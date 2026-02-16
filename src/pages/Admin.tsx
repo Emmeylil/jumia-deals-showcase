@@ -48,16 +48,35 @@ const Admin = () => {
 
         try {
             const data = await fetchJumiaProductBySku(sku);
+            console.log("Jumia SKU data received:", data);
+
             if (data) {
+                // Normalize data in case Edge Function uses different property names
+                const fetchedName = data.displayName || (data as any).name || (data as any).display_name || "";
+                const fetchedImage = data.image || (data as any).image_url || "";
+                const fetchedUrl = data.url || (data as any).product_url || "";
+                const fetchedSku = data.sku || sku;
+
+                let fetchedPrice = 0;
+                let fetchedOldPrice = 0;
+
+                if (data.prices) {
+                    fetchedPrice = data.prices.price;
+                    fetchedOldPrice = data.prices.oldPrice;
+                } else if ((data as any).price) {
+                    fetchedPrice = (data as any).price;
+                    fetchedOldPrice = (data as any).old_price || (data as any).oldPrice || (fetchedPrice * 1.2);
+                }
+
                 setPreviewProduct({
-                    name: data.displayName,
-                    displayName: data.displayName,
-                    image: data.image,
-                    url: data.url,
-                    sku: data.sku
+                    name: fetchedName,
+                    displayName: fetchedName,
+                    image: fetchedImage,
+                    url: fetchedUrl,
+                    sku: fetchedSku
                 });
-                setOldPrice(data.prices.oldPrice > 0 ? data.prices.oldPrice.toString() : "");
-                setNewPrice(data.prices.price > 0 ? data.prices.price.toString() : "");
+                setOldPrice(fetchedOldPrice > 0 ? fetchedOldPrice.toString() : "");
+                setNewPrice(fetchedPrice > 0 ? fetchedPrice.toString() : "");
                 toast.success("Product found on Jumia!");
             } else {
                 toast.error("Could not find product with this SKU on Jumia. You can still enter details manually.");
@@ -150,7 +169,11 @@ const Admin = () => {
                                         <label className="text-sm font-medium mb-1 block">Product Name</label>
                                         <Input
                                             value={previewProduct.name}
-                                            onChange={(e) => setPreviewProduct({ ...previewProduct, name: e.target.value })}
+                                            onChange={(e) => setPreviewProduct({
+                                                ...previewProduct,
+                                                name: e.target.value,
+                                                displayName: e.target.value
+                                            })}
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -187,7 +210,14 @@ const Admin = () => {
                                     className="mt-2 text-xs"
                                     placeholder="Image URL"
                                     value={previewProduct.image}
-                                    onChange={(e) => setPreviewProduct({ ...previewProduct, image: e.target.value })}
+                                    onChange={(e) => {
+                                        let val = e.target.value;
+                                        // Auto-fix relative paths if user pastes them
+                                        if (val.startsWith("/src/assets/products/")) {
+                                            val = val.replace("/src/assets/products/", "/products/");
+                                        }
+                                        setPreviewProduct({ ...previewProduct, image: val });
+                                    }}
                                 />
                             )}
                         </div>
