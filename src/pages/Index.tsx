@@ -87,7 +87,7 @@ const Index = () => {
               {/* Cover Page */}
               <Page className="bg-primary text-white !p-0">
                 <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-12 text-center bg-gradient-to-br from-primary to-primary/80">
-                  <img src="/jumia-logo.png" alt="Jumia" className="w-48 brightness-0 invert opacity-90" />
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Jumia_Group_Logo.png" alt="Jumia" className="w-48 brightness-0 invert opacity-90" />
                   <div className="h-1 w-24 bg-white/30 rounded-full" />
                   <h1 className="text-5xl font-black tracking-tighter uppercase italic drop-shadow-lg">
                     HOTTEST <br />
@@ -121,7 +121,7 @@ const Index = () => {
                   <h2 className="text-3xl font-black mb-4">Don't Miss Out!</h2>
                   <p className="mb-8">Visit Jumia.com.ng for even more amazing deals on all your favorite brands.</p>
                   <div className="w-32 h-32 bg-white p-4 shadow-inner rounded-xl mb-6">
-                    <img src="/qrcode-placeholder.png" alt="QR Code" className="w-full h-full opacity-50 grayscale" />
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jumia.com.ng" alt="QR Code" className="w-full h-full opacity-80" />
                   </div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Scan to shop now</p>
                 </div>
@@ -134,7 +134,7 @@ const Index = () => {
       {/* Navigation Controls */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/95 backdrop-blur-sm p-3 rounded-full shadow-2xl border border-gray-200 z-50">
         <button
-          onClick={() => bookRef.current.pageFlip().prevPage()}
+          onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
           className="p-3 hover:bg-gray-100 rounded-full transition-colors"
         >
           <svg className="w-6 h-6 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
@@ -143,7 +143,7 @@ const Index = () => {
         <div className="h-6 w-px bg-gray-200 mx-2" />
 
         <button
-          onClick={() => bookRef.current.pageFlip().nextPage()}
+          onClick={() => bookRef.current?.pageFlip()?.flipNext()}
           className="p-3 hover:bg-gray-100 rounded-full transition-colors"
         >
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
