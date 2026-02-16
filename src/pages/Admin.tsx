@@ -21,14 +21,22 @@ const Admin = () => {
     const [previewProduct, setPreviewProduct] = useState<{ name: string, image: string } | null>(null);
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
-            const docs = snapshot.docs.map((doc) => ({
-                ...doc.data(),
-                id: parseInt(doc.id),
-            })) as Product[];
-            setProducts(docs.sort((a, b) => a.id - b.id));
-            setLoading(false);
-        });
+        const q = query(collection(db, "products"), orderBy("id"), limit(100));
+        const unsubscribe = onSnapshot(q,
+            (snapshot) => {
+                const docs = snapshot.docs.map((doc) => ({
+                    ...doc.data(),
+                    id: parseInt(doc.id),
+                })) as Product[];
+                setProducts(docs);
+                setLoading(false);
+            },
+            (error) => {
+                console.error("Firestore error:", error);
+                toast.error("Failed to load products. Check your connection.");
+                setLoading(false);
+            }
+        );
 
         return () => unsubscribe();
     }, []);

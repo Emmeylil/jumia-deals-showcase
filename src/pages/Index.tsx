@@ -4,7 +4,7 @@ import CatalogHeader from "@/components/CatalogHeader";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/data/products";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import catalogBg from "@/assets/catalog-bg.jpg";
 
 interface PageProps {
@@ -28,14 +28,21 @@ const Index = () => {
   const bookRef = useRef<any>(null);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
-      const docs = snapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: parseInt(doc.id),
-      })) as Product[];
-      setProducts(docs.sort((a, b) => a.id - b.id));
-      setLoading(false);
-    });
+    const q = query(collection(db, "products"), orderBy("id"), limit(50));
+    const unsubscribe = onSnapshot(q,
+      (snapshot) => {
+        const docs = snapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: parseInt(doc.id),
+        })) as Product[];
+        setProducts(docs);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Firestore error:", error);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -51,7 +58,7 @@ const Index = () => {
       <CatalogHeader />
 
       <div
-        className="w-full min-h-[calc(100-80px)] flex items-center justify-center p-4 md:p-12"
+        className="w-full min-h-[calc(100vh-80px)] flex items-center justify-center p-4 md:p-12"
         style={{
           backgroundImage: `url(${catalogBg})`,
           backgroundSize: "cover",
