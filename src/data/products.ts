@@ -13,10 +13,17 @@ import splitAcLargeImg from "@/assets/products/split-ac-large.png";
 
 export interface Product {
   id: number;
+  sku?: string;
   name: string;
+  displayName?: string;
   image: string;
+  url?: string;
   price: number;
   oldPrice: number;
+  prices?: {
+    price: number;
+    oldPrice: number;
+  };
   discountPercentage?: number;
 }
 

@@ -1,7 +1,12 @@
 export interface JumiaProduct {
-    name: string;
+    sku: string;
+    displayName: string;
     image: string;
-    price: number;
+    url: string;
+    prices: {
+        price: number;
+        oldPrice: number;
+    };
 }
 
 export async function fetchJumiaProductBySku(sku: string): Promise<JumiaProduct | null> {
@@ -29,18 +34,30 @@ export async function fetchJumiaProductBySku(sku: string): Promise<JumiaProduct 
 
                     // Jumia price is usually a string with currency or an object
                     let price = 0;
-                    if (product.prices && product.prices.price) {
-                        if (typeof product.prices.price === 'number') {
-                            price = product.prices.price;
-                        } else if (typeof product.prices.price === 'string') {
-                            price = parseInt(product.prices.price.replace(/[^\d]/g, ""));
+                    let oldPrice = 0;
+
+                    if (product.prices) {
+                        if (product.prices.price) {
+                            price = typeof product.prices.price === 'number'
+                                ? product.prices.price
+                                : parseInt(product.prices.price.replace(/[^\d]/g, ""));
+                        }
+                        if (product.prices.oldPrice) {
+                            oldPrice = typeof product.prices.oldPrice === 'number'
+                                ? product.prices.oldPrice
+                                : parseInt(product.prices.oldPrice.replace(/[^\d]/g, ""));
                         }
                     }
 
                     return {
-                        name: product.name,
+                        sku: product.sku || sku,
+                        displayName: product.name,
                         image: product.image,
-                        price: price
+                        url: product.url || "",
+                        prices: {
+                            price: price,
+                            oldPrice: oldPrice || Math.round(price * 1.2) // Fallback 20% markup
+                        }
                     };
                 }
             } catch (e) {
@@ -51,12 +68,18 @@ export async function fetchJumiaProductBySku(sku: string): Promise<JumiaProduct 
         // Fallback: try to match from metadata if it's a product page directly
         const metaName = html.match(/<meta property="og:title" content="([^"]+)"/);
         const metaImage = html.match(/<meta property="og:image" content="([^"]+)"/);
+        const metaUrl = html.match(/<meta property="og:url" content="([^"]+)"/);
 
         if (metaName && metaImage) {
             return {
-                name: metaName[1].split("|")[0].trim(),
+                sku: sku,
+                displayName: metaName[1].split("|")[0].trim(),
                 image: metaImage[1].trim(),
-                price: 0 // Price might be harder to get from meta
+                url: metaUrl ? metaUrl[1].replace("https://www.jumia.com.ng", "") : "",
+                prices: {
+                    price: 0,
+                    oldPrice: 0
+                }
             };
         }
 

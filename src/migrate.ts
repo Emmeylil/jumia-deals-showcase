@@ -1,5 +1,5 @@
 import { db } from "./lib/firebase";
-import { collection, doc, setDoc, getDocs } from "firebase/firestore";
+import { collection, doc, setDoc, getDocs } from "@firebase/firestore";
 import { products } from "./data/products";
 
 async function migrateProducts() {
@@ -9,7 +9,17 @@ async function migrateProducts() {
     if (snapshot.empty) {
         console.log("Migrating products to Firestore...");
         for (const product of products) {
-            await setDoc(doc(db, "products", product.id.toString()), product);
+            const enrichedProduct = {
+                ...product,
+                displayName: product.name,
+                sku: `SKU-${product.id}`, // Placeholder SKU for static data
+                url: "",
+                prices: {
+                    price: product.price,
+                    oldPrice: product.oldPrice
+                }
+            };
+            await setDoc(doc(db, "products", product.id.toString()), enrichedProduct);
         }
         console.log("Migration complete!");
     } else {

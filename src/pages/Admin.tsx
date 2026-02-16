@@ -18,7 +18,7 @@ const Admin = () => {
     const [sku, setSku] = useState("");
     const [newPrice, setNewPrice] = useState("");
     const [oldPrice, setOldPrice] = useState("");
-    const [previewProduct, setPreviewProduct] = useState<{ name: string, image: string } | null>(null);
+    const [previewProduct, setPreviewProduct] = useState<{ name: string, displayName: string, image: string, url: string, sku: string } | null>(null);
 
     useEffect(() => {
         const q = query(collection(db, "products"), orderBy("id"), limit(100));
@@ -49,12 +49,19 @@ const Admin = () => {
         try {
             const data = await fetchJumiaProductBySku(sku);
             if (data) {
-                setPreviewProduct({ name: data.name, image: data.image });
-                setOldPrice(data.price > 0 ? data.price.toString() : "");
+                setPreviewProduct({
+                    name: data.displayName,
+                    displayName: data.displayName,
+                    image: data.image,
+                    url: data.url,
+                    sku: data.sku
+                });
+                setOldPrice(data.prices.oldPrice > 0 ? data.prices.oldPrice.toString() : "");
+                setNewPrice(data.prices.price > 0 ? data.prices.price.toString() : "");
                 toast.success("Product found on Jumia!");
             } else {
                 toast.error("Could not find product with this SKU on Jumia. You can still enter details manually.");
-                setPreviewProduct({ name: "", image: "" }); // Allow manual entry if not found
+                setPreviewProduct({ name: "", displayName: "", image: "", url: "", sku: sku }); // Allow manual entry if not found
             }
         } catch (error) {
             toast.error("Error fetching SKU");
@@ -72,10 +79,17 @@ const Admin = () => {
 
             const productData: Product = {
                 id: nextId,
+                sku: sku || previewProduct.sku,
                 name: previewProduct.name,
+                displayName: previewProduct.displayName,
                 image: previewProduct.image,
+                url: previewProduct.url,
                 price: parseInt(newPrice),
-                oldPrice: parseInt(oldPrice) || parseInt(newPrice) * 1.2, // Default 20% more if old price missing
+                oldPrice: parseInt(oldPrice) || parseInt(newPrice) * 1.2,
+                prices: {
+                    price: parseInt(newPrice),
+                    oldPrice: parseInt(oldPrice) || parseInt(newPrice) * 1.2,
+                }
             };
 
             await setDoc(doc(db, "products", nextId.toString()), productData);
@@ -188,8 +202,11 @@ const Admin = () => {
                             <div className="flex items-center gap-4">
                                 <img src={product.image} alt={product.name} className="w-16 h-16 object-contain" />
                                 <div>
-                                    <h3 className="font-semibold text-sm line-clamp-1">{product.name}</h3>
-                                    <p className="text-xs text-muted-foreground">ID: {product.id}</p>
+                                    <h3 className="font-semibold text-sm line-clamp-1">{product.displayName || product.name}</h3>
+                                    <div className="flex gap-2 text-[10px] text-muted-foreground uppercase tracking-tight">
+                                        <span>ID: {product.id}</span>
+                                        {product.sku && <span>• SKU: {product.sku}</span>}
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
