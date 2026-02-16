@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "migrate": "vite-node src/migrate.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -47,6 +48,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
+    "firebase": "^12.9.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
@@ -54,6 +56,7 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.61.1",
+    "react-pageflip": "^2.0.3",
     "react-resizable-panels": "^2.1.9",
     "react-router-dom": "^6.30.1",
     "recharts": "^2.15.4",
@@ -65,9 +68,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
-    "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
@@ -84,6 +87,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
+    "vite-node": "^5.1.0",
     "vitest": "^3.2.4"
   }
 }
