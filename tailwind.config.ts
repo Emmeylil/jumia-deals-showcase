@@ -47,6 +47,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        jumia: {
+          purple: "hsl(var(--jumia-purple))",
+          "purple-light": "hsl(var(--jumia-purple-light))",
+          orange: "hsl(var(--jumia-orange))",
+          "orange-dark": "hsl(var(--jumia-orange-dark))",
+          bg: "hsl(var(--jumia-bg))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
