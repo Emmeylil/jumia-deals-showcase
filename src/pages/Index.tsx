@@ -4,7 +4,7 @@ import CatalogHeader from "@/components/CatalogHeader";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/data/products";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit } from "@firebase/firestore";
 import catalogBg from "@/assets/catalog-bg.jpg";
 
 interface PageProps {

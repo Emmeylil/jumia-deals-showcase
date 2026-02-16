@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, doc, updateDoc, setDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc, setDoc, getDocs, query, orderBy, limit } from "@firebase/firestore";
 import { Product, formatPrice } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
