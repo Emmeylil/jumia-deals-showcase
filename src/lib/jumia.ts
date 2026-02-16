@@ -17,20 +17,35 @@ export async function fetchJumiaProductBySku(sku: string): Promise<JumiaProduct 
         const data = await response.json();
         const html = data.contents;
 
-        // Simple regex parsing of the HTML to find name and image
-        // Note: Jumia's HTML structure might vary, but we look for common patterns
+        // Look for the JSON data within script tags, similar to the user's script
+        // We search for the products array which Jumia embeds in their initial state scripts
+        const productsMatch = html.match(/"products":\s*(\[[\s\S]*?\])\s*,\s*"head"/);
 
-        // Look for the first product in search results
-        const nameMatch = html.match(/<h3 class="name">([^<]+)<\/h3>/);
-        const imageMatch = html.match(/data-src="([^"]+)" class="img"/);
-        const priceMatch = html.match(/<div class="prc">₦ ([0-9,]+)<\/div>/);
+        if (productsMatch) {
+            try {
+                const products = JSON.parse(productsMatch[1]);
+                if (products && products.length > 0) {
+                    const product = products[0];
 
-        if (nameMatch && imageMatch) {
-            return {
-                name: nameMatch[1].trim(),
-                image: imageMatch[1].trim(),
-                price: priceMatch ? parseInt(priceMatch[1].replace(/,/g, "")) : 0
-            };
+                    // Jumia price is usually a string with currency or an object
+                    let price = 0;
+                    if (product.prices && product.prices.price) {
+                        if (typeof product.prices.price === 'number') {
+                            price = product.prices.price;
+                        } else if (typeof product.prices.price === 'string') {
+                            price = parseInt(product.prices.price.replace(/[^\d]/g, ""));
+                        }
+                    }
+
+                    return {
+                        name: product.name,
+                        image: product.image,
+                        price: price
+                    };
+                }
+            } catch (e) {
+                console.error("Error parsing products JSON:", e);
+            }
         }
 
         // Fallback: try to match from metadata if it's a product page directly
