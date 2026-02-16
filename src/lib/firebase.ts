@@ -1,14 +1,14 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { initializeApp } from "@firebase/app";
+import { getFirestore, enableIndexedDbPersistence } from "@firebase/firestore";
+import { getAuth } from "@firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCYHvsRT2seLKiJ2Puvxve3RC32cMTbQjA",
-  authDomain: "digital-cataloge-81b8f.firebaseapp.com",
-  projectId: "digital-cataloge-81b8f",
-  storageBucket: "digital-cataloge-81b8f.firebasestorage.app",
-  messagingSenderId: "117571270900",
-  appId: "1:117571270900:web:32422a8b2f05af326986a1"
+  apiKey: "AIzaSyAK57O6YKG17sXSw0GovdLFN-B_FLrn19M",
+  authDomain: "jumia-e-catalog.firebaseapp.com",
+  projectId: "jumia-e-catalog",
+  storageBucket: "jumia-e-catalog.firebasestorage.app",
+  messagingSenderId: "776751698383",
+  appId: "1:776751698383:web:e18138daae9c4564a402ba"
 };
 
 const app = initializeApp(firebaseConfig);
