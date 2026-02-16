@@ -7,13 +7,20 @@ import { db } from "@/lib/firebase";
 import { collection, onSnapshot } from "firebase/firestore";
 import catalogBg from "@/assets/catalog-bg.jpg";
 
-const Page = React.forwardRef(({ children, className }: any, ref: any) => {
+interface PageProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className }, ref) => {
   return (
     <div className={`bg-white shadow-2xl p-8 overflow-hidden flex flex-col items-center justify-center border ${className}`} ref={ref}>
       {children}
     </div>
   );
 });
+
+Page.displayName = "Page";
 
 const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -54,7 +61,7 @@ const Index = () => {
       >
         {!loading && (
           <div className="relative">
-            {/* @ts-ignore */}
+            {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
             <HTMLFlipBook
               width={550}
               height={733}
