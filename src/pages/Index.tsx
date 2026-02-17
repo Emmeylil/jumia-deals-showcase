@@ -32,9 +32,10 @@ Page.displayName = "Page";
 const DEFAULT_SETTINGS = {
   innerPages: {
     backgroundImage: "",
+    backgroundColor: "",
   },
-  frontPage: { backgroundImage: "" },
-  backPage: { backgroundImage: "" }
+  frontPage: { backgroundImage: "", backgroundColor: "" },
+  backPage: { backgroundImage: "", backgroundColor: "" }
 };
 
 const Index = () => {
@@ -159,7 +160,10 @@ const Index = () => {
           <Page className="bg-white text-gray-900 border-none">
             <div
               className="w-full h-full flex flex-col items-center justify-center gap-6 p-12 text-center bg-white relative overflow-hidden bg-cover bg-center"
-              style={catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}}
+              style={{
+                ...(catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}),
+                ...(catalogSettings?.frontPage?.backgroundColor ? { backgroundColor: catalogSettings.frontPage.backgroundColor } : {})
+              }}
             >
               {/* Decorative Circle */}
               <div
@@ -219,7 +223,10 @@ const Index = () => {
               <Page
                 key={`page-${pageNum}`}
                 className="bg-[#E6F7FF] bg-cover bg-center"
-                style={catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}}
+                style={{
+                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                  ...(catalogSettings?.innerPages?.backgroundColor ? { backgroundColor: catalogSettings.innerPages.backgroundColor } : {})
+                }}
               >
                 <div className="w-full h-full flex flex-row">
                   {/* Left Sidebar Header */}
@@ -252,7 +259,10 @@ const Index = () => {
               <Page
                 key={`page-${pageNum + 1}`}
                 className="bg-[#E2E0F5] bg-cover bg-center"
-                style={catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}}
+                style={{
+                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                  ...(catalogSettings?.innerPages?.backgroundColor ? { backgroundColor: catalogSettings.innerPages.backgroundColor } : {})
+                }}
               >
                 <div className="w-full h-full flex flex-row">
                   {/* Content Area */}
@@ -293,7 +303,10 @@ const Index = () => {
           <Page className="bg-[#f5f5f5] text-gray-800">
             <div
               className="w-full h-full flex flex-col items-center justify-center p-12 text-center border-l border-gray-200 bg-cover bg-center"
-              style={catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}}
+              style={{
+                ...(catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}),
+                ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
+              }}
             >
               <h2 className="text-3xl font-black mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
               <p className="mb-8 text-gray-600">{catalogSettings?.backPage?.description || "Visit Jumia.com.ng for even more amazing deals on all your favorite brands."}</p>

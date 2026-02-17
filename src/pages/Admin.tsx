@@ -33,6 +33,7 @@ interface CatalogSettings {
     primaryColor: string;
     secondaryColor: string;
     backgroundImage?: string;
+    backgroundColor?: string;
   };
   backPage: {
     title: string;
@@ -41,9 +42,11 @@ interface CatalogSettings {
     callToAction: string;
     footerText: string;
     backgroundImage?: string;
+    backgroundColor?: string;
   };
   innerPages: {
     backgroundImage?: string;
+    backgroundColor?: string;
   };
 };
 
@@ -56,6 +59,7 @@ const DEFAULT_SETTINGS: CatalogSettings = {
     primaryColor: "#FF9900",
     secondaryColor: "#009FE3",
     backgroundImage: "",
+    backgroundColor: "#ffffff",
   },
   backPage: {
     title: "Don't Miss Out!",
@@ -64,9 +68,11 @@ const DEFAULT_SETTINGS: CatalogSettings = {
     callToAction: "Scan to shop now",
     footerText: "JUMIA © 2026",
     backgroundImage: "",
+    backgroundColor: "#f5f5f5",
   },
   innerPages: {
     backgroundImage: "",
+    backgroundColor: "", // Default empty to allow default page colors if not set
   },
 };
 
@@ -434,6 +440,22 @@ const Admin = () => {
                     )}
                   </div>
                 </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Background Color</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={catalogSettings.frontPage.backgroundColor || "#ffffff"}
+                      onChange={(e) => setCatalogSettings({ ...catalogSettings, frontPage: { ...catalogSettings.frontPage, backgroundColor: e.target.value } })}
+                      className="w-12 p-1 h-10"
+                    />
+                    <Input
+                      value={catalogSettings.frontPage.backgroundColor || "#ffffff"}
+                      onChange={(e) => setCatalogSettings({ ...catalogSettings, frontPage: { ...catalogSettings.frontPage, backgroundColor: e.target.value } })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block">Primary Color</label>
@@ -487,6 +509,23 @@ const Admin = () => {
                       )}
                     </div>
                   </div>
+                  <div className="mt-4">
+                    <label className="text-sm font-medium mb-1 block">Background Color (Overrides default page colors)</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={catalogSettings.innerPages?.backgroundColor || "#ffffff"}
+                        onChange={(e) => setCatalogSettings({ ...catalogSettings, innerPages: { ...catalogSettings.innerPages, backgroundColor: e.target.value } })}
+                        className="w-12 p-1 h-10"
+                      />
+                      <Input
+                        value={catalogSettings.innerPages?.backgroundColor || "#ffffff"}
+                        onChange={(e) => setCatalogSettings({ ...catalogSettings, innerPages: { ...catalogSettings.innerPages, backgroundColor: e.target.value } })}
+                        placeholder="#RRGGBB or empty for default"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
                 </div>
 
 
@@ -525,6 +564,22 @@ const Admin = () => {
                     {catalogSettings.backPage.backgroundImage && (
                       <img src={catalogSettings.backPage.backgroundImage} alt="Preview" className="h-10 w-10 object-cover rounded" />
                     )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Background Color</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={catalogSettings.backPage.backgroundColor || "#f5f5f5"}
+                      onChange={(e) => setCatalogSettings({ ...catalogSettings, backPage: { ...catalogSettings.backPage, backgroundColor: e.target.value } })}
+                      className="w-12 p-1 h-10"
+                    />
+                    <Input
+                      value={catalogSettings.backPage.backgroundColor || "#f5f5f5"}
+                      onChange={(e) => setCatalogSettings({ ...catalogSettings, backPage: { ...catalogSettings.backPage, backgroundColor: e.target.value } })}
+                      className="flex-1"
+                    />
                   </div>
                 </div>
                 <div>
