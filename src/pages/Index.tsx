@@ -33,15 +33,11 @@ const Index = () => {
     );
   }
 
-  // Split products for the two different sections based on the image layout
-  // Page 1 (Left): Small Appliances (First 6 items)
-  const leftPageProducts = products.slice(0, 6);
-
-  // Page 2 (Right): Remaining items + Featured
-  // The right page has a 2x3 grid structure (6 slots).
-
-  const rightPageRegularProducts = products.slice(6, 10);
-  const featuredProduct = products.find(p => p.id === 10) || products[9];
+  // Chunk products into groups of 10 (6 for left page, 4 for right page)
+  const productChunks = [];
+  for (let i = 0; i < products.length; i += 10) {
+    productChunks.push(products.slice(i, i + 10));
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 font-gotham overflow-hidden flex items-center justify-center p-4">
@@ -95,69 +91,95 @@ const Index = () => {
             </div>
           </Page>
 
-          {/* LEFT PAGE: Small Appliances Start */}
-          <Page className="bg-[#E6F7FF]">
-            <div className="w-full h-full flex flex-row">
-              {/* Left Sidebar Header */}
-              <div className="w-14 bg-[#009FE3] flex flex-col items-center py-6 relative shadow-lg z-10">
-                <div className="bg-black/20 p-1.5 rounded-full mb-6">
-                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
-                </div>
-                <div className="flex-1 flex items-center justify-center">
-                  <h2 className="text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
-                    Small Appliances
-                  </h2>
-                </div>
-              </div>
+          {/* DYNAMIC PAGES */}
+          {productChunks.map((chunk, index) => {
+            const pageNum = index * 2 + 1;
+            const leftPageProducts = chunk.slice(0, 6);
+            const rightPageRegularProducts = chunk.slice(6, 9);
+            const featuredProduct = chunk[9] || (rightPageRegularProducts.length === 3 ? null : chunk[chunk.length - 1]);
 
-              {/* Content Area */}
-              <div className="flex-1 p-3 grid grid-cols-2 grid-rows-3 gap-3 content-start">
-                {leftPageProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            </div>
+            // Adjust right page regular if we are at the end and don't have enough for a featured slot specifically
+            // The logic implies: 6 on left. remaining on right. If >= 10, 10th is featured. 
+            // If length is say 8: 6 left, 2 right. invalid access to index 9.
+            // Let's refine:
+            // Left: 0-6
+            // Right: 6-10.
+            // visual layout calls for 3 regular slots + 1 featured slot on right page.
+            // If we have less than 4 items for the right page, we fill regular slots first.
 
-            {/* Page Number */}
-            <div className="absolute bottom-3 left-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              Page 01
-            </div>
-          </Page>
+            return (
+              <React.Fragment key={index}>
+                {/* LEFT PAGE */}
+                <Page className="bg-[#E6F7FF]">
+                  <div className="w-full h-full flex flex-row">
+                    {/* Left Sidebar Header */}
+                    <div className="w-14 bg-[#009FE3] flex flex-col items-center py-6 relative shadow-lg z-10">
+                      <div className="bg-black/20 p-1.5 rounded-full mb-6">
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
+                      </div>
+                      <div className="flex-1 flex items-center justify-center">
+                        <h2 className="text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
+                          Best Deals
+                        </h2>
+                      </div>
+                    </div>
 
-          {/* RIGHT PAGE: Small Appliances End + Featured */}
-          <Page className="bg-[#E2E0F5]"> {/* Slight background change to indicate section shift */}
-            <div className="w-full h-full flex flex-row">
-              {/* Content Area */}
-              <div className="flex-1 p-3 grid grid-cols-2 grid-rows-3 gap-3 content-start">
-                {/* Regular Products */}
-                {rightPageRegularProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
+                    {/* Content Area */}
+                    <div className="flex-1 p-3 grid grid-cols-2 grid-rows-3 gap-3 content-start">
+                      {leftPageProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
+                  </div>
 
-                {/* Featured Product Card - Spanning or taking up last slot visually */}
-                <div className="col-span-2 row-span-1 mt-auto">
-                  {featuredProduct && <FeaturedProductCard product={featuredProduct} />}
-                </div>
-              </div>
+                  {/* Page Number */}
+                  <div className="absolute bottom-3 left-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Page {String(pageNum).padStart(2, '0')}
+                  </div>
+                </Page>
 
-              {/* Right Sidebar Header (Large Appliances Teaser) */}
-              <div className="w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-6 relative shadow-inner z-10">
-                <div className="flex-1 flex items-center justify-center">
-                  <h2 className="text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
-                    Large Appliances
-                  </h2>
-                </div>
-                <div className="bg-purple-200 p-1.5 rounded-full mt-6">
-                  <svg className="w-6 h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                </div>
-              </div>
-            </div>
+                {/* RIGHT PAGE */}
+                <Page className="bg-[#E2E0F5]">
+                  <div className="w-full h-full flex flex-row">
+                    {/* Content Area */}
+                    <div className="flex-1 p-3 grid grid-cols-2 grid-rows-3 gap-3 content-start">
+                      {/* Regular Products (up to 3) */}
+                      {rightPageRegularProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
 
-            {/* Page Number */}
-            <div className="absolute bottom-3 right-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              Page 02
-            </div>
-          </Page>
+                      {/* Featured Product Card - Spanning or taking up last slot visually */}
+                      <div className="col-span-2 row-span-1 mt-auto">
+                        {chunk.length > 9 && <FeaturedProductCard product={chunk[9]} />}
+                        {/* Fallback if we have fewer items but want to fill the slot? 
+                            For now, only show featured if we actually have a 10th item in this chunk 
+                            OR if it's the very last item of a non-full chunk if you prefer?
+                            Let's stick to: 6 left + 3 right + 1 featured = 10.
+                        */}
+                      </div>
+                    </div>
+
+                    {/* Right Sidebar Header */}
+                    <div className="w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-6 relative shadow-inner z-10">
+                      <div className="flex-1 flex items-center justify-center">
+                        <h2 className="text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                          Top Picks
+                        </h2>
+                      </div>
+                      <div className="bg-purple-200 p-1.5 rounded-full mt-6">
+                        <svg className="w-6 h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Page Number */}
+                  <div className="absolute bottom-3 right-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Page {String(pageNum + 1).padStart(2, '0')}
+                  </div>
+                </Page>
+              </React.Fragment>
+            );
+          })}>
 
           {/* BACK COVER */}
           <Page className="bg-[#f5f5f5] text-gray-800">
