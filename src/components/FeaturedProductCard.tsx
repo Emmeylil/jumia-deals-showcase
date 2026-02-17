@@ -19,7 +19,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
             )}
 
             {/* Product Image */}
-            <div className="flex-1 w-full flex items-center justify-center pt-2 pb-2">
+            <div className="flex-1 w-full flex items-center justify-center pt-2 pb-2 min-h-0">
                 <img
                     src={product.image}
                     alt={product.name}
@@ -28,14 +28,14 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
             </div>
 
             {/* Product Name */}
-            <div className="w-full text-center px-1 mb-2">
+            <div className="w-full text-center px-1 mb-2 shrink-0">
                 <h3 className="text-xs md:text-sm font-black text-gray-900 leading-tight line-clamp-2 uppercase">
                     {product.name}
                 </h3>
             </div>
 
             {/* Price Pill */}
-            <div className="w-full flex flex-col items-center justify-end mt-auto gap-0.5">
+            <div className="w-full flex flex-col items-center justify-end mt-auto gap-0.5 shrink-0">
                 <div className="bg-white text-black w-full max-w-[90%] py-1.5 rounded-xl flex items-center justify-center shadow-sm border border-orange-100">
                     <span className="text-sm md:text-base font-black tracking-tight">
                         {formatPrice(product.price)}

@@ -20,7 +20,7 @@ const ProductCard = ({ product, compact }: ProductCardProps) => {
       )}
 
       {/* Product Image */}
-      <div className="flex-1 w-full flex items-center justify-center py-1 mt-1">
+      <div className="flex-1 w-full flex items-center justify-center py-1 mt-1 min-h-0">
         <img
           src={product.image}
           alt={product.name}
@@ -30,14 +30,14 @@ const ProductCard = ({ product, compact }: ProductCardProps) => {
       </div>
 
       {/* Product Name */}
-      <div className="w-full text-center px-1 mb-1">
+      <div className="w-full text-center px-1 mb-1 shrink-0">
         <h3 className="text-[9px] md:text-[10px] font-medium text-gray-700 leading-tight line-clamp-2 h-[2.2em]">
           {product.displayName || product.name}
         </h3>
       </div>
 
       {/* Price Pill */}
-      <div className="w-full flex flex-col items-center justify-end mt-auto gap-0.5">
+      <div className="w-full flex flex-col items-center justify-end mt-auto gap-0.5 shrink-0">
         <div className="bg-[#FF9900] text-black w-full max-w-[80%] py-1 rounded-lg flex items-center justify-center shadow-sm">
           <span className="text-[11px] md:text-xs font-black tracking-tight">
             {formatPrice(product.price)}
