@@ -12,17 +12,30 @@ import { db } from "@/lib/firebase";
 interface PageProps {
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className }, ref) => {
+const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className, style }, ref) => {
   return (
-    <div className={`bg-white shadow-md overflow-hidden flex flex-col border border-gray-200 ${className}`} ref={ref}>
+    <div
+      className={`bg-white shadow-md overflow-hidden flex flex-col border border-gray-200 ${className}`}
+      ref={ref}
+      style={style}
+    >
       {children}
     </div>
   );
 });
 
 Page.displayName = "Page";
+
+const DEFAULT_SETTINGS = {
+  innerPages: {
+    backgroundImage: "",
+  },
+  frontPage: { backgroundImage: "" },
+  backPage: { backgroundImage: "" }
+};
 
 const Index = () => {
   const { products, loading } = useProducts();
@@ -37,7 +50,15 @@ const Index = () => {
 
     const unsubscribe = onSnapshot(doc(db, "settings", "catalog"), (snapshot: any) => {
       if (snapshot.exists()) {
-        setCatalogSettings(snapshot.data());
+        const data = snapshot.data();
+        // Deep merge for safe access
+        setCatalogSettings({
+          ...DEFAULT_SETTINGS,
+          ...data,
+          innerPages: { ...DEFAULT_SETTINGS.innerPages, ...data.innerPages },
+          frontPage: { ...DEFAULT_SETTINGS.frontPage, ...data.frontPage },
+          backPage: { ...DEFAULT_SETTINGS.backPage, ...data.backPage },
+        });
       }
       setSettingsLoading(false);
     });
@@ -181,11 +202,12 @@ const Index = () => {
 
             return [
               /* LEFT PAGE */
-              <Page key={`page-${pageNum}`} className="bg-[#E6F7FF]">
-                <div
-                  className="w-full h-full flex flex-row bg-cover bg-center"
-                  style={catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}}
-                >
+              <Page
+                key={`page-${pageNum}`}
+                className="bg-[#E6F7FF] bg-cover bg-center"
+                style={catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}}
+              >
+                <div className="w-full h-full flex flex-row">
                   {/* Left Sidebar Header */}
                   <div className="w-14 bg-[#009FE3] flex flex-col items-center py-6 relative shadow-lg z-10">
                     <div className="bg-black/20 p-1.5 rounded-full mb-6">
@@ -213,11 +235,12 @@ const Index = () => {
               </Page>,
 
               /* RIGHT PAGE */
-              <Page key={`page-${pageNum + 1}`} className="bg-[#E2E0F5]">
-                <div
-                  className="w-full h-full flex flex-row bg-cover bg-center"
-                  style={catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}}
-                >
+              <Page
+                key={`page-${pageNum + 1}`}
+                className="bg-[#E2E0F5] bg-cover bg-center"
+                style={catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}}
+              >
+                <div className="w-full h-full flex flex-row">
                   {/* Content Area */}
                   <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start">
                     {/* Regular Products (up to 3) */}
