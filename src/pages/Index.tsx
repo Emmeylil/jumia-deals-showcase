@@ -353,10 +353,10 @@ const Index = () => {
       >
         {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
         <HTMLFlipBook
-          width={400}
+          width={isDesktop ? 400 : 350}
           height={520}
           size="stretch"
-          minWidth={300}
+          minWidth={isDesktop ? 300 : 280}
           maxWidth={800}
           minHeight={400}
           maxHeight={1000}
@@ -365,7 +365,7 @@ const Index = () => {
           ref={bookRef}
           showCover={true}
           mobileScrollSupport={true}
-          usePortrait={false}
+          usePortrait={!isDesktop}
           flippingTime={1000}
           startPage={0}
           drawShadow={true}
