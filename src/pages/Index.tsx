@@ -258,8 +258,16 @@ const Index = () => {
         style={{ backgroundImage: `url(${catalogBg})` }}
       />
 
+      {/* Search Backdrop (closes results when clicking away) */}
+      {isSearchFocused && (
+        <div
+          className="fixed inset-0 z-40 bg-black/5 backdrop-blur-[2px]"
+          onClick={() => setIsSearchFocused(false)}
+        />
+      )}
+
       {/* Search Bar */}
-      <div className="w-full max-w-md mb-6 relative z-50">
+      <div className="w-full max-w-md mb-8 relative z-50 px-4 md:px-0">
         <div className="relative group">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-jumia-purple transition-colors">
             <Search size={18} />
@@ -267,7 +275,7 @@ const Index = () => {
           <Input
             type="text"
             placeholder="Search products, brands, or deals..."
-            className="pl-10 pr-10 py-6 bg-white/90 backdrop-blur-md border-2 border-white/50 shadow-xl rounded-2xl focus:ring-4 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all text-gray-900 placeholder:text-gray-400 font-medium"
+            className="pl-10 pr-10 py-7 bg-white/95 backdrop-blur-md border-2 border-white/50 shadow-2xl rounded-2xl focus:ring-4 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all text-gray-900 placeholder:text-gray-400 font-medium"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
@@ -275,9 +283,9 @@ const Index = () => {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 px-1"
+              className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 px-1 hover:scale-110 transition-transform"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           )}
         </div>
