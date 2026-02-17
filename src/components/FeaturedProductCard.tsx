@@ -5,37 +5,47 @@ interface FeaturedProductCardProps {
 }
 
 const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
+    const discount = product.oldPrice
+        ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
+        : 0;
+
     return (
-        <div className="relative bg-[#FFDA00] rounded-xl shadow-sm border border-yellow-400 flex flex-col p-2 h-full min-h-0 overflow-hidden transition-all hover:shadow-md cursor-pointer group">
+        <div className="relative bg-[#FFDA00] rounded-[1.5rem] shadow-sm flex flex-col items-center p-3 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group">
+            {/* Discount Badge */}
+            {discount > 0 && (
+                <div className="absolute top-2 right-2 z-10 bg-white text-[#FF9900] text-[10px] font-black w-8 h-8 flex items-center justify-center rounded-full shadow-sm">
+                    -{discount}%
+                </div>
+            )}
+
             {/* Product Image */}
-            <div className="flex-1 flex items-center justify-center pt-1 pb-2">
+            <div className="flex-1 w-full flex items-center justify-center pt-2 pb-2">
                 <img
                     src={product.image}
                     alt={product.name}
-                    className="max-h-32 w-auto object-contain group-hover:scale-110 transition-transform duration-300"
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                 />
             </div>
 
-            {/* Featured Price Pill */}
-            <div className="flex justify-center mb-4">
-                <div className="bg-white text-gray-900 px-4 py-1.5 rounded-full inline-flex flex-col items-center shadow-md">
-                    <span className="text-xl md:text-2xl font-black leading-none">
-                        {formatPrice(product.price)}
-                    </span>
-                    <span className="text-[10px] md:text-xs text-gray-400 line-through font-bold mt-1">
-                        {formatPrice(product.oldPrice)}
-                    </span>
-                </div>
+            {/* Product Name */}
+            <div className="w-full text-center px-1 mb-2">
+                <h3 className="text-xs md:text-sm font-black text-gray-900 leading-tight line-clamp-2 uppercase">
+                    {product.name}
+                </h3>
             </div>
 
-            {/* Product Info */}
-            <div className="text-center">
-                <h3 className="text-lg md:text-xl font-black text-gray-900 uppercase tracking-tight leading-none mb-1">
-                    {product.name.split(' ')[0]} {/* Simplified brand name for focus */}
-                </h3>
-                <p className="text-[10px] md:text-xs font-bold text-gray-800 uppercase tracking-tight leading-tight uppercase opacity-80">
-                    {product.name}
-                </p>
+            {/* Price Pill */}
+            <div className="w-full flex flex-col items-center justify-end mt-auto gap-0.5">
+                <div className="bg-white text-black w-full max-w-[90%] py-1.5 rounded-xl flex items-center justify-center shadow-sm border border-orange-100">
+                    <span className="text-sm md:text-base font-black tracking-tight">
+                        {formatPrice(product.price)}
+                    </span>
+                </div>
+                {product.oldPrice && (
+                    <span className="text-[10px] text-gray-600 line-through font-bold">
+                        {formatPrice(product.oldPrice)}
+                    </span>
+                )}
             </div>
         </div>
     );
