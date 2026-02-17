@@ -10,6 +10,7 @@ import chestFreezerImg from "@/assets/products/chest-freezer.png";
 import doubleDoorFridgeImg from "@/assets/products/double-door-fridge.png";
 import chestFreezerLargeImg from "@/assets/products/chest-freezer-large.png";
 import splitAcLargeImg from "@/assets/products/split-ac-large.png";
+const placeholderImg = "/placeholder.svg";
 
 export interface Product {
   id: number;
@@ -30,87 +31,80 @@ export interface Product {
 export const products: Product[] = [
   {
     id: 1,
-    name: "Maxi 20 Litres Manual Microwave Oven",
+    name: "Hisense 20L Microwave 1-Year Warranty",
     image: microwaveImg,
-    price: 55370,
-    oldPrice: 65340,
+    price: 75900,
+    oldPrice: 82070,
   },
   {
     id: 2,
-    name: "Skyrun 4 Burners (4+0) Gas Cooker",
+    name: "Boscon Auto Ignition Table Top Gas Cooker",
     image: gasCookerImg,
-    price: 147999,
-    oldPrice: 201163,
+    price: 15900,
+    oldPrice: 17655,
   },
   {
     id: 3,
-    name: "HANSEN 18 inches Industrial Standing Fan",
-    image: standingFanImg,
-    price: 16999,
-    oldPrice: 20060,
+    name: "Tinmo 18\" Rechargeable Standing Fan",
+    image: rechargeableFanImg,
+    price: 53000,
+    oldPrice: 59000,
   },
   {
     id: 4,
-    name: "Nexus 1HP Split Air Conditioner",
-    image: splitAcImg,
-    price: 269999,
-    oldPrice: 374099,
+    name: "Binatone 1.5 Litres Blender with Grinder",
+    image: tableFanImg, // Placeholder for blender if not specifically available
+    price: 28560,
+    oldPrice: 35305,
   },
   {
     id: 5,
-    name: "Rechargeable Standing Fan (168F) + Solar Panel",
-    image: rechargeableFanImg,
-    price: 37999,
-    oldPrice: 66500,
+    name: "Syinix 2.2L Electric Kettle",
+    image: placeholderImg, // Need to make sure placeholder is available
+    price: 6100,
+    oldPrice: 6816,
   },
   {
     id: 6,
-    name: "Royal 1.5 HP INVERTER Air Conditioner",
-    image: inverterAcImg,
-    price: 341250,
-    oldPrice: 394385,
+    name: "Zyre 1200W Dry Iron + 1 Year Warranty",
+    image: placeholderImg,
+    price: 7850,
+    oldPrice: 8703,
   },
   {
     id: 7,
-    name: "Nexus 1.5HP Split Air Conditioner",
-    image: splitAcLargeImg,
-    price: 299600,
-    oldPrice: 391128,
+    name: "Bushburgh Intelligent Infrared Electric Stove",
+    image: placeholderImg,
+    price: 32990,
+    oldPrice: 36650,
   },
   {
     id: 8,
-    name: "Lontor 12 Inch Rechargeable Table Fan",
-    image: tableFanImg,
-    price: 39000,
-    oldPrice: 66500,
+    name: "Century Electric Oven Toaster/Baker",
+    image: chestFreezerImg,
+    price: 38100,
+    oldPrice: 47999,
   },
   {
     id: 9,
-    name: "260ml Mist Humidifier Diffuser",
-    image: humidifierImg,
-    price: 3020,
-    oldPrice: 7435,
+    name: "Gold Crown Toaster with 1-Year Warranty",
+    image: placeholderImg,
+    price: 13000,
+    oldPrice: 15000,
   },
   {
     id: 10,
-    name: "Skyrun 200l Chest Freezer",
-    image: chestFreezerImg,
-    price: 279999,
-    oldPrice: 386291,
+    name: "Silvercrest 2L Industrial 8500W Motor Blender",
+    image: doubleDoorFridgeImg, // Using a different image for featured
+    price: 24900,
+    oldPrice: 27200,
   },
   {
     id: 11,
-    name: "Aeon 70L Double Door Fridge",
-    image: doubleDoorFridgeImg,
-    price: 149999,
-    oldPrice: 193499,
-  },
-  {
-    id: 12,
-    name: "Aeon 90 Litres Chest Freezer",
-    image: chestFreezerLargeImg,
-    price: 257999,
-    oldPrice: 379999,
+    name: "Humidifier 260mL Mist Humidifier",
+    image: humidifierImg,
+    price: 4900,
+    oldPrice: 5560,
   },
 ];
 

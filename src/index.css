@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.cdnfonts.com/css/gotham-webfont');
 
 @tailwind base;
 @tailwind components;
@@ -15,26 +15,26 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    --primary: 280 60% 35%;
+    --primary: 199 89% 48%; /* New Jumia Blue from image */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 190 50% 85%;
-    --secondary-foreground: 280 60% 35%;
+    --secondary-foreground: 199 89% 48%;
 
     --muted: 210 20% 92%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 30 92% 54%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 45 100% 50%; /* Jumia Yellow/Gold */
+    --accent-foreground: 0 0% 15%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 280 60% 35%;
+    --ring: 199 89% 48%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -46,13 +46,12 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Custom Jumia tokens */
-    --jumia-purple: 280 60% 35%;
-    --jumia-purple-light: 280 50% 55%;
-    --jumia-orange: 30 92% 54%;
-    --jumia-orange-dark: 25 90% 48%;
+    --jumia-blue: 199 89% 48%;
+    --jumia-blue-light: 199 80% 65%;
+    --jumia-cyan: 185 70% 90%;
+    --jumia-yellow: 45 100% 50%;
     --jumia-bg: 190 40% 92%;
-    --jumia-card-shadow: 0 4px 16px 0 hsla(0, 0%, 0%, 0.08);
-    --jumia-card-shadow-hover: 0 8px 30px 0 hsla(0, 0%, 0%, 0.15);
+    --jumia-card-shadow: 0 2px 8px 0 hsla(0, 0%, 0%, 0.05);
   }
 
   .dark {
@@ -62,27 +61,19 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 280 60% 55%;
+    --primary: 199 89% 48%;
     --primary-foreground: 0 0% 100%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 30 92% 54%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 0 0% 15%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -92,8 +83,8 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    @apply bg-background text-foreground;
+    font-family: 'Gotham', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 }
 

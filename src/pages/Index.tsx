@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import HTMLFlipBook from "react-pageflip";
-import CatalogHeader from "@/components/CatalogHeader";
 import ProductCard from "@/components/ProductCard";
-import { Product } from "@/data/products";
-import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy, limit } from "@firebase/firestore";
+import FeaturedProductCard from "@/components/FeaturedProductCard";
+import { type Product, products as initialProducts } from "@/data/products";
 import catalogBg from "@/assets/catalog-bg.jpg";
 
 interface PageProps {
@@ -14,7 +12,7 @@ interface PageProps {
 
 const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className }, ref) => {
   return (
-    <div className={`bg-white shadow-2xl p-8 overflow-hidden flex flex-col items-center justify-center border ${className}`} ref={ref}>
+    <div className={`bg-white shadow-md overflow-hidden flex flex-col border border-gray-200 ${className}`} ref={ref}>
       {children}
     </div>
   );
@@ -23,133 +21,170 @@ const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className 
 Page.displayName = "Page";
 
 const Index = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products] = useState<Product[]>(initialProducts);
   const bookRef = useRef<any>(null);
 
-  useEffect(() => {
-    const q = query(collection(db, "products"), orderBy("id"), limit(50));
-    const unsubscribe = onSnapshot(q,
-      (snapshot) => {
-        const docs = snapshot.docs.map((doc) => ({
-          ...doc.data(),
-          id: parseInt(doc.id),
-        })) as Product[];
-        setProducts(docs);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Firestore error:", error);
-        setLoading(false);
-      }
-    );
+  // Split products for the two different sections based on the image layout
+  // Page 1 (Left): Small Appliances (First 6 items)
+  const leftPageProducts = products.slice(0, 6);
 
-    return () => unsubscribe();
-  }, []);
+  // Page 2 (Right): Remaining items + Featured
+  // The right page has a 2x3 grid structure (6 slots).
 
-
-  // Group products into pages of 6
-  const productPages: Product[][] = [];
-  for (let i = 0; i < products.length; i += 6) {
-    productPages.push(products.slice(i, i + 6));
-  }
+  const rightPageRegularProducts = products.slice(6, 10);
+  const featuredProduct = products.find(p => p.id === 10) || products[9];
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      <CatalogHeader />
+    <div className="min-h-screen bg-gray-100 font-gotham overflow-hidden flex items-center justify-center p-4">
 
+      {/* Background with blur effect */}
       <div
-        className="w-full min-h-[calc(100vh-80px)] flex items-center justify-center p-4 md:p-12"
-        style={{
-          backgroundImage: `url(${catalogBg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundAttachment: "fixed"
-        }}
-      >
-        {!loading && products.length > 0 && (
-          <div className="relative">
-            {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
-            <HTMLFlipBook
-              width={550}
-              height={733}
-              size="stretch"
-              minWidth={315}
-              maxWidth={1000}
-              minHeight={420}
-              maxHeight={1350}
-              maxShadowOpacity={0.5}
-              className="jumia-book shadow-2xl"
-              ref={bookRef}
-              showCover={true}
-              mobileScrollSupport={true}
-              startPage={0}
-            >
-              {/* Cover Page */}
-              <Page className="bg-primary text-white !p-0">
-                <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-12 text-center bg-gradient-to-br from-primary to-primary/80">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Jumia_Group_Logo.png" alt="Jumia" className="w-48 brightness-0 invert opacity-90" />
-                  <div className="h-1 w-24 bg-white/30 rounded-full" />
-                  <h1 className="text-5xl font-black tracking-tighter uppercase italic drop-shadow-lg">
-                    HOTTEST <br />
-                    <span className="text-secondary text-5xl">DEALS!</span>
-                  </h1>
-                  <p className="text-xl font-medium opacity-90 tracking-widest uppercase">Digital Catalog 2026</p>
-                  <div className="mt-8 px-6 py-2 border-2 border-white/50 rounded-full text-sm font-bold animate-pulse">
-                    OPEN TO EXPLORE
-                  </div>
-                </div>
-              </Page>
+        className="fixed inset-0 z-0 bg-cover bg-center opacity-20 pointer-events-none"
+        style={{ backgroundImage: `url(${catalogBg})` }}
+      />
 
-              {/* Product Pages - 6 products per page */}
-              {productPages.map((pageProducts, pageIndex) => (
-                <Page key={`page-${pageIndex}`} className="bg-white !p-4">
-                  <div className="w-full h-full flex flex-col justify-between">
-                    <div className="grid grid-cols-2 grid-rows-3 gap-2 flex-1">
-                      {pageProducts.map((product) => (
-                        <ProductCard key={product.id} product={product} compact />
-                      ))}
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between items-center text-[10px] text-gray-400 font-medium tracking-widest uppercase">
-                      <span>Jumia Deals 2026</span>
-                      <span>Page {pageIndex + 1}</span>
-                    </div>
-                  </div>
-                </Page>
-              ))}
+      <div className="relative z-10 w-full max-w-6xl flex justify-center transform scale-95 md:scale-100 transition-transform duration-500">
+        {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
+        <HTMLFlipBook
+          width={550}
+          height={733}
+          size="stretch"
+          minWidth={315}
+          maxWidth={1000}
+          minHeight={420}
+          maxHeight={1350}
+          maxShadowOpacity={0.5}
+          className="jumia-book shadow-2xl"
+          ref={bookRef}
+          showCover={true}
+          mobileScrollSupport={true}
+          startPage={0}
+        >
+          {/* COVER PAGE */}
+          <Page className="bg-[#009FE3] text-white">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-12 text-center bg-gradient-to-br from-[#009FE3] to-[#007bb0]">
+              <div className="flex items-center gap-2 mb-8">
+                <h1 className="text-4xl font-black tracking-tight uppercase">JUMIA</h1>
+                <div className="bg-jumia-yellow w-4 h-4 rounded-full animate-pulse" />
+              </div>
 
-              {/* Back Cover */}
-              <Page className="bg-[#f5f5f5] text-gray-800">
-                <div className="w-full h-full flex flex-col items-center justify-center p-12 text-center">
-                  <h2 className="text-3xl font-black mb-4">Don't Miss Out!</h2>
-                  <p className="mb-8">Visit Jumia.com.ng for even more amazing deals on all your favorite brands.</p>
-                  <div className="w-32 h-32 bg-white p-4 shadow-inner rounded-xl mb-6">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jumia.com.ng" alt="QR Code" className="w-full h-full opacity-80" />
-                  </div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Scan to shop now</p>
+              <div className="relative">
+                <h1 className="text-7xl font-black tracking-tighter uppercase italic drop-shadow-lg leading-tight">
+                  HOTTEST <br />
+                  <span className="text-[#FFDA00]">DEALS!</span>
+                </h1>
+                <div className="absolute -bottom-4 right-0 bg-white text-[#009FE3] text-xs font-bold px-2 py-1 rotate-[-5deg] shadow-sm">
+                  LIMITED TIME
                 </div>
-              </Page>
-            </HTMLFlipBook>
-          </div>
-        )}
+              </div>
+
+              <p className="text-xl font-bold tracking-widest uppercase mt-8 opacity-90">Digital Catalog 2026</p>
+
+              <div className="mt-12 px-8 py-3 border-2 border-white/50 rounded-full text-sm font-bold bg-white/10 backdrop-blur-sm animate-pulse cursor-pointer hover:bg-white hover:text-[#009FE3] transition-colors">
+                CLICK TO OPEN
+              </div>
+            </div>
+          </Page>
+
+          {/* LEFT PAGE: Small Appliances Start */}
+          <Page className="bg-[#E6F7FF]">
+            <div className="w-full h-full flex flex-row">
+              {/* Left Sidebar Header */}
+              <div className="w-14 bg-[#009FE3] flex flex-col items-center py-6 relative shadow-lg z-10">
+                <div className="bg-black/20 p-1.5 rounded-full mb-6">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <h2 className="text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
+                    Small Appliances
+                  </h2>
+                </div>
+              </div>
+
+              {/* Content Area */}
+              <div className="flex-1 p-3 grid grid-cols-2 grid-rows-3 gap-3 content-start">
+                {leftPageProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </div>
+
+            {/* Page Number */}
+            <div className="absolute bottom-3 left-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Page 01
+            </div>
+          </Page>
+
+          {/* RIGHT PAGE: Small Appliances End + Featured */}
+          <Page className="bg-[#E2E0F5]"> {/* Slight background change to indicate section shift */}
+            <div className="w-full h-full flex flex-row">
+              {/* Content Area */}
+              <div className="flex-1 p-3 grid grid-cols-2 grid-rows-3 gap-3 content-start">
+                {/* Regular Products */}
+                {rightPageRegularProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+
+                {/* Featured Product Card - Spanning or taking up last slot visually */}
+                <div className="col-span-2 row-span-1 mt-auto">
+                  {featuredProduct && <FeaturedProductCard product={featuredProduct} />}
+                </div>
+              </div>
+
+              {/* Right Sidebar Header (Large Appliances Teaser) */}
+              <div className="w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-6 relative shadow-inner z-10">
+                <div className="flex-1 flex items-center justify-center">
+                  <h2 className="text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                    Large Appliances
+                  </h2>
+                </div>
+                <div className="bg-purple-200 p-1.5 rounded-full mt-6">
+                  <svg className="w-6 h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Page Number */}
+            <div className="absolute bottom-3 right-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Page 02
+            </div>
+          </Page>
+
+          {/* BACK COVER */}
+          <Page className="bg-[#f5f5f5] text-gray-800">
+            <div className="w-full h-full flex flex-col items-center justify-center p-12 text-center border-l border-gray-200">
+              <h2 className="text-3xl font-black mb-4">Don't Miss Out!</h2>
+              <p className="mb-8 text-gray-600">Visit Jumia.com.ng for even more amazing deals on all your favorite brands.</p>
+              <div className="w-40 h-40 bg-white p-4 shadow-xl rounded-2xl mb-6 transform hover:scale-105 transition-transform duration-300">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jumia.com.ng" alt="QR Code" className="w-full h-full opacity-90" />
+              </div>
+              <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-12">Scan to shop now</p>
+
+              <div className="flex items-center gap-2 opacity-50">
+                <span className="font-bold">JUMIA</span>
+                <span>&copy; 2026</span>
+              </div>
+            </div>
+          </Page>
+        </HTMLFlipBook>
       </div>
 
       {/* Navigation Controls */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/95 backdrop-blur-sm p-3 rounded-full shadow-2xl border border-gray-200 z-50">
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
-          className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+          className="p-3 hover:bg-gray-100 rounded-full transition-colors group"
         >
-          <svg className="w-6 h-6 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
+          <svg className="w-6 h-6 rotate-180 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
         </button>
 
         <div className="h-6 w-px bg-gray-200 mx-2" />
 
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipNext()}
-          className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+          className="p-3 hover:bg-gray-100 rounded-full transition-colors group"
         >
-          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
+          <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
     </div>

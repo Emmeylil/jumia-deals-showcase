@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Gotham", "Inter", "sans-serif"],
+        gotham: ["Gotham", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -48,10 +52,10 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         jumia: {
-          purple: "hsl(var(--jumia-purple))",
-          "purple-light": "hsl(var(--jumia-purple-light))",
-          orange: "hsl(var(--jumia-orange))",
-          "orange-dark": "hsl(var(--jumia-orange-dark))",
+          blue: "hsl(var(--jumia-blue))",
+          "blue-light": "hsl(var(--jumia-blue-light))",
+          cyan: "hsl(var(--jumia-cyan))",
+          yellow: "hsl(var(--jumia-yellow))",
           bg: "hsl(var(--jumia-bg))",
         },
         sidebar: {
