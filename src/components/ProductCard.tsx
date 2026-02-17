@@ -1,23 +1,25 @@
 import { type Product, formatPrice } from "@/data/products";
-import { incrementClick } from "@/lib/stats";
+import { incrementClick, incrementProductClick } from "@/lib/stats";
 import { addUTMParameters } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Product;
   compact?: boolean;
+  highlighted?: boolean;
 }
 
-const ProductCard = ({ product, compact }: ProductCardProps) => {
+const ProductCard = ({ product, compact, highlighted }: ProductCardProps) => {
   const discount = product.oldPrice
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
 
   const handleClick = () => {
     incrementClick();
+    incrementProductClick(product.id);
   };
 
   const content = (
-    <div className="relative bg-white rounded-[1.5rem] shadow-sm flex flex-col items-center p-2 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group">
+    <div className={`relative bg-white rounded-[1.5rem] shadow-sm flex flex-col items-center p-2 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group ${highlighted ? 'border-2 border-jumia-purple ring-4 ring-jumia-purple/20 animate-beat' : ''}`}>
       {/* Discount Badge */}
       {discount > 0 && (
         <div className="absolute top-2 right-2 z-10 bg-[#FF9900] text-white text-[9px] font-black w-6 h-6 flex items-center justify-center rounded-full shadow-sm">

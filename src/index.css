@@ -121,4 +121,17 @@
     background-color: hsl(var(--jumia-orange));
     color: hsl(0, 0%, 100%);
   }
+
+  .animate-beat {
+    animation: beat 1s ease-in-out infinite;
+  }
+
+  @keyframes beat {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
 }

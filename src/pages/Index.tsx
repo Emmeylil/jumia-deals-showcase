@@ -56,6 +56,7 @@ const Index = () => {
   const [isDesktop, setIsDesktop] = React.useState(window.innerWidth >= 768);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
+  const [highlightedProductId, setHighlightedProductId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
@@ -240,7 +241,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen font-gotham overflow-hidden flex flex-col items-center justify-center p-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal">
+    <div className={`min-h-screen font-gotham overflow-hidden flex flex-col items-center justify-center p-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal ${!isDesktop ? 'fixed inset-0 touch-none' : ''}`}>
 
       {/* Control Bar */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
@@ -317,8 +318,10 @@ const Index = () => {
                     className="w-full p-3 flex items-center gap-4 hover:bg-jumia-purple/5 border-b border-gray-100 last:border-none transition-colors group"
                     onClick={() => {
                       bookRef.current?.pageFlip()?.flip(targetPage);
+                      setHighlightedProductId(product.id);
                       setSearchQuery("");
                       setIsSearchFocused(false);
+                      setTimeout(() => setHighlightedProductId(null), 5000);
                     }}
                   >
                     <div className="w-12 h-12 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 p-1">
@@ -460,7 +463,11 @@ const Index = () => {
                   {/* Content Area */}
                   <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start">
                     {leftPageProducts.map((product) => (
-                      <ProductCard key={product.id} product={product} />
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        highlighted={product.id === highlightedProductId}
+                      />
                     ))}
                   </div>
                 </div>
@@ -486,7 +493,11 @@ const Index = () => {
                   <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start">
                     {/* Regular Products (up to 3) */}
                     {rightPageRegularProducts.map((product) => (
-                      <ProductCard key={product.id} product={product} />
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        highlighted={product.id === highlightedProductId}
+                      />
                     ))}
 
                     {/* Featured Slot - Banner Placement */}
@@ -551,20 +562,24 @@ const Index = () => {
         </HTMLFlipBook>
       </div>
 
-      {/* Navigation Controls */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/95 backdrop-blur-sm p-3 rounded-full shadow-2xl border border-gray-200 z-50">
+      {/* BOTTOM NAVIGATION CONTROLS */}
+      <div className="absolute bottom-6 flex items-center gap-8 z-50">
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
-          className="p-3 hover:bg-gray-100 rounded-full transition-colors group"
+          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-gray-100 bg-white shadow-md' : 'bg-transparent text-white'}`}
         >
-          <svg className="w-6 h-6 rotate-180 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
+          <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" /></svg>
         </button>
 
-        <div className="h-6 w-px bg-gray-200 mx-2" />
+        <div className="bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full shadow-xl flex items-center gap-3 border border-white/20">
+          <span className="text-sm font-black text-jumia-purple">
+            {currentPage + 1} <span className="opacity-30 mx-1">/</span> {totalPages}
+          </span>
+        </div>
 
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipNext()}
-          className="p-3 hover:bg-gray-100 rounded-full transition-colors group"
+          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-gray-100 bg-white shadow-md' : 'bg-transparent text-white'}`}
         >
           <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
         </button>

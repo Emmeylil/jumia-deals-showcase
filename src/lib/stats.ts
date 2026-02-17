@@ -74,3 +74,15 @@ export const getStats = async (): Promise<StatsData | null> => {
     }
     return null;
 };
+
+export const incrementProductClick = async (productId: string | number) => {
+    const id = productId.toString();
+    const productRef = doc(db, "product_clicks", id);
+    const snapshot = await getDoc(productRef);
+
+    if (!snapshot.exists()) {
+        await setDoc(productRef, { clicks: 1 });
+    } else {
+        await updateDoc(productRef, { clicks: increment(1) });
+    }
+};

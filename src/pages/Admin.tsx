@@ -9,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
-import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download } from "lucide-react";
+import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy } from "lucide-react";
 import { getStats, type StatsData } from "@/lib/stats";
+import BannerCard from "@/components/BannerCard";
 
 interface FetchedProduct {
   name: string;
@@ -103,6 +104,7 @@ const Admin = () => {
 
   // Stats state
   const [stats, setStats] = useState<StatsData | null>(null);
+  const [productClicks, setProductClicks] = useState<Array<{ id: string, clicks: number, product?: Product }>>([]);
 
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
@@ -189,6 +191,16 @@ const Admin = () => {
     const fetchStatsData = async () => {
       const data = await getStats();
       setStats(data);
+
+      // Fetch product leaderboard
+      const clicksRef = collection(db, "product_clicks");
+      const q = query(clicksRef, orderBy("clicks", "desc"), limit(5));
+      const snapshot = await getDocs(q);
+      const clicksData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        clicks: doc.data().clicks
+      }));
+      setProductClicks(clicksData);
     };
 
     fetchStatsData();
@@ -875,6 +887,41 @@ const Admin = () => {
                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Downloads</span>
                 </div>
               </div>
+
+              {/* Product Leaderboard */}
+              {productClicks.length > 0 && (
+                <div className="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <Trophy className="text-yellow-500" size={20} /> Most Popular Products
+                  </h3>
+                  <div className="space-y-3">
+                    {productClicks.map((item, index) => {
+                      const product = products.find(p => p.id.toString() === item.id);
+                      return (
+                        <div key={item.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                          <div className="w-6 h-6 rounded-full bg-jumia-purple/10 text-jumia-purple flex items-center justify-center text-xs font-black">
+                            {index + 1}
+                          </div>
+                          {product?.image && (
+                            <img src={product.image} alt="" className="w-8 h-8 object-contain" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold truncate text-gray-900">
+                              {product?.displayName || product?.name || `Product #${item.id}`}
+                            </p>
+                            <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">
+                              {item.clicks} Total Clicks
+                            </p>
+                          </div>
+                          <div className="text-xs font-bold text-jumia-purple bg-jumia-purple/5 px-2 py-1 rounded">
+                            {Math.round((item.clicks / (stats?.clicks || 1)) * 100)}% of engagement
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Bulk SKU Search */}
