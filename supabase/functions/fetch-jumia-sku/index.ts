@@ -97,6 +97,7 @@ Deno.serve(async (req) => {
             const result = {
               sku: product.sku || sku,
               displayName: fullName,
+              brand: brand,
               image: product.image || '',
               url: product.url || '',
               prices: {
@@ -147,6 +148,7 @@ Deno.serve(async (req) => {
         const result = {
           sku: skuMatch ? skuMatch[1] : sku,
           displayName: fullName,
+          brand: brand,
           image: imgMatch ? imgMatch[1] : '',
           url: url,
           prices: {
@@ -201,6 +203,7 @@ Deno.serve(async (req) => {
           const result = {
             sku: product.sku || sku,
             displayName: fullName,
+            brand: brand,
             image: product.image || '',
             url: product.url || '',
             prices: {

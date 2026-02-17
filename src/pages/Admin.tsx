@@ -14,6 +14,7 @@ import { getStats, type StatsData } from "@/lib/stats";
 interface FetchedProduct {
   name: string;
   displayName: string;
+  brand?: string;
   image: string;
   url: string;
   sku: string;
@@ -87,6 +88,7 @@ const Admin = () => {
           results.push({
             name: data.displayName || "",
             displayName: data.displayName || "",
+            brand: data.brand,
             image: data.image || "",
             url: data.url || "",
             sku: data.sku || sku,
@@ -319,6 +321,11 @@ const Admin = () => {
                     <img src={item.image} alt="" className="w-16 h-16 object-contain flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0 space-y-2">
+                    {item.brand && (
+                      <div className="text-xs text-muted-foreground">
+                        <span className="font-semibold">Brand:</span> {item.brand}
+                      </div>
+                    )}
                     <Input
                       value={item.displayName || item.name}
                       onChange={(e) => updateFetchedProduct(idx, "displayName", e.target.value)}

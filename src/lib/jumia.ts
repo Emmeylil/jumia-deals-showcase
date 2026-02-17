@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface JumiaProduct {
     sku: string;
     displayName: string;
+    brand?: string;
     image: string;
     url: string;
     prices: {
