@@ -30,14 +30,16 @@ const Index = () => {
 
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = React.useState<any>(null);
+  const [settingsLoading, setSettingsLoading] = React.useState(true);
 
   React.useEffect(() => {
     // Subscribe to settings
 
-    const unsubscribe = onSnapshot(doc(db, "settings", "catalog"), (doc: any) => {
-      if (doc.exists()) {
-        setCatalogSettings(doc.data());
+    const unsubscribe = onSnapshot(doc(db, "settings", "catalog"), (snapshot: any) => {
+      if (snapshot.exists()) {
+        setCatalogSettings(snapshot.data());
       }
+      setSettingsLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -82,7 +84,7 @@ const Index = () => {
     window.print(); // Simple "download" as PDF via print
   };
 
-  if (loading) {
+  if (loading || settingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
