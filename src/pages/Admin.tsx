@@ -96,15 +96,28 @@ const Admin = () => {
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
 
-      const newSettings = { ...catalogSettings };
+      let newSettings: CatalogSettings;
       if (type === 'front') {
-        newSettings.frontPage.backgroundImage = url;
+        newSettings = {
+          ...catalogSettings,
+          frontPage: {
+            ...catalogSettings.frontPage,
+            backgroundImage: url
+          }
+        };
       } else {
-        newSettings.backPage.backgroundImage = url;
+        newSettings = {
+          ...catalogSettings,
+          backPage: {
+            ...catalogSettings.backPage,
+            backgroundImage: url
+          }
+        };
       }
 
       setCatalogSettings(newSettings);
-      toast.success(`${type === 'front' ? 'Front' : 'Back'} page background uploaded!`);
+      await setDoc(doc(db, "settings", "catalog"), newSettings);
+      toast.success(`${type === 'front' ? 'Front' : 'Back'} page background uploaded and saved!`);
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload image");
@@ -135,7 +148,7 @@ const Admin = () => {
     };
 
     // Using onSnapshot for real-time updates on settings too?
-    const settingsUnsub = onSnapshot(doc(db, "settings", "catalog"), (snapshot) => {
+    const settingsUnsub = onSnapshot(doc(db, "settings", "catalog"), (snapshot: any) => {
       if (snapshot.exists()) {
         setCatalogSettings(snapshot.data() as CatalogSettings);
       } else {
