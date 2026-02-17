@@ -6,6 +6,8 @@ import { useProducts } from "@/hooks/useProducts";
 import { Loader2, Share2, Download } from "lucide-react";
 import catalogBg from "@/assets/catalog-bg.jpg";
 import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload } from "@/lib/stats";
+import { onSnapshot, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface PageProps {
   children: React.ReactNode;
@@ -31,8 +33,6 @@ const Index = () => {
 
   React.useEffect(() => {
     // Subscribe to settings
-    const { onSnapshot, doc } = require("firebase/firestore");
-    const { db } = require("@/lib/firebase");
 
     const unsubscribe = onSnapshot(doc(db, "settings", "catalog"), (doc: any) => {
       if (doc.exists()) {
