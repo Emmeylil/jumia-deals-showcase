@@ -1,8 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useRef } from "react";
 import HTMLFlipBook from "react-pageflip";
 import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
-import { type Product, products as initialProducts } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
+import { Loader2 } from "lucide-react";
 import catalogBg from "@/assets/catalog-bg.jpg";
 
 interface PageProps {
@@ -21,8 +22,16 @@ const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className 
 Page.displayName = "Page";
 
 const Index = () => {
-  const [products] = useState<Product[]>(initialProducts);
+  const { products, loading } = useProducts();
   const bookRef = useRef<any>(null);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   // Split products for the two different sections based on the image layout
   // Page 1 (Left): Small Appliances (First 6 items)
