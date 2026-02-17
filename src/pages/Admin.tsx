@@ -602,7 +602,7 @@ const Admin = () => {
                       <div className="grid gap-4">
                         <div className="flex items-center gap-4">
                           <div className="flex-1">
-                            <label className="text-xs font-medium mb-1 block">Banner Image</label>
+                            <label className="text-xs font-medium mb-1 block">Banner Image (File)</label>
                             <Input
                               type="file"
                               accept="image/*"
@@ -613,19 +613,43 @@ const Admin = () => {
                               className="text-xs"
                             />
                           </div>
-                          {banner?.image && (
-                            <div className="relative group">
-                              <img src={banner.image} alt="Preview" className="h-12 w-20 object-cover rounded border bg-white" />
-                              <button
-                                onClick={() => {
-                                  const newBanners = { ...catalogSettings.banners };
-                                  delete newBanners[spreadId];
+                          <div className="flex-1">
+                            <label className="text-xs font-medium mb-1 block">Image URL (Alternative)</label>
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="https://..."
+                                value={banner?.image || ""}
+                                onChange={(e) => {
+                                  const newBanners = {
+                                    ...(catalogSettings.banners || {}),
+                                    [spreadId]: {
+                                      ...(banner || { image: "" }),
+                                      image: e.target.value
+                                    }
+                                  };
                                   setCatalogSettings({ ...catalogSettings, banners: newBanners });
                                 }}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Trash2 size={10} />
-                              </button>
+                                className="text-xs"
+                              />
+                              {banner?.image && (
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => {
+                                    const newBanners = { ...catalogSettings.banners };
+                                    delete newBanners[spreadId];
+                                    setCatalogSettings({ ...catalogSettings, banners: newBanners });
+                                  }}
+                                >
+                                  <Trash2 size={14} />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          {banner?.image && (
+                            <div className="relative group shrink-0">
+                              <img src={banner.image} alt="Preview" className="h-12 w-20 object-cover rounded border bg-white" />
                             </div>
                           )}
                         </div>

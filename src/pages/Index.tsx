@@ -380,7 +380,8 @@ const Index = () => {
                         const spreadId = `spread-${index}`;
                         const banner = catalogSettings?.banners?.[spreadId];
 
-                        if (banner?.image) {
+                        // If banner is configured (even if empty), we show the ad slot in BannerCard
+                        if (banner) {
                           return <BannerCard image={banner.image} url={banner.url} />;
                         }
 
@@ -388,7 +389,7 @@ const Index = () => {
                           return <FeaturedProductCard product={chunk[9]} />;
                         }
 
-                        return null;
+                        return <BannerCard />; // Fallback placeholder
                       })()}
                     </div>
                   </div>
