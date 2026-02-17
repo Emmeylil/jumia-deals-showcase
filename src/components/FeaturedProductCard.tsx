@@ -6,9 +6,9 @@ interface FeaturedProductCardProps {
 
 const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
     return (
-        <div className="relative bg-[#FFDA00] rounded-xl shadow-sm border border-yellow-400 flex flex-col p-4 h-full min-h-0 overflow-hidden transition-all hover:shadow-md cursor-pointer group">
+        <div className="relative bg-[#FFDA00] rounded-xl shadow-sm border border-yellow-400 flex flex-col p-2 h-full min-h-0 overflow-hidden transition-all hover:shadow-md cursor-pointer group">
             {/* Product Image */}
-            <div className="flex-1 flex items-center justify-center pt-2 pb-4">
+            <div className="flex-1 flex items-center justify-center pt-1 pb-2">
                 <img
                     src={product.image}
                     alt={product.name}

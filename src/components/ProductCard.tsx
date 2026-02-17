@@ -7,11 +7,11 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, compact }: ProductCardProps) => {
   return (
-    <div className="relative bg-white rounded-xl shadow-sm border border-gray-100 flex p-3 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group">
+    <div className="relative bg-white rounded-xl shadow-sm border border-gray-100 flex p-1.5 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group">
       {/* Product Info (Left) */}
       <div className="flex-1 flex flex-col justify-between pr-2 z-10">
         <div>
-          <h3 className="text-[10px] md:text-xs font-bold text-gray-800 leading-tight line-clamp-2">
+          <h3 className="text-[9px] md:text-[10px] font-bold text-gray-800 leading-tight line-clamp-2">
             {product.displayName || product.name}
           </h3>
         </div>
@@ -31,7 +31,7 @@ const ProductCard = ({ product, compact }: ProductCardProps) => {
       </div>
 
       {/* Product Image (Right) */}
-      <div className="w-20 md:w-24 flex items-center justify-center shrink-0">
+      <div className="w-16 md:w-20 flex items-center justify-center shrink-0">
         <img
           src={product.image}
           alt={product.name}

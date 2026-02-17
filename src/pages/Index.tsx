@@ -51,8 +51,8 @@ const Index = () => {
       <div className="relative z-10 w-full max-w-6xl flex justify-center transform scale-95 md:scale-100 transition-transform duration-500">
         {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
         <HTMLFlipBook
-          width={450}
-          height={600}
+          width={400}
+          height={520}
           size="stretch"
           minWidth={300}
           maxWidth={800}
@@ -115,7 +115,7 @@ const Index = () => {
                   </div>
 
                   {/* Content Area */}
-                  <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start">
+                  <div className="flex-1 p-1.5 grid grid-cols-2 grid-rows-3 gap-1.5 content-start">
                     {leftPageProducts.map((product) => (
                       <ProductCard key={product.id} product={product} />
                     ))}
@@ -132,7 +132,7 @@ const Index = () => {
               <Page key={`page-${pageNum + 1}`} className="bg-[#E2E0F5]">
                 <div className="w-full h-full flex flex-row">
                   {/* Content Area */}
-                  <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start">
+                  <div className="flex-1 p-1.5 grid grid-cols-2 grid-rows-3 gap-1.5 content-start">
                     {/* Regular Products (up to 3) */}
                     {rightPageRegularProducts.map((product) => (
                       <ProductCard key={product.id} product={product} />
