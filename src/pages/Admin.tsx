@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "@firebase/storage";
 import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc, query, orderBy, limit, getDocs } from "@firebase/firestore";
@@ -84,8 +84,14 @@ const Admin = () => {
 
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
+  const settingsRef = useRef(catalogSettings);
   const [activeTab, setActiveTab] = useState<"products" | "settings">("products");
   const [uploading, setUploading] = useState(false);
+
+  // Keep ref in sync with state for async access
+  useEffect(() => {
+    settingsRef.current = catalogSettings;
+  }, [catalogSettings]);
 
   const handleImageUpload = async (file: File, type: 'front' | 'back') => {
     if (!file) return;
@@ -96,20 +102,23 @@ const Admin = () => {
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
 
+      // Use the ref to get the absolute latest state, ensuring no overwrites of concurrent edits
+      const currentSettings = settingsRef.current;
+
       let newSettings: CatalogSettings;
       if (type === 'front') {
         newSettings = {
-          ...catalogSettings,
+          ...currentSettings,
           frontPage: {
-            ...catalogSettings.frontPage,
+            ...currentSettings.frontPage,
             backgroundImage: url
           }
         };
       } else {
         newSettings = {
-          ...catalogSettings,
+          ...currentSettings,
           backPage: {
-            ...catalogSettings.backPage,
+            ...currentSettings.backPage,
             backgroundImage: url
           }
         };
@@ -150,7 +159,8 @@ const Admin = () => {
     // Using onSnapshot for real-time updates on settings too?
     const settingsUnsub = onSnapshot(doc(db, "settings", "catalog"), (snapshot: any) => {
       if (snapshot.exists()) {
-        setCatalogSettings(snapshot.data() as CatalogSettings);
+        // Merge with defaults to ensure new fields (like backgroundImage) exist
+        setCatalogSettings({ ...DEFAULT_SETTINGS, ...snapshot.data() } as CatalogSettings);
       } else {
         // Initialize if not exists
         setDoc(snapshot.ref, DEFAULT_SETTINGS);
