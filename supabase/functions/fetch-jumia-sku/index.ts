@@ -125,11 +125,16 @@ Deno.serve(async (req) => {
       const skuMatch = card.match(/data-sku="([^"]+)"/i);
 
       if (nameMatch || imgMatch) {
+        let url = urlMatch ? urlMatch[1] : '';
+        if (url && !url.startsWith('http')) {
+          url = `https://www.jumia.com.ng${url.startsWith('/') ? '' : '/'}${url}`;
+        }
+
         const result = {
           sku: skuMatch ? skuMatch[1] : sku,
           displayName: nameMatch ? (nameMatch[1] || '').trim() : '',
           image: imgMatch ? imgMatch[1] : '',
-          url: urlMatch ? urlMatch[1] : '',
+          url: url,
           prices: {
             price: priceMatch ? parseInt(priceMatch[1]) : 0,
             oldPrice: oldPriceMatch ? parseInt(oldPriceMatch[1]) : 0,

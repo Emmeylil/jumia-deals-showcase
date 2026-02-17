@@ -10,7 +10,7 @@ const ProductCard = ({ product, compact }: ProductCardProps) => {
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
 
-  return (
+  const content = (
     <div className="relative bg-white rounded-[1.5rem] shadow-sm flex flex-col items-center p-2 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group">
       {/* Discount Badge */}
       {discount > 0 && (
@@ -52,6 +52,16 @@ const ProductCard = ({ product, compact }: ProductCardProps) => {
       </div>
     </div>
   );
+
+  if (product.url) {
+    return (
+      <a href={product.url} target="_blank" rel="noopener noreferrer" className="block h-full">
+        {content}
+      </a>
+    );
+  }
+
+  return content;
 };
 
 export default ProductCard;

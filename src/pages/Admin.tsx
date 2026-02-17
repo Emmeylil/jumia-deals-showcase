@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc, query, orderBy, limit } from "@firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc, query, orderBy, limit, getDocs } from "@firebase/firestore";
 import { Product, formatPrice } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,7 +138,7 @@ const Admin = () => {
           name: item.displayName,
           displayName: item.displayName,
           image: item.image,
-          url: item.url,
+          url: item.url.startsWith("http") ? item.url : `https://www.jumia.com.ng${item.url.startsWith("/") ? "" : "/"}${item.url}`,
           price: item.price,
           oldPrice: item.oldPrice || Math.round(item.price * 1.2),
           prices: {
@@ -183,7 +183,27 @@ const Admin = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  const handleDeleteAll = async () => {
+    if (!confirm("ARE YOU SURE? This will delete ALL products from the catalog. This action cannot be undone.")) return;
+
+    setLoading(true);
+    try {
+      const q = query(collection(db, "products"));
+      const snapshot = await getDocs(q); // Need to import getDocs
+
+      const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      toast.success("All products deleted");
+    } catch (error) {
+      console.error("Delete all error:", error);
+      toast.error("Failed to delete products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Loading...</div>;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -224,9 +244,8 @@ const Admin = () => {
               {fetchedProducts.map((item, idx) => (
                 <div
                   key={idx}
-                  className={`flex items-start gap-3 p-3 border rounded-lg ${
-                    item.selected && item.displayName ? "bg-green-50 border-green-200" : "bg-gray-50"
-                  }`}
+                  className={`flex items-start gap-3 p-3 border rounded-lg ${item.selected && item.displayName ? "bg-green-50 border-green-200" : "bg-gray-50"
+                    }`}
                 >
                   <input
                     type="checkbox"
@@ -277,7 +296,14 @@ const Admin = () => {
         </section>
 
         {/* Manage Products */}
-        <h2 className="text-2xl font-bold mb-6">Manage Products</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Manage Products</h2>
+          {products.length > 0 && (
+            <Button variant="destructive" size="sm" onClick={handleDeleteAll}>
+              <Trash2 size={16} className="mr-2" /> Delete All
+            </Button>
+          )}
+        </div>
         <div className="space-y-4">
           {products.map((product) => (
             <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg bg-white shadow-sm gap-3">
