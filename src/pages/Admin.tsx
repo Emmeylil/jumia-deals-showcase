@@ -46,7 +46,8 @@ interface CatalogSettings {
   };
   innerPages: {
     backgroundImage?: string;
-    backgroundColor?: string;
+    leftPageBackgroundColor?: string;
+    rightPageBackgroundColor?: string;
   };
 };
 
@@ -72,7 +73,8 @@ const DEFAULT_SETTINGS: CatalogSettings = {
   },
   innerPages: {
     backgroundImage: "",
-    backgroundColor: "", // Default empty to allow default page colors if not set
+    leftPageBackgroundColor: "",
+    rightPageBackgroundColor: "",
   },
 };
 
@@ -509,21 +511,40 @@ const Admin = () => {
                       )}
                     </div>
                   </div>
-                  <div className="mt-4">
-                    <label className="text-sm font-medium mb-1 block">Background Color (Overrides default page colors)</label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={catalogSettings.innerPages?.backgroundColor || "#ffffff"}
-                        onChange={(e) => setCatalogSettings({ ...catalogSettings, innerPages: { ...catalogSettings.innerPages, backgroundColor: e.target.value } })}
-                        className="w-12 p-1 h-10"
-                      />
-                      <Input
-                        value={catalogSettings.innerPages?.backgroundColor || "#ffffff"}
-                        onChange={(e) => setCatalogSettings({ ...catalogSettings, innerPages: { ...catalogSettings.innerPages, backgroundColor: e.target.value } })}
-                        placeholder="#RRGGBB or empty for default"
-                        className="flex-1"
-                      />
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Left Page Background</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={catalogSettings.innerPages?.leftPageBackgroundColor || "#E6F7FF"}
+                          onChange={(e) => setCatalogSettings({ ...catalogSettings, innerPages: { ...catalogSettings.innerPages, leftPageBackgroundColor: e.target.value } })}
+                          className="w-12 p-1 h-10"
+                        />
+                        <Input
+                          value={catalogSettings.innerPages?.leftPageBackgroundColor || ""}
+                          onChange={(e) => setCatalogSettings({ ...catalogSettings, innerPages: { ...catalogSettings.innerPages, leftPageBackgroundColor: e.target.value } })}
+                          placeholder="Default Blue"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Right Page Background</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={catalogSettings.innerPages?.rightPageBackgroundColor || "#E2E0F5"}
+                          onChange={(e) => setCatalogSettings({ ...catalogSettings, innerPages: { ...catalogSettings.innerPages, rightPageBackgroundColor: e.target.value } })}
+                          className="w-12 p-1 h-10"
+                        />
+                        <Input
+                          value={catalogSettings.innerPages?.rightPageBackgroundColor || ""}
+                          onChange={(e) => setCatalogSettings({ ...catalogSettings, innerPages: { ...catalogSettings.innerPages, rightPageBackgroundColor: e.target.value } })}
+                          placeholder="Default Purple"
+                          className="flex-1"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

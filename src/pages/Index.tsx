@@ -32,7 +32,8 @@ Page.displayName = "Page";
 const DEFAULT_SETTINGS = {
   innerPages: {
     backgroundImage: "",
-    backgroundColor: "",
+    leftPageBackgroundColor: "",
+    rightPageBackgroundColor: "",
   },
   frontPage: { backgroundImage: "", backgroundColor: "" },
   backPage: { backgroundImage: "", backgroundColor: "" }
@@ -225,7 +226,7 @@ const Index = () => {
                 className="bg-[#E6F7FF] bg-cover bg-center"
                 style={{
                   ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
-                  ...(catalogSettings?.innerPages?.backgroundColor ? { backgroundColor: catalogSettings.innerPages.backgroundColor } : {})
+                  ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
                 }}
               >
                 <div className="w-full h-full flex flex-row">
@@ -261,7 +262,7 @@ const Index = () => {
                 className="bg-[#E2E0F5] bg-cover bg-center"
                 style={{
                   ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
-                  ...(catalogSettings?.innerPages?.backgroundColor ? { backgroundColor: catalogSettings.innerPages.backgroundColor } : {})
+                  ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
                 }}
               >
                 <div className="w-full h-full flex flex-row">
