@@ -88,9 +88,16 @@ Deno.serve(async (req) => {
               }
             }
 
+            // Extract brand and construct full name with brand
+            const brand = product.brand || '';
+            const productName = product.name || product.displayName || '';
+            const fullName = brand && !productName.toLowerCase().startsWith(brand.toLowerCase())
+              ? `${brand} ${productName}`
+              : productName;
+
             const result = {
               sku: product.sku || sku,
-              displayName: product.name || product.displayName || '',
+              displayName: fullName,
               image: product.image || '',
               url: product.url || '',
               prices: {
@@ -130,9 +137,17 @@ Deno.serve(async (req) => {
           url = `https://www.jumia.com.ng${url.startsWith('/') ? '' : '/'}${url}`;
         }
 
+        // Try to extract brand
+        const brandMatch = card.match(/data-brand=\"([^\"]+)\"/i) || card.match(/class=\"[^\"]*brand[^\"]*\"[^>]*>([^<]+)</i);
+        const brand = brandMatch ? brandMatch[1].trim() : '';
+        const productName = nameMatch ? (nameMatch[1] || '').trim() : '';
+        const fullName = brand && !productName.toLowerCase().startsWith(brand.toLowerCase())
+          ? `${brand} ${productName}`
+          : productName;
+
         const result = {
           sku: skuMatch ? skuMatch[1] : sku,
-          displayName: nameMatch ? (nameMatch[1] || '').trim() : '',
+          displayName: fullName,
           image: imgMatch ? imgMatch[1] : '',
           url: url,
           prices: {
@@ -177,9 +192,17 @@ Deno.serve(async (req) => {
         const products = findProducts(storeData);
         if (products && products.length > 0) {
           const product = products.find((p: any) => p.sku === sku) || products[0];
+
+          // Extract brand and construct full name
+          const brand = product.brand || '';
+          const productName = product.name || product.displayName || '';
+          const fullName = brand && !productName.toLowerCase().startsWith(brand.toLowerCase())
+            ? `${brand} ${productName}`
+            : productName;
+
           const result = {
             sku: product.sku || sku,
-            displayName: product.name || product.displayName || '',
+            displayName: fullName,
             image: product.image || '',
             url: product.url || '',
             prices: {
