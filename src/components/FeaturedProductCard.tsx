@@ -1,5 +1,6 @@
 import { type Product, formatPrice } from "@/data/products";
 import { incrementClick } from "@/lib/stats";
+import { addUTMParameters } from "@/lib/utils";
 
 interface FeaturedProductCardProps {
     product: Product;
@@ -68,7 +69,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
 
     if (product.url) {
         return (
-            <a href={product.url} target="_blank" rel="noopener noreferrer" className="block h-full" onClick={handleClick}>
+            <a href={addUTMParameters(product.url)} target="_blank" rel="noopener noreferrer" className="block h-full" onClick={handleClick}>
                 {content}
             </a>
         );
