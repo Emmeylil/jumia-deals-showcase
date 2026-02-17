@@ -179,7 +179,7 @@ const Index = () => {
                 </Page>
               </React.Fragment>
             );
-          })}>
+          })}
 
           {/* BACK COVER */}
           <Page className="bg-[#f5f5f5] text-gray-800">
