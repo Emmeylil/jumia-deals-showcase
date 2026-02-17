@@ -26,6 +26,22 @@ const Index = () => {
   const { products, loading } = useProducts();
   const bookRef = useRef<any>(null);
 
+  // Catalog Settings state
+  const [catalogSettings, setCatalogSettings] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    // Subscribe to settings
+    const { onSnapshot, doc } = require("firebase/firestore");
+    const { db } = require("@/lib/firebase");
+
+    const unsubscribe = onSnapshot(doc(db, "settings", "catalog"), (doc: any) => {
+      if (doc.exists()) {
+        setCatalogSettings(doc.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Tracking
   useEffect(() => {
     // Track view and reader on mount
@@ -37,8 +53,6 @@ const Index = () => {
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       // Update every 10 seconds to avoid spamming writes, or just on unmount
-      // For simplicity/accuracy against crashes, let's update in chunks or on unmount.
-      // Actually, implementing a periodic ping is safer.
     }, 10000);
 
     return () => {
