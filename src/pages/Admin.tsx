@@ -32,6 +32,7 @@ const Admin = () => {
 
   // Editing state for existing products
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editOldPrice, setEditOldPrice] = useState("");
 
@@ -158,15 +159,17 @@ const Admin = () => {
     }
   };
 
-  const handleUpdatePrice = async (id: number, price: number, oldPrice: number) => {
+  const handleUpdateProduct = async (id: number, name: string, price: number, oldPrice: number) => {
     try {
       const productRef = doc(db, "products", id.toString());
       await updateDoc(productRef, {
+        name,
+        displayName: name,
         price,
         oldPrice,
         prices: { price, oldPrice },
       });
-      toast.success("Prices updated");
+      toast.success("Product updated");
       setEditingId(null);
     } catch (error) {
       toast.error("Update failed");
@@ -319,33 +322,43 @@ const Admin = () => {
               </div>
 
               {editingId === product.id ? (
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex flex-col gap-2 flex-shrink-0 w-full max-w-sm">
                   <div>
-                    <label className="text-[10px] text-muted-foreground">Price</label>
+                    <label className="text-[10px] text-muted-foreground">Name</label>
                     <Input
-                      type="number"
-                      value={editPrice}
-                      onChange={(e) => setEditPrice(e.target.value)}
-                      className="w-24 h-8 text-sm"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="h-8 text-sm"
                     />
                   </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground">Old Price</label>
-                    <Input
-                      type="number"
-                      value={editOldPrice}
-                      onChange={(e) => setEditOldPrice(e.target.value)}
-                      className="w-24 h-8 text-sm"
-                    />
+                  <div className="flex gap-2">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Price</label>
+                      <Input
+                        type="number"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value)}
+                        className="w-24 h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Old Price</label>
+                      <Input
+                        type="number"
+                        value={editOldPrice}
+                        onChange={(e) => setEditOldPrice(e.target.value)}
+                        className="w-24 h-8 text-sm"
+                      />
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="mt-3 self-end"
+                      onClick={() => handleUpdateProduct(product.id, editName, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0)}
+                    >
+                      <Save size={16} />
+                    </Button>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="mt-3"
-                    onClick={() => handleUpdatePrice(product.id, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0)}
-                  >
-                    <Save size={16} />
-                  </Button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -358,6 +371,7 @@ const Admin = () => {
                     variant="ghost"
                     onClick={() => {
                       setEditingId(product.id);
+                      setEditName(product.displayName || product.name);
                       setEditPrice(product.price.toString());
                       setEditOldPrice(product.oldPrice.toString());
                     }}
