@@ -5,7 +5,8 @@ import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
-import { Loader2, Share2, Download } from "lucide-react";
+import { Loader2, Share2, Download, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
 import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload } from "@/lib/stats";
 import { onSnapshot, doc } from "firebase/firestore";
@@ -53,6 +54,8 @@ const Index = () => {
   const [currentPage, setCurrentPage] = React.useState(0);
   const [totalPages, setTotalPages] = React.useState(0);
   const [isDesktop, setIsDesktop] = React.useState(window.innerWidth >= 768);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [isSearchFocused, setIsSearchFocused] = React.useState(false);
 
   React.useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
@@ -254,6 +257,79 @@ const Index = () => {
         className="fixed inset-0 z-0 bg-cover bg-center opacity-20 pointer-events-none"
         style={{ backgroundImage: `url(${catalogBg})` }}
       />
+
+      {/* Search Bar */}
+      <div className="w-full max-w-md mb-6 relative z-50">
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-jumia-purple transition-colors">
+            <Search size={18} />
+          </div>
+          <Input
+            type="text"
+            placeholder="Search products, brands, or deals..."
+            className="pl-10 pr-10 py-6 bg-white/90 backdrop-blur-md border-2 border-white/50 shadow-xl rounded-2xl focus:ring-4 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all text-gray-900 placeholder:text-gray-400 font-medium"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 px-1"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+
+        {/* Search Results Dropdown */}
+        {isSearchFocused && searchQuery.length > 1 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            {(() => {
+              const filtered = products.filter(p =>
+                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.category?.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+
+              if (filtered.length === 0) {
+                return <div className="p-8 text-center text-gray-400 italic font-medium">No results found for "{searchQuery}"</div>;
+              }
+
+              return filtered.map((product) => {
+                const productIndex = products.findIndex(p => p.id === product.id);
+                const chunkIndex = Math.floor(productIndex / 10);
+                const indexInChunk = productIndex % 10;
+                const onLeftPage = indexInChunk < 6;
+                const targetPage = 1 + (chunkIndex * 2) + (onLeftPage ? 0 : 1);
+
+                return (
+                  <button
+                    key={product.id}
+                    className="w-full p-3 flex items-center gap-4 hover:bg-jumia-purple/5 border-b border-gray-100 last:border-none transition-colors group"
+                    onClick={() => {
+                      bookRef.current?.pageFlip()?.flip(targetPage);
+                      setSearchQuery("");
+                      setIsSearchFocused(false);
+                    }}
+                  >
+                    <div className="w-12 h-12 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 p-1">
+                      <img src={product.image} alt="" className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
+                    </div>
+                    <div className="flex-1 text-left overflow-hidden">
+                      <h4 className="font-bold text-gray-900 truncate text-sm leading-tight">{product.name}</h4>
+                      <p className="text-xs text-gray-500 font-semibold">{product.brand} • Page {targetPage + 1}</p>
+                    </div>
+                    <div className="text-jumia-purple font-black text-sm whitespace-nowrap">
+                      ₦{product.price.toLocaleString()}
+                    </div>
+                  </button>
+                );
+              });
+            })()}
+          </div>
+        )}
+      </div>
 
       <div
         className="relative z-10 w-full max-w-6xl flex justify-center transition-all duration-700 ease-in-out"

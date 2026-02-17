@@ -21,6 +21,8 @@ export interface Product {
   url?: string;
   price: number;
   oldPrice: number;
+  brand?: string;
+  category?: string;
   prices?: {
     price: number;
     oldPrice: number;
