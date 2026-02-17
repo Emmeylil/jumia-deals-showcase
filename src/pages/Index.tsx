@@ -291,7 +291,7 @@ const Index = () => {
           {/* COVER PAGE */}
           <Page className="bg-white text-gray-900 border-none" id="page-0">
             <div
-              className="w-full h-full flex flex-col items-center justify-center gap-6 p-6 md:p-12 text-center bg-white relative overflow-hidden bg-cover bg-center"
+              className="w-full h-full flex flex-col items-center justify-center gap-6 p-12 text-center bg-white relative overflow-hidden bg-cover bg-center"
               style={{
                 ...(catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}),
                 ...(catalogSettings?.frontPage?.backgroundColor ? { backgroundColor: catalogSettings.frontPage.backgroundColor } : {})
@@ -307,16 +307,16 @@ const Index = () => {
                 style={{ backgroundColor: `${catalogSettings?.frontPage?.secondaryColor || '#009FE3'}1A` }} // 10% opacity hex
               />
 
-              <div className="mb-4 md:mb-8 z-10">
+              <div className="mb-8 z-10">
                 <img
                   src="https://ng.jumia.is/cms/jumia_logo_small.png"
                   alt="Jumia Logo"
-                  className="h-10 md:h-16 w-auto object-contain"
+                  className="h-16 w-auto object-contain"
                 />
               </div>
 
               <div className="relative z-10">
-                <h1 className="text-4xl md:text-5xl lg:text-7xl font-black tracking-tighter uppercase italic drop-shadow-sm leading-tight text-gray-900">
+                <h1 className="text-7xl font-black tracking-tighter uppercase italic drop-shadow-sm leading-tight text-gray-900">
                   {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
                   <span
                     className="drop-shadow-sm"
@@ -441,15 +441,15 @@ const Index = () => {
           {/* BACK COVER */}
           <Page className="bg-[#f5f5f5] text-gray-800" id={`page-${1 + productChunks.length * 2}`}>
             <div
-              className="w-full h-full flex flex-col items-center justify-center p-8 md:p-12 text-center border-l border-gray-200 bg-cover bg-center"
+              className="w-full h-full flex flex-col items-center justify-center p-12 text-center border-l border-gray-200 bg-cover bg-center"
               style={{
                 ...(catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}),
                 ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
               }}
             >
-              <h2 className="text-2xl md:text-3xl font-black mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
-              <p className="mb-6 md:mb-8 text-sm md:text-base text-gray-600">{catalogSettings?.backPage?.description || "Visit Jumia.com.ng for even more amazing deals on all your favorite brands."}</p>
-              <div className="w-32 h-32 md:w-40 md:h-40 bg-white p-4 shadow-xl rounded-2xl mb-6 transform hover:scale-105 transition-transform duration-300">
+              <h2 className="text-3xl font-black mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
+              <p className="mb-8 text-gray-600">{catalogSettings?.backPage?.description || "Visit Jumia.com.ng for even more amazing deals on all your favorite brands."}</p>
+              <div className="w-40 h-40 bg-white p-4 shadow-xl rounded-2xl mb-6 transform hover:scale-105 transition-transform duration-300">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
                   alt="QR Code"
