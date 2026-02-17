@@ -1,10 +1,11 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
 import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import { useProducts } from "@/hooks/useProducts";
-import { Loader2 } from "lucide-react";
+import { Loader2, Share2, Download } from "lucide-react";
 import catalogBg from "@/assets/catalog-bg.jpg";
+import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload } from "@/lib/stats";
 
 interface PageProps {
   children: React.ReactNode;
@@ -25,6 +26,48 @@ const Index = () => {
   const { products, loading } = useProducts();
   const bookRef = useRef<any>(null);
 
+  // Tracking
+  useEffect(() => {
+    // Track view and reader on mount
+    incrementView();
+    incrementReader();
+
+    // Track time on book
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      // Update every 10 seconds to avoid spamming writes, or just on unmount
+      // For simplicity/accuracy against crashes, let's update in chunks or on unmount.
+      // Actually, implementing a periodic ping is safer.
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+      const totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+      updateTimeOnBook(totalSeconds);
+    };
+  }, []);
+
+  const handleShare = () => {
+    incrementShare();
+    if (navigator.share) {
+      navigator.share({
+        title: 'Jumia Deals Catalog',
+        text: 'Check out the hottest deals on Jumia!',
+        url: window.location.href,
+      }).catch(console.error);
+    } else {
+      // Fallback
+      navigator.clipboard.writeText(window.location.href);
+      alert("Link copied to clipboard!");
+    }
+  };
+
+  const handleDownload = () => {
+    incrementDownload();
+    window.print(); // Simple "download" as PDF via print
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -40,7 +83,17 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-gotham overflow-hidden flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 font-gotham overflow-hidden flex flex-col items-center justify-center p-4 relative">
+
+      {/* Control Bar */}
+      <div className="absolute top-4 right-4 z-50 flex gap-2">
+        <button onClick={handleShare} className="bg-white p-2 rounded-full shadow hover:bg-gray-50 text-gray-700" title="Share">
+          <Share2 size={20} />
+        </button>
+        <button onClick={handleDownload} className="bg-white p-2 rounded-full shadow hover:bg-gray-50 text-gray-700" title="Download/Print">
+          <Download size={20} />
+        </button>
+      </div>
 
       {/* Background with blur effect */}
       <div
