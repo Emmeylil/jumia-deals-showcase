@@ -208,14 +208,6 @@ const Index = () => {
     }
   };
 
-  if (loading || settingsLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   // Chunk products into groups of 10 (6 for left page, 4 for right page)
   const productChunks = [];
   for (let i = 0; i < products.length; i += 10) {
@@ -223,12 +215,20 @@ const Index = () => {
   }
 
   // Calculate total pages for centering logic
-  useEffect(() => {
+  React.useEffect(() => {
     // 1 (Front) + inner spreads + 1 (Back)
     // Pages: 0 (Front), 1-N (Inner), N+1 (Back)
     const count = 1 + (productChunks.length * 2) + 1;
     setTotalPages(count);
   }, [productChunks.length]);
+
+  if (loading || settingsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen font-gotham overflow-hidden flex flex-col items-center justify-center p-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal">
