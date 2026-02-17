@@ -35,7 +35,18 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
             {/* Product Name */}
             <div className="w-full text-center px-1 mb-2 shrink-0">
                 <h3 className="text-xs md:text-sm font-black text-gray-900 leading-tight line-clamp-2 uppercase">
-                    {product.name}
+                    {(() => {
+                        const fullName = product.displayName || product.name;
+                        const words = fullName.split(' ');
+                        const brand = words[0];
+                        const rest = words.slice(1).join(' ');
+                        return (
+                            <>
+                                <span className="font-black">{brand}</span>
+                                {rest && <span> {rest}</span>}
+                            </>
+                        );
+                    })()}
                 </h3>
             </div>
 

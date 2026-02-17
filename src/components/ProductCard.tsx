@@ -37,7 +37,18 @@ const ProductCard = ({ product, compact }: ProductCardProps) => {
       {/* Product Name */}
       <div className="w-full text-center px-1 mb-1 shrink-0">
         <h3 className="text-[9px] md:text-[10px] font-medium text-gray-700 leading-tight line-clamp-2 h-[2.2em]">
-          {product.displayName || product.name}
+          {(() => {
+            const fullName = product.displayName || product.name;
+            const words = fullName.split(' ');
+            const brand = words[0];
+            const rest = words.slice(1).join(' ');
+            return (
+              <>
+                <span className="font-black">{brand}</span>
+                {rest && <span> {rest}</span>}
+              </>
+            );
+          })()}
         </h3>
       </div>
 
