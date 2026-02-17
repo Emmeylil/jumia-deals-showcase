@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
+import html2canvas from 'html2canvas';
 import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import { useProducts } from "@/hooks/useProducts";
@@ -13,14 +14,16 @@ interface PageProps {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  id?: string;
 }
 
-const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className, style }, ref) => {
+const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className, style, id }, ref) => {
   return (
     <div
       className={`bg-white shadow-md overflow-hidden flex flex-col border border-gray-200 ${className}`}
       ref={ref}
       style={style}
+      id={id}
     >
       {children}
     </div>
@@ -102,9 +105,104 @@ const Index = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     incrementDownload();
-    window.print(); // Simple "download" as PDF via print
+    // window.print(); // Removed print logic
+
+    const book = bookRef.current?.pageFlip();
+    if (!book) return;
+
+    const currentIndex = book.getCurrentPageIndex();
+    const isMobile = window.innerWidth < 768; // Adjust breakpoint as needed
+
+    // Determine which page(s) to capture
+    // Cover page is index 0.
+    // In landscape mode (desktop), pages are usually displayed in pairs (spread), except maybe cover.
+    // However, react-pageflip logic can be tricky.
+    // Let's assume:
+    // Index 0: Cover
+    // Index 1, 2: Spread 1
+    // Index 3, 4: Spread 2
+    // ...
+
+    // We try to capture the visible element(s).
+    // The library doesn't easily expose "visible" DOM elements directly in a simple way without querying.
+    // But we assigned IDs!
+
+    // Logic:
+    // If index 0 => capture #page-0
+    // If index > 0 and isMobile => capture #page-{index}
+    // If index > 0 and !isMobile => capture #page-{index} AND #page-{index+1} (if exists) combined? 
+    // Actually, `getCurrentPageIndex()` usually returns the index of the left page in a spread (or the single page).
+
+    // Let's try to capture the specific page IDs.
+
+    let captureIds: string[] = [];
+
+    if (currentIndex === 0) {
+      captureIds.push("page-0");
+    } else {
+      if (isMobile) {
+        captureIds.push(`page-${currentIndex}`);
+      } else {
+        // Desktop spread
+        // React-pageflip usually treats index 0 as cover (single).
+        // Index 1 is left, Index 2 is right.
+        // If current index is odd (1, 3, 5...), it's likely the left page of a spread.
+        // If it's even (and not 0), it might be right page (but usually it reports left).
+
+        // We will simplify: try to capture the page at currentIndex. 
+        // If it's odd, also try currentIndex + 1.
+
+        captureIds.push(`page-${currentIndex}`);
+        if (currentIndex % 2 !== 0) { // If odd, assumes left page of spread
+          captureIds.push(`page-${currentIndex + 1}`);
+        }
+      }
+    }
+
+    // Filter out IDs that don't exist
+    const elements = captureIds.map(id => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+
+    if (elements.length === 0) {
+      console.error("No pages found to capture");
+      return;
+    }
+
+    try {
+      let canvas;
+
+      if (elements.length === 1) {
+        canvas = await html2canvas(elements[0], { scale: 2, useCORS: true });
+      } else {
+        // Merge two canvases or capture a container?
+        // Capturing a container is better if they are side-by-side in DOM.
+        // But they are likely inside the flipbook structure with transforms.
+        // Better to capture individually and merge in a new canvas.
+
+        const canvas1 = await html2canvas(elements[0], { scale: 2, useCORS: true });
+        const canvas2 = await html2canvas(elements[1], { scale: 2, useCORS: true });
+
+        const mergedCanvas = document.createElement('canvas');
+        mergedCanvas.width = canvas1.width + canvas2.width;
+        mergedCanvas.height = Math.max(canvas1.height, canvas2.height);
+        const ctx = mergedCanvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(canvas1, 0, 0);
+          ctx.drawImage(canvas2, canvas1.width, 0);
+        }
+        canvas = mergedCanvas;
+      }
+
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `jumia-catalog-page-${currentIndex}.png`;
+      link.click();
+
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
   };
 
   if (loading || settingsLoading) {
@@ -158,7 +256,7 @@ const Index = () => {
           startPage={0}
         >
           {/* COVER PAGE */}
-          <Page className="bg-white text-gray-900 border-none">
+          <Page className="bg-white text-gray-900 border-none" id="page-0">
             <div
               className="w-full h-full flex flex-col items-center justify-center gap-6 p-12 text-center bg-white relative overflow-hidden bg-cover bg-center"
               style={{
@@ -223,6 +321,7 @@ const Index = () => {
               /* LEFT PAGE */
               <Page
                 key={`page-${pageNum}`}
+                id={`page-${pageNum}`}
                 className="bg-[#E6F7FF] bg-cover bg-center"
                 style={{
                   ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
@@ -259,6 +358,7 @@ const Index = () => {
               /* RIGHT PAGE */
               <Page
                 key={`page-${pageNum + 1}`}
+                id={`page-${pageNum + 1}`}
                 className="bg-[#E2E0F5] bg-cover bg-center"
                 style={{
                   ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
@@ -301,7 +401,7 @@ const Index = () => {
           })}
 
           {/* BACK COVER */}
-          <Page className="bg-[#f5f5f5] text-gray-800">
+          <Page className="bg-[#f5f5f5] text-gray-800" id={`page-${1 + productChunks.length * 2}`}>
             <div
               className="w-full h-full flex flex-col items-center justify-center p-12 text-center border-l border-gray-200 bg-cover bg-center"
               style={{
