@@ -315,8 +315,7 @@ const Index = () => {
           {productChunks.flatMap((chunk, index) => {
             const pageNum = index * 2 + 1;
             const leftPageProducts = chunk.slice(0, 6);
-            const rightPageRegularProducts = chunk.slice(6, 9);
-            const featuredProduct = chunk[9] || (rightPageRegularProducts.length === 3 ? null : chunk[chunk.length - 1]);
+            const rightPageRegularProducts = chunk.slice(6, 10);
 
             return [
               /* LEFT PAGE */
@@ -374,22 +373,14 @@ const Index = () => {
                       <ProductCard key={product.id} product={product} />
                     ))}
 
-                    {/* Featured Slot - Banner or Product */}
+                    {/* Featured Slot - Banner Placement */}
                     <div className="col-span-2 row-span-1 mt-auto">
                       {(() => {
                         const spreadId = `spread-${index}`;
                         const banner = catalogSettings?.banners?.[spreadId];
 
-                        // If banner is configured (even if empty), we show the ad slot in BannerCard
-                        if (banner) {
-                          return <BannerCard image={banner.image} url={banner.url} />;
-                        }
-
-                        if (chunk.length > 9) {
-                          return <FeaturedProductCard product={chunk[9]} />;
-                        }
-
-                        return <BannerCard />; // Fallback placeholder
+                        // Always render BannerCard. It will handle its own placeholder state.
+                        return <BannerCard image={banner?.image} url={banner?.url} />;
                       })()}
                     </div>
                   </div>
