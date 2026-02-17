@@ -162,8 +162,14 @@ const Index = () => {
               style={catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}}
             >
               {/* Decorative Circle */}
-              <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-[#FF9900]/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-[-50px] left-[-50px] w-40 h-40 bg-[#009FE3]/10 rounded-full blur-3xl pointer-events-none" />
+              <div
+                className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-[#FF9900]/10 rounded-full blur-3xl pointer-events-none"
+                style={{ backgroundColor: `${catalogSettings?.frontPage?.primaryColor || '#FF9900'}1A` }} // 10% opacity hex
+              />
+              <div
+                className="absolute bottom-[-50px] left-[-50px] w-40 h-40 bg-[#009FE3]/10 rounded-full blur-3xl pointer-events-none"
+                style={{ backgroundColor: `${catalogSettings?.frontPage?.secondaryColor || '#009FE3'}1A` }} // 10% opacity hex
+              />
 
               <div className="mb-8 z-10">
                 <img
@@ -175,20 +181,28 @@ const Index = () => {
 
               <div className="relative z-10">
                 <h1 className="text-7xl font-black tracking-tighter uppercase italic drop-shadow-sm leading-tight text-gray-900">
-                  HOTTEST <br />
-                  <span className="text-[#FF9900] drop-shadow-sm">DEALS!</span>
+                  {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
+                  <span
+                    className="drop-shadow-sm"
+                    style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}
+                  >
+                    {catalogSettings?.frontPage?.subtitle || "DEALS!"}
+                  </span>
                 </h1>
-                <div className="absolute -bottom-4 right-0 bg-[#009FE3] text-white text-xs font-bold px-3 py-1 rotate-[-5deg] shadow-md rounded-sm">
+                <div
+                  className="absolute -bottom-4 right-0 text-white text-xs font-bold px-3 py-1 rotate-[-5deg] shadow-md rounded-sm"
+                  style={{ backgroundColor: catalogSettings?.frontPage?.secondaryColor || '#009FE3' }}
+                >
                   LIMITED TIME
                 </div>
               </div>
 
               <p className="text-xl font-bold tracking-widest uppercase mt-8 opacity-70 text-gray-600 z-10">
-                Digital Catalog 2026
+                {catalogSettings?.frontPage?.tagline || "Digital Catalog 2026"}
               </p>
 
               <div className="mt-12 px-8 py-3 border-2 border-gray-200 rounded-full text-sm font-bold text-gray-900 bg-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-bounce z-10">
-                CLICK TO OPEN
+                {catalogSettings?.frontPage?.footerText || "CLICK TO OPEN"}
               </div>
             </div>
           </Page>
@@ -281,16 +295,20 @@ const Index = () => {
               className="w-full h-full flex flex-col items-center justify-center p-12 text-center border-l border-gray-200 bg-cover bg-center"
               style={catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}}
             >
-              <h2 className="text-3xl font-black mb-4">Don't Miss Out!</h2>
-              <p className="mb-8 text-gray-600">Visit Jumia.com.ng for even more amazing deals on all your favorite brands.</p>
+              <h2 className="text-3xl font-black mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
+              <p className="mb-8 text-gray-600">{catalogSettings?.backPage?.description || "Visit Jumia.com.ng for even more amazing deals on all your favorite brands."}</p>
               <div className="w-40 h-40 bg-white p-4 shadow-xl rounded-2xl mb-6 transform hover:scale-105 transition-transform duration-300">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jumia.com.ng" alt="QR Code" className="w-full h-full opacity-90" />
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
+                  alt="QR Code"
+                  className="w-full h-full opacity-90"
+                />
               </div>
-              <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-12">Scan to shop now</p>
+              <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-12">{catalogSettings?.backPage?.callToAction || "Scan to shop now"}</p>
 
               <div className="flex items-center gap-2 opacity-50">
-                <span className="font-bold">JUMIA</span>
-                <span>&copy; 2026</span>
+                <span className="font-bold">{catalogSettings?.backPage?.footerText?.split('©')[0]?.trim() || "JUMIA"}</span>
+                <span>&copy; {new Date().getFullYear()}</span>
               </div>
             </div>
           </Page>
