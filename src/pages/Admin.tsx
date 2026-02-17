@@ -42,6 +42,9 @@ interface CatalogSettings {
     footerText: string;
     backgroundImage?: string;
   };
+  innerPages: {
+    backgroundImage?: string;
+  };
 };
 
 const DEFAULT_SETTINGS: CatalogSettings = {
@@ -60,6 +63,9 @@ const DEFAULT_SETTINGS: CatalogSettings = {
     qrCodeUrl: "https://jumia.com.ng",
     callToAction: "Scan to shop now",
     footerText: "JUMIA © 2026",
+    backgroundImage: "",
+  },
+  innerPages: {
     backgroundImage: "",
   },
 };
@@ -93,7 +99,7 @@ const Admin = () => {
     settingsRef.current = catalogSettings;
   }, [catalogSettings]);
 
-  const handleImageUpload = async (file: File, type: 'front' | 'back') => {
+  const handleImageUpload = async (file: File, type: 'front' | 'back' | 'inner') => {
     if (!file) return;
 
     try {
@@ -114,7 +120,7 @@ const Admin = () => {
             backgroundImage: url
           }
         };
-      } else {
+      } else if (type === 'back') {
         newSettings = {
           ...currentSettings,
           backPage: {
@@ -122,11 +128,19 @@ const Admin = () => {
             backgroundImage: url
           }
         };
+      } else {
+        newSettings = {
+          ...currentSettings,
+          innerPages: {
+            ...currentSettings.innerPages,
+            backgroundImage: url
+          }
+        };
       }
 
       setCatalogSettings(newSettings);
       await setDoc(doc(db, "settings", "catalog"), newSettings);
-      toast.success(`${type === 'front' ? 'Front' : 'Back'} page background uploaded and saved!`);
+      toast.success(`${type === 'front' ? 'Front' : type === 'back' ? 'Back' : 'Inner'} page background uploaded and saved!`);
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload image");
@@ -391,6 +405,13 @@ const Admin = () => {
                   </div>
                 </div>
                 <div>
+                  <label className="text-sm font-medium mb-1 block">Footer Text</label>
+                  <Input
+                    value={catalogSettings.frontPage.footerText}
+                    onChange={(e) => setCatalogSettings({ ...catalogSettings, frontPage: { ...catalogSettings.frontPage, footerText: e.target.value } })}
+                  />
+                </div>
+                <div>
                   <label className="text-sm font-medium mb-1 block">Tagline</label>
                   <Input
                     value={catalogSettings.frontPage.tagline}
@@ -447,13 +468,28 @@ const Admin = () => {
                     </div>
                   </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Button Text</label>
-                  <Input
-                    value={catalogSettings.frontPage.footerText}
-                    onChange={(e) => setCatalogSettings({ ...catalogSettings, frontPage: { ...catalogSettings.frontPage, footerText: e.target.value } })}
-                  />
+
+                <div className="border-t pt-6">
+                  <h3 className="font-bold text-lg mb-4">Inner Pages Settings</h3>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Background Image (Applied to all inner pages)</label>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'inner');
+                        }}
+                        disabled={uploading}
+                      />
+                      {catalogSettings.innerPages?.backgroundImage && (
+                        <img src={catalogSettings.innerPages.backgroundImage} alt="Preview" className="h-10 w-10 object-cover rounded" />
+                      )}
+                    </div>
+                  </div>
                 </div>
+
+
               </div>
             </section>
 

@@ -182,7 +182,10 @@ const Index = () => {
             return [
               /* LEFT PAGE */
               <Page key={`page-${pageNum}`} className="bg-[#E6F7FF]">
-                <div className="w-full h-full flex flex-row">
+                <div
+                  className="w-full h-full flex flex-row bg-cover bg-center"
+                  style={catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}}
+                >
                   {/* Left Sidebar Header */}
                   <div className="w-14 bg-[#009FE3] flex flex-col items-center py-6 relative shadow-lg z-10">
                     <div className="bg-black/20 p-1.5 rounded-full mb-6">
@@ -211,7 +214,10 @@ const Index = () => {
 
               /* RIGHT PAGE */
               <Page key={`page-${pageNum + 1}`} className="bg-[#E2E0F5]">
-                <div className="w-full h-full flex flex-row">
+                <div
+                  className="w-full h-full flex flex-row bg-cover bg-center"
+                  style={catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}}
+                >
                   {/* Content Area */}
                   <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start">
                     {/* Regular Products (up to 3) */}
