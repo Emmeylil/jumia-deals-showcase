@@ -24,6 +24,11 @@ interface FetchedProduct {
   selected: boolean;
 }
 
+interface Banner {
+  image: string;
+  url?: string;
+}
+
 interface CatalogSettings {
   frontPage: {
     title: string;
@@ -37,6 +42,7 @@ interface CatalogSettings {
   };
   backPage: {
     title: string;
+    subtitle?: string; // Add if needed by UI
     description: string;
     qrCodeUrl: string;
     callToAction: string;
@@ -49,6 +55,7 @@ interface CatalogSettings {
     leftPageBackgroundColor?: string;
     rightPageBackgroundColor?: string;
   };
+  banners?: Record<string, Banner>;
 };
 
 const DEFAULT_SETTINGS: CatalogSettings = {
@@ -76,6 +83,7 @@ const DEFAULT_SETTINGS: CatalogSettings = {
     leftPageBackgroundColor: "",
     rightPageBackgroundColor: "",
   },
+  banners: {},
 };
 
 const Admin = () => {
@@ -107,8 +115,14 @@ const Admin = () => {
     settingsRef.current = catalogSettings;
   }, [catalogSettings]);
 
-  const handleImageUpload = async (file: File, type: 'front' | 'back' | 'inner') => {
+  const handleImageUpload = async (file: File, type: 'front' | 'back' | 'inner' | 'banner', spreadId?: string) => {
     if (!file) return;
+
+    // Size validation: 200kb = 200 * 1024 bytes
+    if (file.size > 200 * 1024) {
+      toast.error("Image exceeds 200kb limit. Please compress it.");
+      return;
+    }
 
     try {
       setUploading(true);
@@ -136,7 +150,7 @@ const Admin = () => {
             backgroundImage: url
           }
         };
-      } else {
+      } else if (type === 'inner') {
         newSettings = {
           ...currentSettings,
           innerPages: {
@@ -144,11 +158,24 @@ const Admin = () => {
             backgroundImage: url
           }
         };
+      } else if (type === 'banner' && spreadId) {
+        newSettings = {
+          ...currentSettings,
+          banners: {
+            ...(currentSettings.banners || {}),
+            [spreadId]: {
+              ...(currentSettings.banners?.[spreadId] || {}),
+              image: url
+            }
+          }
+        };
+      } else {
+        return; // Should not happen
       }
 
       setCatalogSettings(newSettings);
       await setDoc(doc(db, "settings", "catalog"), newSettings);
-      toast.success(`${type === 'front' ? 'Front' : type === 'back' ? 'Back' : 'Inner'} page background uploaded and saved!`);
+      toast.success(`${type === 'banner' ? 'Banner' : type === 'front' ? 'Front' : type === 'back' ? 'Back' : 'Inner'} uploaded and saved!`);
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload image");
@@ -550,6 +577,80 @@ const Admin = () => {
                 </div>
 
 
+              </div>
+            </section>
+
+            {/* Banner Management */}
+            <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold flex items-center gap-2">Banner Management</h2>
+                <div className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-semibold border border-orange-100">
+                  Max 200KB limit
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mb-6">
+                Configure promotional banners for each spread (pair of pages). These banners replace the featured product slot.
+              </p>
+
+              <div className="space-y-6">
+                {[...Array(5)].map((_, i) => {
+                  const spreadId = `spread-${i}`;
+                  const banner = catalogSettings.banners?.[spreadId];
+                  return (
+                    <div key={spreadId} className="p-4 border border-gray-100 rounded-lg bg-gray-50/50">
+                      <h3 className="font-semibold text-sm mb-3">Spread {i + 1} (Right Page Bottom Slot)</h3>
+                      <div className="grid gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <label className="text-xs font-medium mb-1 block">Banner Image</label>
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'banner', spreadId);
+                              }}
+                              disabled={uploading}
+                              className="text-xs"
+                            />
+                          </div>
+                          {banner?.image && (
+                            <div className="relative group">
+                              <img src={banner.image} alt="Preview" className="h-12 w-20 object-cover rounded border bg-white" />
+                              <button
+                                onClick={() => {
+                                  const newBanners = { ...catalogSettings.banners };
+                                  delete newBanners[spreadId];
+                                  setCatalogSettings({ ...catalogSettings, banners: newBanners });
+                                }}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 size={10} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium mb-1 block">Click-through URL (Optional)</label>
+                          <Input
+                            placeholder="https://jumia.com.ng/..."
+                            value={banner?.url || ""}
+                            onChange={(e) => {
+                              const newBanners = {
+                                ...(catalogSettings.banners || {}),
+                                [spreadId]: {
+                                  ...(banner || { image: "" }),
+                                  url: e.target.value
+                                }
+                              };
+                              setCatalogSettings({ ...catalogSettings, banners: newBanners });
+                            }}
+                            className="text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 

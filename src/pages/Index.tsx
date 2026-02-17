@@ -3,6 +3,7 @@ import HTMLFlipBook from "react-pageflip";
 import html2canvas from 'html2canvas';
 import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
+import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
 import { Loader2, Share2, Download } from "lucide-react";
 import catalogBg from "@/assets/catalog-bg.jpg";
@@ -373,9 +374,22 @@ const Index = () => {
                       <ProductCard key={product.id} product={product} />
                     ))}
 
-                    {/* Featured Product Card - Spanning or taking up last slot visually */}
+                    {/* Featured Slot - Banner or Product */}
                     <div className="col-span-2 row-span-1 mt-auto">
-                      {chunk.length > 9 && <FeaturedProductCard product={chunk[9]} />}
+                      {(() => {
+                        const spreadId = `spread-${index}`;
+                        const banner = catalogSettings?.banners?.[spreadId];
+
+                        if (banner?.image) {
+                          return <BannerCard image={banner.image} url={banner.url} />;
+                        }
+
+                        if (chunk.length > 9) {
+                          return <FeaturedProductCard product={chunk[9]} />;
+                        }
+
+                        return null;
+                      })()}
                     </div>
                   </div>
 
