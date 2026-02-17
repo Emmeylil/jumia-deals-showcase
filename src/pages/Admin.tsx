@@ -454,18 +454,51 @@ const Admin = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Background Image</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-sm font-medium block">Background Image (File)</label>
+                    <span className="text-[10px] text-muted-foreground font-semibold">Max 200KB • Recommended: 800x1040px</span>
+                  </div>
                   <div className="flex gap-2 items-center">
+                    <div className="flex-1">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'front');
+                        }}
+                        disabled={uploading}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Background Image URL (Alternative)</label>
+                  <div className="flex gap-2">
                     <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'front');
-                      }}
-                      disabled={uploading}
+                      placeholder="https://..."
+                      value={catalogSettings.frontPage.backgroundImage || ""}
+                      onChange={(e) => setCatalogSettings({
+                        ...catalogSettings,
+                        frontPage: { ...catalogSettings.frontPage, backgroundImage: e.target.value }
+                      })}
+                      className="text-xs"
                     />
                     {catalogSettings.frontPage.backgroundImage && (
-                      <img src={catalogSettings.frontPage.backgroundImage} alt="Preview" className="h-10 w-10 object-cover rounded" />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 text-destructive flex-shrink-0"
+                        onClick={() => setCatalogSettings({
+                          ...catalogSettings,
+                          frontPage: { ...catalogSettings.frontPage, backgroundImage: "" }
+                        })}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
+                    {catalogSettings.frontPage.backgroundImage && (
+                      <img src={catalogSettings.frontPage.backgroundImage} alt="Preview" className="h-10 w-10 object-cover rounded flex-shrink-0 border" />
                     )}
                   </div>
                 </div>
@@ -593,7 +626,7 @@ const Admin = () => {
               </p>
 
               <div className="space-y-6">
-                {[...Array(5)].map((_, i) => {
+                {[...Array(Math.max(1, Math.ceil(products.length / 10)))].map((_, i) => {
                   const spreadId = `spread-${i}`;
                   const banner = catalogSettings.banners?.[spreadId];
                   return (
@@ -697,18 +730,51 @@ const Admin = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Background Image</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-sm font-medium block">Background Image (File)</label>
+                    <span className="text-[10px] text-muted-foreground font-semibold">Max 200KB • Recommended: 800x1040px</span>
+                  </div>
                   <div className="flex gap-2 items-center">
+                    <div className="flex-1">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'back');
+                        }}
+                        disabled={uploading}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Background Image URL (Alternative)</label>
+                  <div className="flex gap-2">
                     <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'back');
-                      }}
-                      disabled={uploading}
+                      placeholder="https://..."
+                      value={catalogSettings.backPage.backgroundImage || ""}
+                      onChange={(e) => setCatalogSettings({
+                        ...catalogSettings,
+                        backPage: { ...catalogSettings.backPage, backgroundImage: e.target.value }
+                      })}
+                      className="text-xs"
                     />
                     {catalogSettings.backPage.backgroundImage && (
-                      <img src={catalogSettings.backPage.backgroundImage} alt="Preview" className="h-10 w-10 object-cover rounded" />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 text-destructive flex-shrink-0"
+                        onClick={() => setCatalogSettings({
+                          ...catalogSettings,
+                          backPage: { ...catalogSettings.backPage, backgroundImage: "" }
+                        })}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
+                    {catalogSettings.backPage.backgroundImage && (
+                      <img src={catalogSettings.backPage.backgroundImage} alt="Preview" className="h-10 w-10 object-cover rounded flex-shrink-0 border" />
                     )}
                   </div>
                 </div>
