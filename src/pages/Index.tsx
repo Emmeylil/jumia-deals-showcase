@@ -250,11 +250,15 @@ const Index = () => {
           minHeight={400}
           maxHeight={1000}
           maxShadowOpacity={0.5}
-          className="jumia-book shadow-2xl"
+          className="jumia-book shadow-2xl mx-auto"
           ref={bookRef}
           showCover={true}
           mobileScrollSupport={true}
+          usePortrait={false}
+          flippingTime={1000}
           startPage={0}
+          drawShadow={true}
+          useMouseEvents={true}
         >
           {/* COVER PAGE */}
           <Page className="bg-white text-gray-900 border-none" id="page-0">
