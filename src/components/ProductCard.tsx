@@ -25,7 +25,7 @@ const ProductCard = ({ product, compact }: ProductCardProps) => {
       )}
 
       {/* Product Image */}
-      <div className="flex-1 w-full flex items-center justify-center py-1 mt-1 min-h-0">
+      <div className="flex-1 w-full flex items-center justify-center py-1 mt-1 min-h-0 max-h-[60%]">
         <img
           src={product.image}
           alt={product.name}
