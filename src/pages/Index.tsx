@@ -50,6 +50,8 @@ const Index = () => {
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = React.useState<any>(null);
   const [settingsLoading, setSettingsLoading] = React.useState(true);
+  const [currentPage, setCurrentPage] = React.useState(0);
+  const [totalPages, setTotalPages] = React.useState(0);
 
   React.useEffect(() => {
     // Subscribe to settings
@@ -220,6 +222,14 @@ const Index = () => {
     productChunks.push(products.slice(i, i + 10));
   }
 
+  // Calculate total pages for centering logic
+  useEffect(() => {
+    // 1 (Front) + inner spreads + 1 (Back)
+    // Pages: 0 (Front), 1-N (Inner), N+1 (Back)
+    const count = 1 + (productChunks.length * 2) + 1;
+    setTotalPages(count);
+  }, [productChunks.length]);
+
   return (
     <div className="min-h-screen font-gotham overflow-hidden flex flex-col items-center justify-center p-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal">
 
@@ -239,7 +249,16 @@ const Index = () => {
         style={{ backgroundImage: `url(${catalogBg})` }}
       />
 
-      <div className="relative z-10 w-full max-w-6xl flex justify-center transform scale-95 md:scale-100 transition-transform duration-500">
+      <div
+        className="relative z-10 w-full max-w-6xl flex justify-center transition-all duration-700 ease-in-out"
+        style={{
+          transform: currentPage === 0
+            ? 'translateX(-25%)'
+            : currentPage === totalPages - 1
+              ? 'translateX(25%)'
+              : 'translateX(0)'
+        }}
+      >
         {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
         <HTMLFlipBook
           width={400}
@@ -259,6 +278,7 @@ const Index = () => {
           startPage={0}
           drawShadow={true}
           useMouseEvents={true}
+          onFlip={(e) => setCurrentPage(e.data)}
         >
           {/* COVER PAGE */}
           <Page className="bg-white text-gray-900 border-none" id="page-0">
