@@ -120,7 +120,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-gotham overflow-hidden flex flex-col items-center justify-center p-4 relative">
+    <div className="min-h-screen font-gotham overflow-hidden flex flex-col items-center justify-center p-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal">
 
       {/* Control Bar */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">

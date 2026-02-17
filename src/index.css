@@ -15,7 +15,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    --primary: 199 89% 48%; /* New Jumia Blue from image */
+    --primary: 199 89% 48%;
+    /* New Jumia Blue from image */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 190 50% 85%;
@@ -24,7 +25,8 @@
     --muted: 210 20% 92%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 45 100% 50%; /* Jumia Yellow/Gold */
+    --accent: 45 100% 50%;
+    /* Jumia Yellow/Gold */
     --accent-foreground: 0 0% 15%;
 
     --destructive: 0 84.2% 60.2%;
@@ -52,6 +54,8 @@
     --jumia-yellow: 45 100% 50%;
     --jumia-bg: 190 40% 92%;
     --jumia-card-shadow: 0 2px 8px 0 hsla(0, 0%, 0%, 0.05);
+    --jumia-purple: 270 95% 75%;
+    --jumia-teal: 190 90% 50%;
   }
 
   .dark {

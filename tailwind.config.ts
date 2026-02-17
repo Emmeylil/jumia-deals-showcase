@@ -57,6 +57,8 @@ export default {
           cyan: "hsl(var(--jumia-cyan))",
           yellow: "hsl(var(--jumia-yellow))",
           bg: "hsl(var(--jumia-bg))",
+          purple: "hsl(var(--jumia-purple))",
+          teal: "hsl(var(--jumia-teal))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
