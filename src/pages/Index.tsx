@@ -47,11 +47,6 @@ const Index = () => {
     return () => unsubscribe();
   }, []);
 
-  // Split products into pairs for book pages (2 products per spread)
-  const productPairs = [];
-  for (let i = 0; i < products.length; i += 2) {
-    productPairs.push(products.slice(i, i + 2));
-  }
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
@@ -100,20 +95,29 @@ const Index = () => {
                 </div>
               </Page>
 
-              {/* Product Pages */}
-              {products.map((product) => (
-                <Page key={product.id} className="bg-white">
-                  <div className="w-full h-full flex flex-col justify-between py-4">
-                    <div className="flex-1 flex items-center justify-center">
-                      <ProductCard product={product} />
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center text-[10px] text-gray-400 font-medium tracking-widest uppercase">
-                      <span>Jumia Deals 2026</span>
-                      <span>ID: {product.id.toString().padStart(3, '0')}</span>
-                    </div>
-                  </div>
-                </Page>
-              ))}
+              {/* Product Pages - 6 products per page */}
+              {(() => {
+                const pages = [];
+                for (let i = 0; i < products.length; i += 6) {
+                  const pageProducts = products.slice(i, i + 6);
+                  pages.push(
+                    <Page key={`page-${i}`} className="bg-white">
+                      <div className="w-full h-full flex flex-col justify-between py-2">
+                        <div className="grid grid-cols-2 grid-rows-3 gap-2 flex-1">
+                          {pageProducts.map((product) => (
+                            <ProductCard key={product.id} product={product} compact />
+                          ))}
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between items-center text-[10px] text-gray-400 font-medium tracking-widest uppercase">
+                          <span>Jumia Deals 2026</span>
+                          <span>Page {Math.floor(i / 6) + 1}</span>
+                        </div>
+                      </div>
+                    </Page>
+                  );
+                }
+                return pages;
+              })()}
 
               {/* Back Cover */}
               <Page className="bg-[#f5f5f5] text-gray-800">
