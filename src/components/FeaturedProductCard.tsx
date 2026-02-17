@@ -24,7 +24,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
             )}
 
             {/* Product Image */}
-            <div className="flex-1 w-full flex items-center justify-center pt-2 pb-2 min-h-0 max-h-[60%]">
+            <div className="flex-1 w-full flex items-center justify-center pt-4 pb-4 min-h-0 max-h-[45%]">
                 <img
                     src={product.image}
                     alt={product.name}
