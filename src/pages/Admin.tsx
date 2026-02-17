@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "@firebase/storage";
 import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc, query, orderBy, limit, getDocs } from "@firebase/firestore";
 import { Product, formatPrice } from "@/data/products";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ interface CatalogSettings {
     footerText: string;
     primaryColor: string;
     secondaryColor: string;
+    backgroundImage?: string;
   };
   backPage: {
     title: string;
@@ -38,8 +40,9 @@ interface CatalogSettings {
     qrCodeUrl: string;
     callToAction: string;
     footerText: string;
+    backgroundImage?: string;
   };
-}
+};
 
 const DEFAULT_SETTINGS: CatalogSettings = {
   frontPage: {
@@ -49,6 +52,7 @@ const DEFAULT_SETTINGS: CatalogSettings = {
     footerText: "CLICK TO OPEN",
     primaryColor: "#FF9900",
     secondaryColor: "#009FE3",
+    backgroundImage: "",
   },
   backPage: {
     title: "Don't Miss Out!",
@@ -56,6 +60,7 @@ const DEFAULT_SETTINGS: CatalogSettings = {
     qrCodeUrl: "https://jumia.com.ng",
     callToAction: "Scan to shop now",
     footerText: "JUMIA © 2026",
+    backgroundImage: "",
   },
 };
 
@@ -80,6 +85,33 @@ const Admin = () => {
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
   const [activeTab, setActiveTab] = useState<"products" | "settings">("products");
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (file: File, type: 'front' | 'back') => {
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const storageRef = ref(storage, `settings/${type}-page-bg-${Date.now()}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+
+      const newSettings = { ...catalogSettings };
+      if (type === 'front') {
+        newSettings.frontPage.backgroundImage = url;
+      } else {
+        newSettings.backPage.backgroundImage = url;
+      }
+
+      setCatalogSettings(newSettings);
+      toast.success(`${type === 'front' ? 'Front' : 'Back'} page background uploaded!`);
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     // Fetch stats
@@ -87,10 +119,7 @@ const Admin = () => {
       const data = await getStats();
       setStats(data);
     };
-    const fetchStatsData = async () => {
-      const data = await getStats();
-      setStats(data);
-    };
+
     fetchStatsData();
 
     // Fetch settings
@@ -106,12 +135,12 @@ const Admin = () => {
     };
 
     // Using onSnapshot for real-time updates on settings too?
-    const settingsUnsub = onSnapshot(doc(db, "settings", "catalog"), (doc) => {
-      if (doc.exists()) {
-        setCatalogSettings(doc.data() as CatalogSettings);
+    const settingsUnsub = onSnapshot(doc(db, "settings", "catalog"), (snapshot) => {
+      if (snapshot.exists()) {
+        setCatalogSettings(snapshot.data() as CatalogSettings);
       } else {
         // Initialize if not exists
-        setDoc(doc.ref, DEFAULT_SETTINGS);
+        setDoc(snapshot.ref, DEFAULT_SETTINGS);
       }
     });
 
@@ -345,6 +374,22 @@ const Admin = () => {
                     onChange={(e) => setCatalogSettings({ ...catalogSettings, frontPage: { ...catalogSettings.frontPage, tagline: e.target.value } })}
                   />
                 </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Background Image</label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'front');
+                      }}
+                      disabled={uploading}
+                    />
+                    {catalogSettings.frontPage.backgroundImage && (
+                      <img src={catalogSettings.frontPage.backgroundImage} alt="Preview" className="h-10 w-10 object-cover rounded" />
+                    )}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block">Primary Color</label>
@@ -406,6 +451,22 @@ const Admin = () => {
                     value={catalogSettings.backPage.description}
                     onChange={(e) => setCatalogSettings({ ...catalogSettings, backPage: { ...catalogSettings.backPage, description: e.target.value } })}
                   />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Background Image</label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'back');
+                      }}
+                      disabled={uploading}
+                    />
+                    {catalogSettings.backPage.backgroundImage && (
+                      <img src={catalogSettings.backPage.backgroundImage} alt="Preview" className="h-10 w-10 object-cover rounded" />
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">QR Code URL (Link destination)</label>

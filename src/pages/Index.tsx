@@ -134,7 +134,10 @@ const Index = () => {
         >
           {/* COVER PAGE */}
           <Page className="bg-white text-gray-900 border-none">
-            <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-12 text-center bg-white relative overflow-hidden">
+            <div
+              className="w-full h-full flex flex-col items-center justify-center gap-6 p-12 text-center bg-white relative overflow-hidden bg-cover bg-center"
+              style={catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}}
+            >
               {/* Decorative Circle */}
               <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-[#FF9900]/10 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute bottom-[-50px] left-[-50px] w-40 h-40 bg-[#009FE3]/10 rounded-full blur-3xl pointer-events-none" />
@@ -243,7 +246,10 @@ const Index = () => {
 
           {/* BACK COVER */}
           <Page className="bg-[#f5f5f5] text-gray-800">
-            <div className="w-full h-full flex flex-col items-center justify-center p-12 text-center border-l border-gray-200">
+            <div
+              className="w-full h-full flex flex-col items-center justify-center p-12 text-center border-l border-gray-200 bg-cover bg-center"
+              style={catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}}
+            >
               <h2 className="text-3xl font-black mb-4">Don't Miss Out!</h2>
               <p className="mb-8 text-gray-600">Visit Jumia.com.ng for even more amazing deals on all your favorite brands.</p>
               <div className="w-40 h-40 bg-white p-4 shadow-xl rounded-2xl mb-6 transform hover:scale-105 transition-transform duration-300">
