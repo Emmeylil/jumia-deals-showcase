@@ -89,11 +89,10 @@ Deno.serve(async (req) => {
             }
 
             // Extract brand and construct full name with brand
+            // displayName already includes brand, so prioritize it
+            const productName = product.displayName || product.name || '';
             const brand = product.brand || '';
-            const productName = product.name || product.displayName || '';
-            const fullName = brand && !productName.toLowerCase().startsWith(brand.toLowerCase())
-              ? `${brand} ${productName}`
-              : productName;
+            const fullName = productName || (brand ? `${brand} ${product.name || ''}` : '');
 
             const result = {
               sku: product.sku || sku,
@@ -137,13 +136,13 @@ Deno.serve(async (req) => {
           url = `https://www.jumia.com.ng${url.startsWith('/') ? '' : '/'}${url}`;
         }
 
-        // Try to extract brand
-        const brandMatch = card.match(/data-brand=\"([^\"]+)\"/i) || card.match(/class=\"[^\"]*brand[^\"]*\"[^>]*>([^<]+)</i);
+        // Try to extract brand and displayName
+        const brandMatch = card.match(/data-brand=\"([^\"]+)\"/i);
+        const displayNameMatch = card.match(/data-display-name=\"([^\"]+)\"/i);
         const brand = brandMatch ? brandMatch[1].trim() : '';
         const productName = nameMatch ? (nameMatch[1] || '').trim() : '';
-        const fullName = brand && !productName.toLowerCase().startsWith(brand.toLowerCase())
-          ? `${brand} ${productName}`
-          : productName;
+        const displayName = displayNameMatch ? displayNameMatch[1].trim() : '';
+        const fullName = displayName || productName || (brand ? `${brand} ${productName}` : '');
 
         const result = {
           sku: skuMatch ? skuMatch[1] : sku,
@@ -194,11 +193,10 @@ Deno.serve(async (req) => {
           const product = products.find((p: any) => p.sku === sku) || products[0];
 
           // Extract brand and construct full name
+          // displayName already includes brand, so prioritize it
+          const productName = product.displayName || product.name || '';
           const brand = product.brand || '';
-          const productName = product.name || product.displayName || '';
-          const fullName = brand && !productName.toLowerCase().startsWith(brand.toLowerCase())
-            ? `${brand} ${productName}`
-            : productName;
+          const fullName = productName || (brand ? `${brand} ${product.name || ''}` : '');
 
           const result = {
             sku: product.sku || sku,
