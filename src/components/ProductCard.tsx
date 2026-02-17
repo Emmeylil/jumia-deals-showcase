@@ -7,7 +7,7 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, compact }: ProductCardProps) => {
   return (
-    <div className="relative bg-white rounded-xl shadow-sm border border-gray-100 flex p-3 h-28 md:h-32 overflow-hidden transition-all hover:shadow-md cursor-pointer group">
+    <div className="relative bg-white rounded-xl shadow-sm border border-gray-100 flex p-3 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group">
       {/* Product Info (Left) */}
       <div className="flex-1 flex flex-col justify-between pr-2 z-10">
         <div>
