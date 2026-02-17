@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
-import { Plus, Search, Loader2, Trash2, Save, Edit2 } from "lucide-react";
+import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download } from "lucide-react";
+import { getStats, type StatsData } from "@/lib/stats";
 
 interface FetchedProduct {
   name: string;
@@ -36,7 +37,18 @@ const Admin = () => {
   const [editPrice, setEditPrice] = useState("");
   const [editOldPrice, setEditOldPrice] = useState("");
 
+  // Stats state
+  const [stats, setStats] = useState<StatsData | null>(null);
+
   useEffect(() => {
+    // Fetch stats
+    const fetchStatsData = async () => {
+      const data = await getStats();
+      setStats(data);
+    };
+    fetchStatsData();
+
+    // Fetch products
     const q = query(collection(db, "products"), orderBy("id"), limit(100));
     const unsubscribe = onSnapshot(q,
       (snapshot) => {
@@ -208,10 +220,56 @@ const Admin = () => {
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Loading...</div>;
 
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h}h ${m}m ${s}s`;
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <CatalogHeader />
       <div className="max-w-4xl mx-auto px-4 py-8">
+
+        {/* Statistics Section */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <BarChart3 className="text-primary" /> Statistics
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+              <Users className="text-blue-500" size={24} />
+              <span className="text-3xl font-bold text-gray-900">{stats?.views || 0}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Views</span>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+              <MousePointer2 className="text-orange-500" size={24} />
+              <span className="text-3xl font-bold text-gray-900">{stats?.clicks || 0}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Product Clicks</span>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+              <Users className="text-green-500" size={24} />
+              <span className="text-3xl font-bold text-gray-900">{stats?.readers || 0}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Unique Readers</span>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+              <Clock className="text-purple-500" size={24} />
+              <span className="text-xl font-bold text-gray-900">{formatTime(stats?.timeOnBook || 0)}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Time on Book</span>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+              <Share2 className="text-pink-500" size={24} />
+              <span className="text-3xl font-bold text-gray-900">{stats?.shares || 0}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Shares</span>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+              <Download className="text-teal-500" size={24} />
+              <span className="text-3xl font-bold text-gray-900">{stats?.downloads || 0}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Downloads</span>
+            </div>
+          </div>
+        </section>
 
         {/* Bulk SKU Search */}
         <section className="mb-12 p-6 border rounded-xl bg-white shadow-sm">
