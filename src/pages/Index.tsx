@@ -268,7 +268,7 @@ const Index = () => {
       )}
 
       {/* Search Bar */}
-      <div className="w-full max-w-md mb-8 relative z-50 px-4 md:px-0">
+      <div className="w-full max-w-md mb-16 md:mb-12 relative z-50 px-4 md:px-0">
         <div className="relative group">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-jumia-purple transition-colors">
             <Search size={18} />
@@ -280,6 +280,29 @@ const Index = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchQuery.length > 1) {
+                const filtered = products.filter(p =>
+                  p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  p.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  p.category?.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+                if (filtered.length > 0) {
+                  const product = filtered[0];
+                  const productIndex = products.findIndex(p => p.id === product.id);
+                  const chunkIndex = Math.floor(productIndex / 10);
+                  const indexInChunk = productIndex % 10;
+                  const onLeftPage = indexInChunk < 6;
+                  const targetPage = 1 + (chunkIndex * 2) + (onLeftPage ? 0 : 1);
+
+                  bookRef.current?.pageFlip()?.flip(targetPage);
+                  setHighlightedProductId(product.id);
+                  setSearchQuery("");
+                  setIsSearchFocused(false);
+                  setTimeout(() => setHighlightedProductId(null), 5000);
+                }
+              }
+            }}
           />
           {searchQuery && (
             <button
