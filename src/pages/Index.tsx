@@ -401,7 +401,7 @@ const Index = () => {
           {/* COVER PAGE */}
           <Page className="bg-white text-gray-900 border-none" id="page-0">
             <div
-              className="w-full h-full flex flex-col items-center justify-center gap-6 p-12 text-center bg-white relative overflow-hidden bg-cover bg-center"
+              className="w-full h-full flex flex-col items-center justify-center gap-2 md:gap-6 p-4 md:p-12 text-center bg-white relative overflow-hidden bg-cover bg-center"
               style={{
                 ...(catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}),
                 ...(catalogSettings?.frontPage?.backgroundColor ? { backgroundColor: catalogSettings.frontPage.backgroundColor } : {})
@@ -410,23 +410,23 @@ const Index = () => {
               {/* Decorative Circle */}
               <div
                 className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-[#FF9900]/10 rounded-full blur-3xl pointer-events-none"
-                style={{ backgroundColor: `${catalogSettings?.frontPage?.primaryColor || '#FF9900'}1A` }} // 10% opacity hex
+                style={{ backgroundColor: `${catalogSettings?.frontPage?.primaryColor || '#FF9900'}1A` }}
               />
               <div
                 className="absolute bottom-[-50px] left-[-50px] w-40 h-40 bg-[#009FE3]/10 rounded-full blur-3xl pointer-events-none"
-                style={{ backgroundColor: `${catalogSettings?.frontPage?.secondaryColor || '#009FE3'}1A` }} // 10% opacity hex
+                style={{ backgroundColor: `${catalogSettings?.frontPage?.secondaryColor || '#009FE3'}1A` }}
               />
 
-              <div className="mb-8 z-10">
+              <div className="mb-2 md:mb-8 z-10">
                 <img
                   src="https://ng.jumia.is/cms/jumia_logo_small.png"
                   alt="Jumia Logo"
-                  className="h-16 w-auto object-contain"
+                  className="h-10 md:h-16 w-auto object-contain"
                 />
               </div>
 
               <div className="relative z-10">
-                <h1 className="text-7xl font-black tracking-tighter uppercase italic drop-shadow-sm leading-tight text-gray-900">
+                <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase italic drop-shadow-sm leading-tight text-gray-900">
                   {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
                   <span
                     className="drop-shadow-sm"
@@ -436,18 +436,18 @@ const Index = () => {
                   </span>
                 </h1>
                 <div
-                  className="absolute -bottom-4 right-0 text-white text-xs font-bold px-3 py-1 rotate-[-5deg] shadow-md rounded-sm"
+                  className="absolute -bottom-4 right-0 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rotate-[-5deg] shadow-md rounded-sm"
                   style={{ backgroundColor: catalogSettings?.frontPage?.secondaryColor || '#009FE3' }}
                 >
                   LIMITED TIME
                 </div>
               </div>
 
-              <p className="text-xl font-bold tracking-widest uppercase mt-8 opacity-70 text-gray-600 z-10">
+              <p className="text-sm md:text-xl font-bold tracking-widest uppercase mt-3 md:mt-8 opacity-70 text-gray-600 z-10">
                 {catalogSettings?.frontPage?.tagline || "Digital Catalog 2026"}
               </p>
 
-              <div className="mt-12 px-8 py-3 border-2 border-gray-200 rounded-full text-sm font-bold text-gray-900 bg-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-bounce z-10">
+              <div className="mt-4 md:mt-12 px-6 md:px-8 py-2 md:py-3 border-2 border-gray-200 rounded-full text-xs md:text-sm font-bold text-gray-900 bg-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-bounce z-10">
                 {catalogSettings?.frontPage?.footerText || "CLICK TO OPEN"}
               </div>
             </div>
@@ -472,19 +472,19 @@ const Index = () => {
               >
                 <div className="w-full h-full flex flex-row">
                   {/* Left Sidebar Header */}
-                  <div className="w-14 bg-[#009FE3] flex flex-col items-center py-6 relative shadow-lg z-10">
-                    <div className="bg-black/20 p-1.5 rounded-full mb-6">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
+                  <div className="w-10 md:w-14 bg-[#009FE3] flex flex-col items-center py-3 md:py-6 relative shadow-lg z-10">
+                    <div className="bg-black/20 p-1 md:p-1.5 rounded-full mb-3 md:mb-6">
+                      <svg className="w-4 h-4 md:w-6 md:h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
                     </div>
                     <div className="flex-1 flex items-center justify-center">
-                      <h2 className="text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
+                      <h2 className="text-xl md:text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
                         Best Deals
                       </h2>
                     </div>
                   </div>
 
                   {/* Content Area */}
-                  <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start">
+                  <div className="flex-1 p-1.5 md:p-2 grid grid-cols-2 grid-rows-3 gap-1.5 md:gap-2 content-start">
                     {leftPageProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -513,7 +513,7 @@ const Index = () => {
               >
                 <div className="w-full h-full flex flex-row">
                   {/* Content Area */}
-                  <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start">
+                  <div className="flex-1 p-1.5 md:p-2 grid grid-cols-2 grid-rows-3 gap-1.5 md:gap-2 content-start">
                     {/* Regular Products (up to 3) */}
                     {rightPageRegularProducts.map((product) => (
                       <ProductCard
@@ -536,14 +536,14 @@ const Index = () => {
                   </div>
 
                   {/* Right Sidebar Header */}
-                  <div className="w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-6 relative shadow-inner z-10">
+                  <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                     <div className="flex-1 flex items-center justify-center">
-                      <h2 className="text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                      <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
                         Top Picks
                       </h2>
                     </div>
-                    <div className="bg-purple-200 p-1.5 rounded-full mt-6">
-                      <svg className="w-6 h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    <div className="bg-purple-200 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
+                      <svg className="w-4 h-4 md:w-6 md:h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </div>
                   </div>
                 </div>
@@ -559,24 +559,24 @@ const Index = () => {
           {/* BACK COVER */}
           <Page className="bg-[#f5f5f5] text-gray-800" id={`page-${1 + productChunks.length * 2}`}>
             <div
-              className="w-full h-full flex flex-col items-center justify-center p-12 text-center border-l border-gray-200 bg-cover bg-center"
+              className="w-full h-full flex flex-col items-center justify-center p-4 md:p-12 text-center border-l border-gray-200 bg-cover bg-center"
               style={{
                 ...(catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}),
                 ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
               }}
             >
-              <h2 className="text-3xl font-black mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
-              <p className="mb-8 text-gray-600">{catalogSettings?.backPage?.description || "Visit Jumia.com.ng for even more amazing deals on all your favorite brands."}</p>
-              <div className="w-40 h-40 bg-white p-4 shadow-xl rounded-2xl mb-6 transform hover:scale-105 transition-transform duration-300">
+              <h2 className="text-xl md:text-3xl font-black mb-2 md:mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
+              <p className="mb-4 md:mb-8 text-gray-600 text-sm md:text-base">{catalogSettings?.backPage?.description || "Visit Jumia.com.ng for even more amazing deals on all your favorite brands."}</p>
+              <div className="w-28 h-28 md:w-40 md:h-40 bg-white p-3 md:p-4 shadow-xl rounded-2xl mb-4 md:mb-6 transform hover:scale-105 transition-transform duration-300">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
                   alt="QR Code"
                   className="w-full h-full opacity-90"
                 />
               </div>
-              <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-12">{catalogSettings?.backPage?.callToAction || "Scan to shop now"}</p>
+              <p className="text-[10px] md:text-xs font-bold text-blue-500 uppercase tracking-widest mb-6 md:mb-12">{catalogSettings?.backPage?.callToAction || "Scan to shop now"}</p>
 
-              <div className="flex items-center gap-2 opacity-50">
+              <div className="flex items-center gap-2 opacity-50 text-sm">
                 <span className="font-bold">{catalogSettings?.backPage?.footerText?.split('©')[0]?.trim() || "JUMIA"}</span>
                 <span>&copy; {new Date().getFullYear()}</span>
               </div>
