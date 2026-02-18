@@ -8,12 +8,12 @@ interface BannerCardProps {
 
 const BannerCard = ({ image, url }: BannerCardProps) => {
     const content = (
-        <div className="relative bg-white rounded-[1.5rem] shadow-sm flex items-center justify-center h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group border border-dashed border-gray-200">
+        <div className="relative bg-gray-50 rounded-[1.5rem] shadow-sm flex items-center justify-center h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group border border-dashed border-gray-200">
             {image ? (
                 <img
                     src={image}
                     alt="Promotion Banner"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                 />
             ) : (
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center p-4">

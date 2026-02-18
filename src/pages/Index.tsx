@@ -513,18 +513,20 @@ const Index = () => {
               >
                 <div className="w-full h-full flex flex-row">
                   {/* Content Area */}
-                  <div className="flex-1 p-1.5 md:p-2 grid grid-cols-2 grid-rows-3 gap-1.5 md:gap-2 content-start">
-                    {/* Regular Products (up to 3) */}
-                    {rightPageRegularProducts.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        highlighted={product.id === highlightedProductId}
-                      />
-                    ))}
+                  <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1.5 md:gap-2 min-h-0">
+                    {/* Regular Products (up to 4) in 2-col grid */}
+                    <div className="grid grid-cols-2 gap-1.5 md:gap-2 flex-1 min-h-0">
+                      {rightPageRegularProducts.map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          highlighted={product.id === highlightedProductId}
+                        />
+                      ))}
+                    </div>
 
-                    {/* Featured Slot - Banner Placement */}
-                    <div className="col-span-2 row-span-1 mt-auto">
+                    {/* Featured Slot - Banner Placement (fixed height) */}
+                    <div className="h-[110px] md:h-[130px] flex-shrink-0">
                       {(() => {
                         const spreadId = `spread-${index}`;
                         const banner = catalogSettings?.banners?.[spreadId];
