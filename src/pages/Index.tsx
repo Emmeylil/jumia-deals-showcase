@@ -241,7 +241,7 @@ const Index = () => {
   }
 
   return (
-    <div className={`min-h-screen font-gotham overflow-hidden flex flex-col items-center justify-center p-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal ${!isDesktop ? 'fixed inset-0 touch-none' : ''}`}>
+    <div className="h-[100dvh] font-gotham overflow-hidden flex flex-col items-center justify-between py-2 md:py-4 px-2 md:px-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal fixed inset-0">
 
       {/* Control Bar */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
@@ -268,7 +268,7 @@ const Index = () => {
       )}
 
       {/* Search Bar */}
-      <div className="w-full max-w-md mb-16 md:mb-12 relative z-50 px-4 md:px-0">
+      <div className="w-full max-w-md mb-2 md:mb-3 relative z-50 px-4 md:px-0 shrink-0">
         <div className="relative group">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-jumia-purple transition-colors">
             <Search size={18} />
@@ -366,7 +366,7 @@ const Index = () => {
       </div>
 
       <div
-        className="relative z-10 w-full max-w-6xl flex justify-center transition-all duration-700 ease-in-out"
+        className="relative z-10 w-full max-w-6xl flex-1 min-h-0 flex justify-center items-center transition-all duration-700 ease-in-out"
         style={{
           transform: isDesktop
             ? (currentPage === 0
@@ -379,13 +379,13 @@ const Index = () => {
       >
         {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
         <HTMLFlipBook
-          width={isDesktop ? 400 : 350}
-          height={520}
+          width={isDesktop ? 380 : 320}
+          height={isDesktop ? 480 : 420}
           size="stretch"
-          minWidth={isDesktop ? 300 : 280}
-          maxWidth={800}
-          minHeight={400}
-          maxHeight={1000}
+          minWidth={isDesktop ? 280 : 250}
+          maxWidth={700}
+          minHeight={350}
+          maxHeight={600}
           maxShadowOpacity={0.5}
           className="jumia-book shadow-2xl mx-auto"
           ref={bookRef}
@@ -586,7 +586,7 @@ const Index = () => {
       </div>
 
       {/* BOTTOM NAVIGATION CONTROLS */}
-      <div className="absolute bottom-6 flex items-center gap-8 z-50">
+      <div className="flex items-center gap-8 z-50 shrink-0 pb-1 md:pb-0 mt-2">
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
           className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-gray-100 bg-white shadow-md' : 'bg-transparent text-white'}`}
