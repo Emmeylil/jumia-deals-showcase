@@ -67,6 +67,16 @@ const Index = () => {
     return p ? parseInt(p) - 1 : 0;
   }, []); // Only once on mount
 
+  // Filter out products without valid images (out-of-stock products)
+  const displayProducts = React.useMemo(() => {
+    return products.filter(p => {
+      if (!p.image) return false;
+      const img = p.image.trim().toLowerCase();
+      if (img === '' || img === '/placeholder.svg' || img === 'placeholder.svg') return false;
+      return true;
+    });
+  }, [products]);
+
   // Chunk products into groups (10 if banner exists, 12 if not)
   const productChunks = React.useMemo(() => {
     const chunks = [];
@@ -81,16 +91,16 @@ const Index = () => {
       .map(key => parseInt(key.split('-')[1]))
       .reduce((max, val) => Math.max(max, val), -1);
 
-    while (i < products.length || spreadIndex <= maxBannerSpreadIdx) {
+    while (i < displayProducts.length || spreadIndex <= maxBannerSpreadIdx) {
       const spreadId = `spread-${spreadIndex}`;
       const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
       const size = hasBanner ? 10 : 12;
-      chunks.push(products.slice(i, i + size));
+      chunks.push(displayProducts.slice(i, i + size));
       i += size;
       spreadIndex++;
     }
     return chunks;
-  }, [products, catalogSettings?.banners]);
+  }, [displayProducts, catalogSettings?.banners]);
 
   // Helper to determine target page for a product based on dynamic chunks
   const getTargetPage = (productId: number) => {
@@ -452,7 +462,7 @@ const Index = () => {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && searchQuery.length > 1) {
                 const searchLower = searchQuery.toLowerCase();
-                const filtered = products
+                const filtered = displayProducts
                   .filter(p =>
                     p.name.toLowerCase().includes(searchLower) ||
                     p.brand?.toLowerCase().includes(searchLower) ||
