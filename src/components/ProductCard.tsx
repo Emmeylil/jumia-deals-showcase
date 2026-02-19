@@ -19,7 +19,7 @@ const ProductCard = ({ product, compact, highlighted }: ProductCardProps) => {
   };
 
   const content = (
-    <div className={`relative bg-white rounded-[1.5rem] shadow-sm flex flex-col items-center p-2 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group ${highlighted ? 'border-2 border-jumia-purple ring-4 ring-jumia-purple/20 animate-beat' : ''}`}>
+    <div className={`relative bg-white rounded-[1.5rem] shadow-sm flex flex-col items-center p-2.5 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group ${highlighted ? 'border-2 border-jumia-purple ring-4 ring-jumia-purple/20 animate-beat' : ''}`}>
       {/* Discount Badge */}
       {discount > 0 && (
         <div className="absolute top-2 right-2 z-10 bg-[#FF9900] text-white text-[9px] font-black w-6 h-6 flex items-center justify-center rounded-full shadow-sm">
@@ -28,7 +28,7 @@ const ProductCard = ({ product, compact, highlighted }: ProductCardProps) => {
       )}
 
       {/* Product Image */}
-      <div className="flex-1 w-full flex items-center justify-center py-0 mt-0.5 min-h-0 max-h-[58%]">
+      <div className="flex-1 w-full flex items-center justify-center py-0 mt-1 min-h-0 max-h-[52%]">
         <img
           src={product.image}
           alt={product.name}
@@ -38,33 +38,33 @@ const ProductCard = ({ product, compact, highlighted }: ProductCardProps) => {
       </div>
 
       {/* Product Name */}
-      <div className="w-full text-center px-1 mb-0.5 shrink-0">
-        <h3 className="text-[9px] md:text-[10px] font-medium text-gray-700 leading-tight line-clamp-2 h-[2.6em]">
+      <div className="w-full text-center px-1 mb-1 shrink-0">
+        <h3 className="text-[11px] md:text-xs font-bold text-gray-900 leading-tight line-clamp-2 min-h-[2.8em] flex items-center justify-center">
           {(() => {
             const fullName = product.displayName || product.name;
             const words = fullName.split(' ');
             const brand = words[0];
             const rest = words.slice(1).join(' ');
             return (
-              <>
+              <span>
                 <span className="font-black">{brand}</span>
                 {rest && <span> {rest}</span>}
-              </>
+              </span>
             );
           })()}
         </h3>
       </div>
 
       {/* Price Pill */}
-      <div className="w-full flex flex-col items-center justify-end mt-1 gap-0.5 shrink-0">
-        <div className="bg-[#FF9900] text-black w-full max-w-[85%] py-0.5 rounded-lg flex items-center justify-center shadow-sm">
-          <span className="text-[11px] md:text-xs font-black tracking-tight">
+      <div className="w-full flex flex-col items-center justify-end mt-0.5 gap-0.5 shrink-0">
+        <div className="bg-[#FF9900] text-black w-full max-w-[90%] py-1 rounded-xl flex items-center justify-center shadow-sm">
+          <span className="text-[12px] md:text-sm font-black tracking-tight">
             {formatPrice(product.price)}
           </span>
         </div>
 
         {product.oldPrice && (
-          <span className="text-[8px] text-gray-400 line-through font-medium">
+          <span className="text-[9px] text-gray-400 line-through font-bold">
             {formatPrice(product.oldPrice)}
           </span>
         )}
