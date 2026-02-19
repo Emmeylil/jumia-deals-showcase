@@ -15,15 +15,40 @@ const Login = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Configuration Check
+        if (!import.meta.env.VITE_FIREBASE_API_KEY) {
+            toast.error("Firebase Configuration Error: API Key missing. Did you restart the dev server after editing .env?");
+            console.error("VITE_FIREBASE_API_KEY is undefined. Check your .env file.");
+            return;
+        }
+
         setLoading(true);
 
+        // Debug: Check if env is loaded
+        console.log("Attempting login for Firebase Project:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
+
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            await signInWithEmailAndPassword(auth, email.trim(), password);
             toast.success("Welcome back, Admin!");
             navigate("/admin");
         } catch (error: any) {
-            console.error("Login error:", error);
-            toast.error("Invalid email or password");
+            console.error("Login error code:", error.code);
+            console.error("Login error message:", error.message);
+
+            if (error.code === 'auth/invalid-credential') {
+                toast.error("Invalid email or password. Please check your credentials.");
+            } else if (error.code === 'auth/user-not-found') {
+                toast.error("No account found with this email. Did you create it in Firebase Console?");
+            } else if (error.code === 'auth/wrong-password') {
+                toast.error("Incorrect password.");
+            } else if (error.code === 'auth/too-many-requests') {
+                toast.error("Too many failed attempts. Account temporarily locked.");
+            } else if (error.code === 'auth/network-request-failed') {
+                toast.error("Network error. Please check your internet connection.");
+            } else {
+                toast.error(`Login failed [${error.code}]: ${error.message}`);
+            }
         } finally {
             setLoading(false);
         }
