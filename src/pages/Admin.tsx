@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
-import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy } from "lucide-react";
+import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw } from "lucide-react";
 import { getStats, type StatsData } from "@/lib/stats";
 import BannerCard from "@/components/BannerCard";
 
@@ -95,6 +95,8 @@ const Admin = () => {
   // Bulk SKU state
   const [skuInput, setSkuInput] = useState("");
   const [fetchedProducts, setFetchedProducts] = useState<FetchedProduct[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
 
   // Editing state for existing products
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -349,6 +351,95 @@ const Admin = () => {
       setSkuInput("");
     } catch (error) {
       toast.error("Failed to add products");
+    }
+  };
+
+  const handleSyncFromSheet = async () => {
+    if (!confirm("This will fetch products from the Google Sheet and attempt to update the catalog. Continue?")) return;
+
+    setIsSyncing(true);
+    setSyncProgress({ current: 0, total: 0 });
+
+    try {
+      const response = await fetch("https://docs.google.com/spreadsheets/d/12Wug9aedeK8vKebFVyXq8-QLCf7ciAXG47BzqYAuu_c/export?format=csv");
+      const csvText = await response.text();
+
+      const rows = csvText.split('\n').map(row => {
+        // More robust CSV parser that handles commas inside quotes correctly
+        const result = [];
+        let current = "";
+        let inQuotes = false;
+
+        for (let i = 0; i < row.length; i++) {
+          const char = row[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim().replace(/^"|"$/g, ''));
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim().replace(/^"|"$/g, ''));
+        return result;
+      }).filter(row => row.length >= 6 && row[1] !== 'SKU');
+
+      if (rows.length === 0) {
+        toast.error("No products found in the sheet");
+        setIsSyncing(false);
+        return;
+      }
+
+      setSyncProgress({ current: 0, total: rows.length });
+
+      // Clear existing products if desired, or just add new ones. 
+      // User said "product selection is from this doc", implying we should probably replace or sync.
+      // Let's replace based on SKU or just overwrite all to match the doc exactly.
+
+      // First, delete all products to ensure we match the doc exactly
+      const q = query(collection(db, "products"));
+      const snapshot = await getDocs(q);
+      await Promise.all(snapshot.docs.map(doc => deleteDoc(doc.ref)));
+
+      let nextId = 1;
+      for (const row of rows) {
+        const [category, sku, name, brand, oldPriceStr, newPriceStr] = row;
+
+        // Clean prices
+        const oldPrice = parseInt(oldPriceStr.replace(/[^0-9]/g, '')) || 0;
+        const newPrice = parseInt(newPriceStr.replace(/[^0-9]/g, '')) || 0;
+
+        // Fetch image from Jumia
+        const jumiaData = await fetchJumiaProductBySku(sku);
+
+        const productData: Product = {
+          id: nextId,
+          sku: sku,
+          name: name,
+          brand: brand,
+          displayName: name,
+          image: jumiaData?.image || "https://premium.jumia.com.ng/assets/images/jumia-logo.png",
+          url: jumiaData?.url ? (jumiaData.url.startsWith("http") ? jumiaData.url : `https://www.jumia.com.ng${jumiaData.url.startsWith("/") ? "" : "/"}${jumiaData.url}`) : `https://www.jumia.com.ng/catalog/?q=${sku}`,
+          price: newPrice,
+          oldPrice: oldPrice || Math.round(newPrice * 1.2),
+          prices: {
+            price: newPrice,
+            oldPrice: oldPrice || Math.round(newPrice * 1.2),
+          },
+        };
+
+        await setDoc(doc(db, "products", nextId.toString()), productData);
+        nextId++;
+        setSyncProgress(prev => ({ ...prev, current: prev.current + 1 }));
+      }
+
+      toast.success(`Successfully synced ${rows.length} products from Google Sheet!`);
+    } catch (error) {
+      console.error("Sync error:", error);
+      toast.error("Failed to sync from Google Sheet");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1015,13 +1106,28 @@ const Admin = () => {
             </section>
 
             {/* Manage Products */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <h2 className="text-2xl font-bold">Manage Products</h2>
-              {products.length > 0 && (
-                <Button variant="destructive" size="sm" onClick={handleDeleteAll}>
-                  <Trash2 size={16} className="mr-2" /> Delete All
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncFromSheet}
+                  disabled={isSyncing}
+                  className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                >
+                  {isSyncing ? (
+                    <><Loader2 size={16} className="mr-2 animate-spin" /> Syncing ({syncProgress.current}/{syncProgress.total})...</>
+                  ) : (
+                    <><RefreshCw size={16} className="mr-2" /> Sync from Google Sheet</>
+                  )}
                 </Button>
-              )}
+                {products.length > 0 && (
+                  <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={isSyncing}>
+                    <Trash2 size={16} className="mr-2" /> Delete All
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="space-y-4">
               {products.map((product) => (
