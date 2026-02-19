@@ -9,9 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
-import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw } from "lucide-react";
+import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw, LogOut } from "lucide-react";
 import { getStats, type StatsData } from "@/lib/stats";
 import BannerCard from "@/components/BannerCard";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useNavigate } from "react-router-dom";
 
 interface FetchedProduct {
   name: string;
@@ -95,6 +98,17 @@ const Admin = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchingSku, setFetchingSku] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (error) {
+      toast.error("Logout failed");
+    }
+  };
 
   // Bulk SKU state
   const [skuInput, setSkuInput] = useState("");
@@ -570,6 +584,14 @@ const Admin = () => {
     <div className="min-h-screen bg-background pb-20">
       <CatalogHeader />
       <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-12">
+          <h1 className="text-4xl font-black tracking-tight text-gray-900">
+            Catalog <span className="text-primary">Admin</span>
+          </h1>
+          <Button onClick={handleLogout} variant="ghost" className="rounded-xl font-bold text-red-500 hover:text-red-600 hover:bg-red-50">
+            <LogOut className="mr-2" size={18} /> Logout
+          </Button>
+        </div>
 
         {/* Navigation Tabs */}
         <div className="flex gap-4 mb-8 border-b">
