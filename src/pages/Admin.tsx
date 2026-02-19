@@ -57,6 +57,8 @@ interface CatalogSettings {
     rightPageBackgroundColor?: string;
   };
   banners?: Record<string, Banner>;
+  lastSyncTimestamp?: number;
+  autoSyncInterval?: number; // in hours
 };
 
 const DEFAULT_SETTINGS: CatalogSettings = {
@@ -85,6 +87,8 @@ const DEFAULT_SETTINGS: CatalogSettings = {
     rightPageBackgroundColor: "",
   },
   banners: {},
+  lastSyncTimestamp: 0,
+  autoSyncInterval: 6, // default 6 hours
 };
 
 const Admin = () => {
@@ -354,8 +358,8 @@ const Admin = () => {
     }
   };
 
-  const handleSyncFromSheet = async () => {
-    if (!confirm("This will fetch products from the Google Sheet and attempt to update the catalog. Continue?")) return;
+  const handleSyncFromSheet = async (isAuto = false) => {
+    if (!isAuto && !confirm("This will fetch products from the Google Sheet and attempt to update the catalog. Manual edits will be preserved unless the sheet value has changed. Continue?")) return;
 
     setIsSyncing(true);
     setSyncProgress({ current: 0, total: 0 });
@@ -365,79 +369,106 @@ const Admin = () => {
       const csvText = await response.text();
 
       const rows = csvText.split('\n').map(row => {
-        // More robust CSV parser that handles commas inside quotes correctly
         const result = [];
         let current = "";
         let inQuotes = false;
-
         for (let i = 0; i < row.length; i++) {
           const char = row[i];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
+          if (char === '"') inQuotes = !inQuotes;
+          else if (char === ',' && !inQuotes) {
             result.push(current.trim().replace(/^"|"$/g, ''));
             current = "";
-          } else {
-            current += char;
-          }
+          } else current += char;
         }
         result.push(current.trim().replace(/^"|"$/g, ''));
         return result;
       }).filter(row => row.length >= 6 && row[1] !== 'SKU');
 
       if (rows.length === 0) {
-        toast.error("No products found in the sheet");
+        if (!isAuto) toast.error("No products found in the sheet");
         setIsSyncing(false);
         return;
       }
 
       setSyncProgress({ current: 0, total: rows.length });
 
-      // Clear existing products if desired, or just add new ones. 
-      // User said "product selection is from this doc", implying we should probably replace or sync.
-      // Let's replace based on SKU or just overwrite all to match the doc exactly.
+      // Get current products to match
+      const currentProducts = [...products];
+      let nextId = currentProducts.length > 0 ? Math.max(...currentProducts.map(p => p.id)) + 1 : 1;
 
-      // First, delete all products to ensure we match the doc exactly
-      const q = query(collection(db, "products"));
-      const snapshot = await getDocs(q);
-      await Promise.all(snapshot.docs.map(doc => deleteDoc(doc.ref)));
-
-      let nextId = 1;
       for (const row of rows) {
         const [category, sku, name, brand, oldPriceStr, newPriceStr] = row;
+        const sheetOldPrice = parseInt(oldPriceStr.replace(/[^0-9]/g, '')) || 0;
+        const sheetPrice = parseInt(newPriceStr.replace(/[^0-9]/g, '')) || 0;
 
-        // Clean prices
-        const oldPrice = parseInt(oldPriceStr.replace(/[^0-9]/g, '')) || 0;
-        const newPrice = parseInt(newPriceStr.replace(/[^0-9]/g, '')) || 0;
+        const existingProduct = currentProducts.find(p => p.sku === sku);
 
-        // Fetch image from Jumia
-        const jumiaData = await fetchJumiaProductBySku(sku);
+        if (existingProduct) {
+          // SMART MERGE LOGIC
+          const priceChangedInSheet = sheetPrice !== (existingProduct.lastSyncedPrice || 0);
+          const oldPriceChangedInSheet = sheetOldPrice !== (existingProduct.lastSyncedOldPrice || 0);
 
-        const productData: Product = {
-          id: nextId,
-          sku: sku,
-          name: name,
-          brand: brand,
-          displayName: name,
-          image: jumiaData?.image || "https://premium.jumia.com.ng/assets/images/jumia-logo.png",
-          url: jumiaData?.url ? (jumiaData.url.startsWith("http") ? jumiaData.url : `https://www.jumia.com.ng${jumiaData.url.startsWith("/") ? "" : "/"}${jumiaData.url}`) : `https://www.jumia.com.ng/catalog/?q=${sku}`,
-          price: newPrice,
-          oldPrice: oldPrice || Math.round(newPrice * 1.2),
-          prices: {
-            price: newPrice,
-            oldPrice: oldPrice || Math.round(newPrice * 1.2),
-          },
-        };
+          const updateData: any = {
+            category,
+            brand,
+            lastSyncedPrice: sheetPrice,
+            lastSyncedOldPrice: sheetOldPrice
+          };
 
-        await setDoc(doc(db, "products", nextId.toString()), productData);
-        nextId++;
+          // Only overwrite display prices IF they match the sync history
+          // or if this is the first time we're syncing this product.
+          if (priceChangedInSheet || !existingProduct.lastSyncedPrice) {
+            updateData.price = sheetPrice;
+            updateData.prices = {
+              price: sheetPrice,
+              oldPrice: oldPriceChangedInSheet || !existingProduct.lastSyncedOldPrice ? sheetOldPrice : (existingProduct.prices?.oldPrice || sheetOldPrice)
+            };
+          }
+
+          if (oldPriceChangedInSheet || !existingProduct.lastSyncedOldPrice) {
+            updateData.oldPrice = sheetOldPrice;
+            if (!updateData.prices) {
+              updateData.prices = {
+                price: (priceChangedInSheet || !existingProduct.lastSyncedPrice) ? sheetPrice : (existingProduct.prices?.price || sheetPrice),
+                oldPrice: sheetOldPrice
+              };
+            }
+          }
+
+          await updateDoc(doc(db, "products", existingProduct.id.toString()), updateData);
+        } else {
+          // New product
+          const jumiaData = await fetchJumiaProductBySku(sku);
+          const productData: Product = {
+            id: nextId,
+            sku: sku,
+            name: name,
+            brand: brand,
+            displayName: name,
+            category: category,
+            image: jumiaData?.image || "https://premium.jumia.com.ng/assets/images/jumia-logo.png",
+            url: jumiaData?.url ? (jumiaData.url.startsWith("http") ? jumiaData.url : `https://www.jumia.com.ng${jumiaData.url.startsWith("/") ? "" : "/"}${jumiaData.url}`) : `https://www.jumia.com.ng/catalog/?q=${sku}`,
+            price: sheetPrice,
+            oldPrice: sheetOldPrice || Math.round(sheetPrice * 1.2),
+            prices: { price: sheetPrice, oldPrice: sheetOldPrice || Math.round(sheetPrice * 1.2) },
+            lastSyncedPrice: sheetPrice,
+            lastSyncedOldPrice: sheetOldPrice
+          };
+          await setDoc(doc(db, "products", nextId.toString()), productData);
+          nextId++;
+        }
         setSyncProgress(prev => ({ ...prev, current: prev.current + 1 }));
       }
 
-      toast.success(`Successfully synced ${rows.length} products from Google Sheet!`);
+      // Update last sync time
+      const now = Date.now();
+      await updateDoc(doc(db, "settings", "catalog"), { lastSyncTimestamp: now });
+      setCatalogSettings(prev => ({ ...prev, lastSyncTimestamp: now }));
+
+      if (!isAuto) toast.success(`Synced ${rows.length} products! Prices updated where necessary.`);
     } catch (error) {
       console.error("Sync error:", error);
-      toast.error("Failed to sync from Google Sheet");
+      if (!isAuto) toast.error("Failed to sync from Google Sheet");
     } finally {
       setIsSyncing(false);
     }
@@ -518,6 +549,13 @@ const Admin = () => {
           >
             Catalog Settings
           </button>
+          <div className="flex-1" />
+          {catalogSettings.lastSyncTimestamp > 0 && (
+            <div className="hidden md:flex flex-col items-end justify-center px-4 mb-2">
+              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Last Sync</span>
+              <span className="text-xs font-black text-gray-500">{new Date(catalogSettings.lastSyncTimestamp).toLocaleString('en-NG', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          )}
         </div>
 
         {activeTab === 'settings' ? (
@@ -923,6 +961,29 @@ const Admin = () => {
               </div>
             </section>
 
+            <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">Automation Settings</h2>
+              <div className="grid gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Google Sheet Sync Interval (Hours)</label>
+                  <select
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={catalogSettings.autoSyncInterval || 6}
+                    onChange={(e) => setCatalogSettings({ ...catalogSettings, autoSyncInterval: parseInt(e.target.value) })}
+                  >
+                    <option value={1}>Every Hour</option>
+                    <option value={4}>Every 4 Hours</option>
+                    <option value={12}>Every 12 Hours</option>
+                    <option value={24}>Every 24 Hours</option>
+                    <option value={0}>Disabled</option>
+                  </select>
+                  <p className="text-[10px] text-muted-foreground mt-2 font-semibold uppercase tracking-wider">
+                    Site will automatically sync from sheet when an admin or visitor opens the catalog if the interval has passed.
+                  </p>
+                </div>
+              </div>
+            </section>
+
             <Button
               onClick={async () => {
                 try {
@@ -1112,7 +1173,7 @@ const Admin = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleSyncFromSheet}
+                  onClick={() => handleSyncFromSheet()}
                   disabled={isSyncing}
                   className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
                 >

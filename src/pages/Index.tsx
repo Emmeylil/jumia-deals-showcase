@@ -10,7 +10,7 @@ import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
 import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload } from "@/lib/stats";
-import { onSnapshot, doc } from "firebase/firestore";
+import { onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 interface PageProps {
@@ -239,6 +239,92 @@ const Index = () => {
       setIsCapturing(false);
     }
   };
+
+
+  const handleAutoSync = async (settings: any) => {
+    if (!settings?.autoSyncInterval) return;
+
+    // Check if interval passed
+    const lastSync = settings.lastSyncTimestamp || 0;
+    const intervalMs = settings.autoSyncInterval * 3600 * 1000;
+
+    if (Date.now() - lastSync < intervalMs) return;
+
+    console.log("Auto-syncing catalog from sheet...");
+    try {
+      const response = await fetch("https://docs.google.com/spreadsheets/d/12Wug9aedeK8vKebFVyXq8-QLCf7ciAXG47BzqYAuu_c/export?format=csv");
+      const csvText = await response.text();
+
+      const rows = csvText.split('\n').map(row => {
+        const result = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < row.length; i++) {
+          const char = row[i];
+          if (char === '"') inQuotes = !inQuotes;
+          else if (char === ',' && !inQuotes) {
+            result.push(current.trim().replace(/^"|"$/g, ''));
+            current = "";
+          } else current += char;
+        }
+        result.push(current.trim().replace(/^"|"$/g, ''));
+        return result;
+      }).filter(row => row.length >= 6 && row[1] !== 'SKU');
+
+      if (rows.length === 0) return;
+
+      for (const row of rows) {
+        const [category, sku, name, brand, oldPriceStr, newPriceStr] = row;
+        const sheetOldPrice = parseInt(oldPriceStr.replace(/[^0-9]/g, '')) || 0;
+        const sheetPrice = parseInt(newPriceStr.replace(/[^0-9]/g, '')) || 0;
+
+        const existingProduct = products.find(p => p.sku === sku);
+
+        if (existingProduct) {
+          const priceChangedInSheet = sheetPrice !== (existingProduct.lastSyncedPrice || 0);
+          const oldPriceChangedInSheet = sheetOldPrice !== (existingProduct.lastSyncedOldPrice || 0);
+
+          if (priceChangedInSheet || oldPriceChangedInSheet || !existingProduct.lastSyncedPrice) {
+            const updateData: any = {
+              category,
+              brand,
+              lastSyncedPrice: sheetPrice,
+              lastSyncedOldPrice: sheetOldPrice
+            };
+
+            if (priceChangedInSheet || !existingProduct.lastSyncedPrice) {
+              updateData.price = sheetPrice;
+              updateData.prices = {
+                price: sheetPrice,
+                oldPrice: oldPriceChangedInSheet || !existingProduct.lastSyncedOldPrice ? sheetOldPrice : (existingProduct.prices?.oldPrice || sheetOldPrice)
+              };
+            }
+
+            if (oldPriceChangedInSheet || !existingProduct.lastSyncedOldPrice) {
+              updateData.oldPrice = sheetOldPrice;
+              if (!updateData.prices) {
+                updateData.prices = {
+                  price: (priceChangedInSheet || !existingProduct.lastSyncedPrice) ? sheetPrice : (existingProduct.prices?.price || sheetPrice),
+                  oldPrice: sheetOldPrice
+                };
+              }
+            }
+            await updateDoc(doc(db, "products", existingProduct.id.toString()), updateData);
+          }
+        }
+      }
+
+      await updateDoc(doc(db, "settings", "catalog"), { lastSyncTimestamp: Date.now() });
+    } catch (error) {
+      console.error("Auto-sync failed:", error);
+    }
+  };
+
+  React.useEffect(() => {
+    if (!loading && !settingsLoading && catalogSettings) {
+      handleAutoSync(catalogSettings);
+    }
+  }, [loading, settingsLoading]);
 
 
   // Calculate total pages for centering logic

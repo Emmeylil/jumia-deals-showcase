@@ -28,6 +28,8 @@ export interface Product {
     oldPrice: number;
   };
   discountPercentage?: number;
+  lastSyncedPrice?: number;
+  lastSyncedOldPrice?: number;
 }
 
 export const products: Product[] = [
