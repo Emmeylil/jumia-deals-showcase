@@ -943,28 +943,7 @@ const Admin = () => {
               </div>
             </section>
 
-            <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">Automation Settings</h2>
-              <div className="grid gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Google Sheet Sync Interval (Hours)</label>
-                  <select
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={catalogSettings.autoSyncInterval || 6}
-                    onChange={(e) => setCatalogSettings({ ...catalogSettings, autoSyncInterval: parseInt(e.target.value) })}
-                  >
-                    <option value={1}>Every Hour</option>
-                    <option value={4}>Every 4 Hours</option>
-                    <option value={12}>Every 12 Hours</option>
-                    <option value={24}>Every 24 Hours</option>
-                    <option value={0}>Disabled</option>
-                  </select>
-                  <p className="text-[10px] text-muted-foreground mt-2 font-semibold uppercase tracking-wider">
-                    Site will automatically sync from sheet when an admin or visitor opens the catalog if the interval has passed.
-                  </p>
-                </div>
-              </div>
-            </section>
+
 
             <Button
               onClick={async () => {
@@ -1189,6 +1168,38 @@ const Admin = () => {
                   </div>
                 </div>
               )}
+            </section>
+
+            {/* Automation Settings */}
+            <section className="mb-8 p-6 border rounded-xl bg-white shadow-sm">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">⚙️ Automation Settings</h2>
+              <div className="grid gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Google Sheet Auto-Sync Interval</label>
+                  <select
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={catalogSettings.autoSyncInterval ?? 6}
+                    onChange={async (e) => {
+                      const updated = { ...catalogSettings, autoSyncInterval: parseInt(e.target.value) };
+                      setCatalogSettings(updated);
+                      try {
+                        await setDoc(doc(db, "settings", "catalog"), updated);
+                        toast.success("Sync interval saved!");
+                      } catch { toast.error("Failed to save interval"); }
+                    }}
+                  >
+                    <option value={1}>Every Hour</option>
+                    <option value={4}>Every 4 Hours</option>
+                    <option value={6}>Every 6 Hours (default)</option>
+                    <option value={12}>Every 12 Hours</option>
+                    <option value={24}>Every 24 Hours</option>
+                    <option value={0}>Disabled</option>
+                  </select>
+                  <p className="text-[10px] text-muted-foreground mt-2 font-semibold uppercase tracking-wider">
+                    The catalog auto-syncs prices from Google Sheet each time an admin or visitor opens it, if the interval has passed.
+                  </p>
+                </div>
+              </div>
             </section>
 
             {/* Bulk SKU Search */}
