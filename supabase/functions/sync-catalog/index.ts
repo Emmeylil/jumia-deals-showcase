@@ -7,92 +7,122 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, q
 // Configuration
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/12Wug9aedeK8vKebFVyXq8-QLCf7ciAXG47BzqYAuu_c/export?format=csv";
 const FIREBASE_CONFIG = {
-    // Replace with your Firebase credentials
-    apiKey: "...",
-    authDomain: "...",
-    projectId: "...",
-    storageBucket: "...",
-    messagingSenderId: "...",
-    appId: "..."
+    apiKey: "AIzaSyAK57O6YKG17sXSw0GovdLFN-B_FLrn19M",
+    authDomain: "jumia-e-catalog.firebaseapp.com",
+    projectId: "jumia-e-catalog",
+    storageBucket: "jumia-e-catalog.firebasestorage.app",
+    messagingSenderId: "776751698383",
+    appId: "1:776751698383:web:e18138daae9c4564a402ba"
 };
 
-// Initialize Firebase
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
 
 serve(async (req: Request) => {
     try {
-        console.log("Starting catalog sync from Google Sheet...");
+        console.log("Starting robust catalog sync...");
 
-        // 1. Fetch CSV
         const response = await fetch(SHEET_URL);
         const csvText = await response.text();
+        const lines = csvText.split('\n');
 
-        const rows = csvText.split('\n').map(row => {
+        const parseCsvLine = (line: string) => {
             const result = [];
             let current = "";
             let inQuotes = false;
-            for (let i = 0; i < row.length; i++) {
-                const char = row[i];
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
                 if (char === '"') inQuotes = !inQuotes;
                 else if (char === ',' && !inQuotes) {
-                    result.push(current.trim().replace(/^"|"$/g, ''));
+                    result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
                     current = "";
                 } else current += char;
             }
-            result.push(current.trim().replace(/^"|"$/g, ''));
+            result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
             return result;
-        }).filter(row => row.length >= 6 && row[1] !== 'SKU');
+        };
 
-        if (rows.length === 0) {
-            return new Response(JSON.stringify({ message: "No rows found" }), { status: 200 });
-        }
+        const headerRow = parseCsvLine(lines[0]);
+        const colMap: Record<string, number> = {};
+        headerRow.forEach((col, idx) => {
+            const norm = col.toLowerCase().replace(/[^a-z]/g, '');
+            if (norm === 'category') colMap.category = idx;
+            else if (norm === 'sku') colMap.sku = idx;
+            else if (norm === 'productname' || norm === 'name') colMap.name = idx;
+            else if (norm === 'brandname' || norm === 'brand') colMap.brand = idx;
+            else if (norm === 'oldprice') colMap.oldPrice = idx;
+            else if (norm === 'newprice' || norm === 'price') colMap.price = idx;
+        });
 
-        // 2. Get current products
+        const mapping = {
+            category: colMap.category ?? 0,
+            sku: colMap.sku ?? 1,
+            name: colMap.name ?? 2,
+            brand: colMap.brand ?? 3,
+            oldPrice: colMap.oldPrice ?? 4,
+            price: colMap.price ?? 5
+        };
+
         const productsSnapshot = await getDocs(collection(db, "products"));
         const currentProducts = productsSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }));
 
-        // 3. Process Rows (Smart Merge Logic)
+        const cleanPrice = (val: string) => {
+            if (!val) return 0;
+            const digits = val.replace(/[^\d.]/g, '');
+            if (!digits) return 0;
+            const numeric = parseFloat(digits);
+            return isNaN(numeric) ? 0 : Math.round(numeric);
+        };
+
+        const rows = lines.slice(1).map(parseCsvLine).filter(row => row.length > 2 && row[mapping.sku]);
+
         for (const row of rows) {
-            const [category, sku, name, brand, oldPriceStr, newPriceStr] = row;
-            const sheetOldPrice = parseInt(oldPriceStr.replace(/[^0-9]/g, '')) || 0;
-            const sheetPrice = parseInt(newPriceStr.replace(/[^0-9]/g, '')) || 0;
+            const sku = row[mapping.sku];
+            const category = row[mapping.category] || "";
+            const name = row[mapping.name] || "Unnamed Product";
+            const brand = row[mapping.brand] || "";
+            const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
+            const sheetPrice = cleanPrice(row[mapping.price]);
+
+            // Prepend brand to name if it's not already there for display purposes
+            const brandSafe = brand.trim();
+            const nameSafe = name.trim();
+            const displayName = (brandSafe && !nameSafe.toLowerCase().startsWith(brandSafe.toLowerCase()))
+                ? `${brandSafe} ${nameSafe}`
+                : nameSafe;
 
             const existingProduct = currentProducts.find((p: any) => p.sku === sku);
 
             if (existingProduct) {
-                const priceChangedInSheet = sheetPrice !== (existingProduct.lastSyncedPrice || 0);
-                const oldPriceChangedInSheet = sheetOldPrice !== (existingProduct.lastSyncedOldPrice || 0);
+                const priceChangedInSheet = sheetPrice !== (existingProduct.lastSyncedPrice ?? -1);
+                const oldPriceChangedInSheet = sheetOldPrice !== (existingProduct.lastSyncedOldPrice ?? -1);
 
-                if (priceChangedInSheet || oldPriceChangedInSheet || !existingProduct.lastSyncedPrice) {
+                if (priceChangedInSheet || oldPriceChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
                     const updateData: any = {
                         category,
-                        brand,
+                        brand: brandSafe,
+                        displayName,
                         lastSyncedPrice: sheetPrice,
                         lastSyncedOldPrice: sheetOldPrice
                     };
 
-                    if (priceChangedInSheet || !existingProduct.lastSyncedPrice) {
+                    if (priceChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
                         updateData.price = sheetPrice;
-                        updateData.prices = {
-                            price: sheetPrice,
-                            oldPrice: oldPriceChangedInSheet || !existingProduct.lastSyncedOldPrice ? sheetOldPrice : (existingProduct.prices?.oldPrice || sheetOldPrice)
-                        };
                     }
-
-                    if (oldPriceChangedInSheet || !existingProduct.lastSyncedOldPrice) {
+                    if (oldPriceChangedInSheet || typeof existingProduct.lastSyncedOldPrice === 'undefined') {
                         updateData.oldPrice = sheetOldPrice;
                     }
 
+                    updateData.prices = {
+                        price: updateData.price ?? existingProduct.price,
+                        oldPrice: updateData.oldPrice ?? existingProduct.oldPrice
+                    };
+
                     await updateDoc(doc(db, "products", existingProduct.id.toString()), updateData);
                 }
-            } else {
-                // Handle new products if needed (would require Jumia fetch)
-                console.log(`New SKU discovered: ${sku}. Use Admin panel to fetch Jumia data for new items first.`);
             }
         }
 
-        // 4. Update Last Sync
         await updateDoc(doc(db, "settings", "catalog"), { lastSyncTimestamp: Date.now() });
 
         return new Response(JSON.stringify({ success: true, processed: rows.length }), {

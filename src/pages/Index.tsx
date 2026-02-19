@@ -308,8 +308,18 @@ const Index = () => {
 
       for (const row of rows) {
         const sku = row[mapping.sku];
+        const category = row[mapping.category] || "";
+        const name = row[mapping.name] || "Unnamed Product";
+        const brand = row[mapping.brand] || "";
         const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
         const sheetPrice = cleanPrice(row[mapping.price]);
+
+        // Prepend brand to name if it's not already there for display purposes
+        const brandSafe = brand.trim();
+        const nameSafe = name.trim();
+        const displayName = (brandSafe && !nameSafe.toLowerCase().startsWith(brandSafe.toLowerCase()))
+          ? `${brandSafe} ${nameSafe}`
+          : nameSafe;
 
         const existingProduct = products.find(p => p.sku === sku);
 
@@ -319,6 +329,9 @@ const Index = () => {
 
           if (priceChangedInSheet || oldPriceChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
             const updateData: any = {
+              displayName,
+              brand: brandSafe,
+              category,
               lastSyncedPrice: sheetPrice,
               lastSyncedOldPrice: sheetOldPrice
             };

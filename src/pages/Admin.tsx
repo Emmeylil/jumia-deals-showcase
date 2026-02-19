@@ -440,6 +440,13 @@ const Admin = () => {
         const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
         const sheetPrice = cleanPrice(row[mapping.price]);
 
+        // Prepend brand to name if it's not already there for display purposes
+        const brandSafe = brand.trim();
+        const nameSafe = name.trim();
+        const displayName = (brandSafe && !nameSafe.toLowerCase().startsWith(brandSafe.toLowerCase()))
+          ? `${brandSafe} ${nameSafe}`
+          : nameSafe;
+
         const existingProduct = currentProducts.find(p => p.sku === sku);
 
         if (existingProduct) {
@@ -448,7 +455,8 @@ const Admin = () => {
 
           const updateData: any = {
             category,
-            brand,
+            brand: brandSafe,
+            displayName,
             lastSyncedPrice: sheetPrice,
             lastSyncedOldPrice: sheetOldPrice
           };
@@ -471,10 +479,10 @@ const Admin = () => {
           const productData: Product = {
             id: nextId,
             sku,
-            name,
-            brand,
+            name: nameSafe,
+            brand: brandSafe,
             category,
-            displayName: name,
+            displayName,
             image: jumiaData?.image || "https://premium.jumia.com.ng/assets/images/jumia-logo.png",
             url: jumiaData?.url ? (jumiaData.url.startsWith("http") ? jumiaData.url : `https://www.jumia.com.ng${jumiaData.url.startsWith("/") ? "" : "/"}${jumiaData.url}`) : `https://www.jumia.com.ng/catalog/?q=${sku}`,
             price: sheetPrice,
