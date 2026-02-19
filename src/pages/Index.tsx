@@ -58,14 +58,33 @@ const Index = () => {
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [highlightedProductId, setHighlightedProductId] = React.useState<number | null>(null);
 
-  // Helper to determine target page for a product
+  // Chunk products into groups (10 if banner exists, 12 if not)
+  const productChunks = React.useMemo(() => {
+    const chunks = [];
+    let i = 0;
+    let spreadIndex = 0;
+    while (i < products.length) {
+      const spreadId = `spread-${spreadIndex}`;
+      const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
+      const size = hasBanner ? 10 : 12;
+      chunks.push(products.slice(i, i + size));
+      i += size;
+      spreadIndex++;
+    }
+    return chunks;
+  }, [products, catalogSettings?.banners]);
+
+  // Helper to determine target page for a product based on dynamic chunks
   const getTargetPage = (productId: number) => {
-    const productIndex = products.findIndex(p => p.id === productId);
-    if (productIndex === -1) return 0;
-    const chunkIndex = Math.floor(productIndex / 10);
-    const indexInChunk = productIndex % 10;
-    const onLeftPage = indexInChunk < 6;
-    return 1 + (chunkIndex * 2) + (onLeftPage ? 0 : 1);
+    for (let chunkIdx = 0; chunkIdx < productChunks.length; chunkIdx++) {
+      const chunk = productChunks[chunkIdx];
+      const prodInChunkIdx = chunk.findIndex(p => p.id === productId);
+      if (prodInChunkIdx !== -1) {
+        const onLeftPage = prodInChunkIdx < 6;
+        return 1 + (chunkIdx * 2) + (onLeftPage ? 0 : 1);
+      }
+    }
+    return 0;
   };
 
   React.useEffect(() => {
@@ -228,11 +247,6 @@ const Index = () => {
     }
   };
 
-  // Chunk products into groups of 10 (6 for left page, 4 for right page)
-  const productChunks = [];
-  for (let i = 0; i < products.length; i += 10) {
-    productChunks.push(products.slice(i, i + 10));
-  }
 
   // Calculate total pages for centering logic
   React.useEffect(() => {
@@ -519,7 +533,10 @@ const Index = () => {
           {productChunks.flatMap((chunk, index) => {
             const pageNum = index * 2 + 1;
             const leftPageProducts = chunk.slice(0, 6);
-            const rightPageRegularProducts = chunk.slice(6, 10);
+            const spreadId = `spread-${index}`;
+            const banner = catalogSettings?.banners?.[spreadId];
+            const hasBanner = !!banner?.image;
+            const rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
 
             return [
               /* LEFT PAGE */
@@ -576,9 +593,9 @@ const Index = () => {
                 <div className="w-full h-full flex flex-row">
                   {/* Content Area */}
                   <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1.5 md:gap-2 min-h-0">
-                    {/* Regular Products (up to 4) in 2-col grid */}
-                    <div className="grid grid-cols-2 gap-1.5 md:gap-2 flex-1 min-h-0">
-                      {rightPageRegularProducts.map((product) => (
+                    {/* Regular Products in dynamic grid */}
+                    <div className={`grid grid-cols-2 gap-1.5 md:gap-2 flex-1 min-h-0 ${hasBanner ? "" : "grid-rows-3"}`}>
+                      {rightPageProducts.map((product) => (
                         <ProductCard
                           key={product.id}
                           product={product}
@@ -588,15 +605,11 @@ const Index = () => {
                     </div>
 
                     {/* Featured Slot - Banner Placement (fixed height) */}
-                    <div className="h-[110px] md:h-[130px] flex-shrink-0">
-                      {(() => {
-                        const spreadId = `spread-${index}`;
-                        const banner = catalogSettings?.banners?.[spreadId];
-
-                        // Always render BannerCard. It will handle its own placeholder state.
-                        return <BannerCard image={banner?.image} url={banner?.url} />;
-                      })()}
-                    </div>
+                    {hasBanner && (
+                      <div className="h-[110px] md:h-[130px] flex-shrink-0">
+                        <BannerCard image={banner.image} url={banner.url} />
+                      </div>
+                    )}
                   </div>
 
                   {/* Right Sidebar Header */}
