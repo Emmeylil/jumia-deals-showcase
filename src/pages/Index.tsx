@@ -6,6 +6,7 @@ import FeaturedProductCard from "@/components/FeaturedProductCard";
 import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
 import { Loader2, Share2, Download, Search, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
 import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload } from "@/lib/stats";
@@ -57,6 +58,14 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [highlightedProductId, setHighlightedProductId] = React.useState<number | null>(null);
+  const [isCapturing, setIsCapturing] = React.useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initial page from URL
+  const initialPage = React.useMemo(() => {
+    const p = searchParams.get('page');
+    return p ? parseInt(p) - 1 : 0;
+  }, []); // Only once on mount
 
   // Chunk products into groups (10 if banner exists, 12 if not)
   const productChunks = React.useMemo(() => {
@@ -134,50 +143,35 @@ const Index = () => {
 
   const handleShare = () => {
     incrementShare();
+    const shareUrl = window.location.href;
+    const pageText = currentPage === 0 ? "the cover" : `Page ${currentPage + 1}`;
     if (navigator.share) {
       navigator.share({
         title: 'Jumia Deals Catalog',
-        text: 'Check out the hottest deals on Jumia!',
-        url: window.location.href,
+        text: `Check out these hot deals on ${pageText} of the Jumia Catalog!`,
+        url: shareUrl,
       }).catch(console.error);
     } else {
       // Fallback
-      navigator.clipboard.writeText(window.location.href);
-      alert("Link copied to clipboard!");
+      navigator.clipboard.writeText(shareUrl);
+      alert("Link to " + pageText + " copied to clipboard!");
     }
   };
 
   const handleDownload = async () => {
+    if (isCapturing) return;
+
     incrementDownload();
-    // window.print(); // Removed print logic
+    setIsCapturing(true);
 
     const book = bookRef.current?.pageFlip();
-    if (!book) return;
+    if (!book) {
+      setIsCapturing(false);
+      return;
+    }
 
     const currentIndex = book.getCurrentPageIndex();
-    const isMobile = window.innerWidth < 768; // Adjust breakpoint as needed
-
-    // Determine which page(s) to capture
-    // Cover page is index 0.
-    // In landscape mode (desktop), pages are usually displayed in pairs (spread), except maybe cover.
-    // However, react-pageflip logic can be tricky.
-    // Let's assume:
-    // Index 0: Cover
-    // Index 1, 2: Spread 1
-    // Index 3, 4: Spread 2
-    // ...
-
-    // We try to capture the visible element(s).
-    // The library doesn't easily expose "visible" DOM elements directly in a simple way without querying.
-    // But we assigned IDs!
-
-    // Logic:
-    // If index 0 => capture #page-0
-    // If index > 0 and isMobile => capture #page-{index}
-    // If index > 0 and !isMobile => capture #page-{index} AND #page-{index+1} (if exists) combined? 
-    // Actually, `getCurrentPageIndex()` usually returns the index of the left page in a spread (or the single page).
-
-    // Let's try to capture the specific page IDs.
+    const isMobile = window.innerWidth < 768;
 
     let captureIds: string[] = [];
 
@@ -188,62 +182,61 @@ const Index = () => {
         captureIds.push(`page-${currentIndex}`);
       } else {
         // Desktop spread
-        // React-pageflip usually treats index 0 as cover (single).
-        // Index 1 is left, Index 2 is right.
-        // If current index is odd (1, 3, 5...), it's likely the left page of a spread.
-        // If it's even (and not 0), it might be right page (but usually it reports left).
-
-        // We will simplify: try to capture the page at currentIndex. 
-        // If it's odd, also try currentIndex + 1.
-
         captureIds.push(`page-${currentIndex}`);
-        if (currentIndex % 2 !== 0) { // If odd, assumes left page of spread
+        if (currentIndex % 2 !== 0) {
           captureIds.push(`page-${currentIndex + 1}`);
         }
       }
     }
 
-    // Filter out IDs that don't exist
     const elements = captureIds.map(id => document.getElementById(id)).filter(Boolean) as HTMLElement[];
 
     if (elements.length === 0) {
       console.error("No pages found to capture");
+      setIsCapturing(false);
       return;
     }
 
     try {
       let canvas;
+      const options = {
+        scale: 3, // High resolution
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        allowTaint: true
+      };
 
       if (elements.length === 1) {
-        canvas = await html2canvas(elements[0], { scale: 2, useCORS: true });
+        canvas = await html2canvas(elements[0], options);
       } else {
-        // Merge two canvases or capture a container?
-        // Capturing a container is better if they are side-by-side in DOM.
-        // But they are likely inside the flipbook structure with transforms.
-        // Better to capture individually and merge in a new canvas.
-
-        const canvas1 = await html2canvas(elements[0], { scale: 2, useCORS: true });
-        const canvas2 = await html2canvas(elements[1], { scale: 2, useCORS: true });
+        // Individual captures
+        const canvas1 = await html2canvas(elements[0], options);
+        const canvas2 = await html2canvas(elements[1], options);
 
         const mergedCanvas = document.createElement('canvas');
         mergedCanvas.width = canvas1.width + canvas2.width;
         mergedCanvas.height = Math.max(canvas1.height, canvas2.height);
         const ctx = mergedCanvas.getContext('2d');
         if (ctx) {
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, mergedCanvas.width, mergedCanvas.height);
           ctx.drawImage(canvas1, 0, 0);
           ctx.drawImage(canvas2, canvas1.width, 0);
         }
         canvas = mergedCanvas;
       }
 
-      const image = canvas.toDataURL("image/png");
+      const image = canvas.toDataURL("image/png", 1.0);
       const link = document.createElement("a");
       link.href = image;
-      link.download = `jumia-catalog-page-${currentIndex}.png`;
+      link.download = `jumia-catalog-page-${currentIndex + 1}.png`;
       link.click();
 
     } catch (error) {
       console.error("Download failed:", error);
+    } finally {
+      setIsCapturing(false);
     }
   };
 
@@ -272,10 +265,26 @@ const Index = () => {
         <button onClick={handleShare} className="bg-white p-2 rounded-full shadow hover:bg-gray-50 text-gray-700" title="Share">
           <Share2 size={20} />
         </button>
-        <button onClick={handleDownload} className="bg-white p-2 rounded-full shadow hover:bg-gray-50 text-gray-700" title="Download/Print">
-          <Download size={20} />
+        <button
+          onClick={handleDownload}
+          className="bg-white p-2 rounded-full shadow hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+          title="Download/Print"
+          disabled={isCapturing}
+        >
+          {isCapturing ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
         </button>
       </div>
+
+      {isCapturing && (
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+            <Loader2 className="w-12 h-12 animate-spin text-jumia-purple" />
+            <p className="font-black text-jumia-purple uppercase tracking-widest animate-pulse">
+              Capturing High Quality Page...
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Background with blur effect */}
       <div
@@ -469,10 +478,15 @@ const Index = () => {
           mobileScrollSupport={true}
           usePortrait={!isDesktop}
           flippingTime={1000}
-          startPage={0}
+          startPage={initialPage > 0 ? initialPage : 0}
           drawShadow={true}
           useMouseEvents={true}
-          onFlip={(e) => setCurrentPage(e.data)}
+          onFlip={(e) => {
+            const newPage = e.data;
+            setCurrentPage(newPage);
+            // Update URL silently
+            setSearchParams({ page: (newPage + 1).toString() }, { replace: true });
+          }}
         >
           {/* COVER PAGE */}
           <Page className="bg-white text-gray-900 border-none" id="page-0">
