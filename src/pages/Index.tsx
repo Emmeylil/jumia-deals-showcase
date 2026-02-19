@@ -72,7 +72,16 @@ const Index = () => {
     const chunks = [];
     let i = 0;
     let spreadIndex = 0;
-    while (i < products.length) {
+
+    // Determine how many spreads to create: 
+    // They must cover all products AND all defined banners
+    const bannerKeys = Object.keys(catalogSettings?.banners || {});
+    const maxBannerSpreadIdx = bannerKeys
+      .filter(key => key.startsWith('spread-'))
+      .map(key => parseInt(key.split('-')[1]))
+      .reduce((max, val) => Math.max(max, val), -1);
+
+    while (i < products.length || spreadIndex <= maxBannerSpreadIdx) {
       const spreadId = `spread-${spreadIndex}`;
       const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
       const size = hasBanner ? 10 : 12;
@@ -252,7 +261,9 @@ const Index = () => {
 
     console.log("Auto-syncing catalog from sheet...");
     try {
-      const response = await fetch("https://docs.google.com/spreadsheets/d/12Wug9aedeK8vKebFVyXq8-QLCf7ciAXG47BzqYAuu_c/export?format=csv");
+      const sheetUrl = import.meta.env.VITE_SHEET_URL;
+      if (!sheetUrl) return;
+      const response = await fetch(sheetUrl);
       const csvText = await response.text();
 
       const lines = csvText.split('\n');

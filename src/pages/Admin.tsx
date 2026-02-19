@@ -129,7 +129,7 @@ const Admin = () => {
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
   const settingsRef = useRef(catalogSettings);
-  const [activeTab, setActiveTab] = useState<"products" | "settings">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners">("products");
   const [uploading, setUploading] = useState(false);
 
   // Keep ref in sync with state for async access
@@ -379,7 +379,9 @@ const Admin = () => {
     setSyncProgress({ current: 0, total: 0 });
 
     try {
-      const response = await fetch("https://docs.google.com/spreadsheets/d/12Wug9aedeK8vKebFVyXq8-QLCf7ciAXG47BzqYAuu_c/export?format=csv");
+      const sheetUrl = import.meta.env.VITE_SHEET_URL;
+      if (!sheetUrl) throw new Error("Sheet URL not configured");
+      const response = await fetch(sheetUrl);
       const csvText = await response.text();
 
       const lines = csvText.split('\n');
@@ -594,15 +596,22 @@ const Admin = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex gap-4 mb-8 border-b">
+        <div className="flex gap-1 mb-8 border-b overflow-x-auto">
           <button
-            className={`pb-2 px-4 font-medium transition-colors border-b-2 ${activeTab === 'products' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'products' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             onClick={() => setActiveTab('products')}
           >
             Manage Products
           </button>
           <button
-            className={`pb-2 px-4 font-medium transition-colors border-b-2 ${activeTab === 'settings' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'banners' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('banners')}
+          >
+            🖼️ Banners & Ads
+            <span className="text-[9px] bg-orange-100 text-orange-700 font-black uppercase rounded px-1.5 py-0.5 tracking-wider">Backend Only</span>
+          </button>
+          <button
+            className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'settings' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             onClick={() => setActiveTab('settings')}
           >
             Catalog Settings
@@ -812,102 +821,17 @@ const Admin = () => {
               </div>
             </section>
 
-            {/* Banner Management */}
-            <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold flex items-center gap-2">Banner Management</h2>
-                <div className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-semibold border border-orange-100">
-                  Max 200KB limit
-                </div>
+            {/* Banner settings moved to dedicated Banners & Ads tab */}
+            <section className="bg-orange-50 border border-orange-100 p-4 rounded-xl flex items-center gap-3">
+              <span className="text-2xl">🖼️</span>
+              <div>
+                <p className="font-bold text-orange-800 text-sm">Banner & Ad Management has moved!</p>
+                <p className="text-orange-700 text-xs mt-0.5">Use the <strong>Banners & Ads</strong> tab above. Banners are never synced from Google Sheet — they are always backend-only.</p>
               </div>
-              <p className="text-sm text-gray-500 mb-6">
-                Configure promotional banners for each spread (pair of pages). These banners replace the featured product slot.
-              </p>
-
-              <div className="space-y-6">
-                {[...Array(Math.max(1, Math.ceil(products.length / 10)))].map((_, i) => {
-                  const spreadId = `spread-${i}`;
-                  const banner = catalogSettings.banners?.[spreadId];
-                  return (
-                    <div key={spreadId} className="p-4 border border-gray-100 rounded-lg bg-gray-50/50">
-                      <h3 className="font-semibold text-sm mb-3">Spread {i + 1} (Right Page Bottom Slot)</h3>
-                      <div className="grid gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="flex-1">
-                            <label className="text-xs font-medium mb-1 block">Banner Image (File)</label>
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'banner', spreadId);
-                              }}
-                              disabled={uploading}
-                              className="text-xs"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <label className="text-xs font-medium mb-1 block">Image URL (Alternative)</label>
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="https://..."
-                                value={banner?.image || ""}
-                                onChange={(e) => {
-                                  const newBanners = {
-                                    ...(catalogSettings.banners || {}),
-                                    [spreadId]: {
-                                      ...(banner || { image: "" }),
-                                      image: e.target.value
-                                    }
-                                  };
-                                  setCatalogSettings({ ...catalogSettings, banners: newBanners });
-                                }}
-                                className="text-xs"
-                              />
-                              {banner?.image && (
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive"
-                                  onClick={() => {
-                                    const newBanners = { ...catalogSettings.banners };
-                                    delete newBanners[spreadId];
-                                    setCatalogSettings({ ...catalogSettings, banners: newBanners });
-                                  }}
-                                >
-                                  <Trash2 size={14} />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                          {banner?.image && (
-                            <div className="relative group shrink-0">
-                              <img src={banner.image} alt="Preview" className="h-12 w-20 object-cover rounded border bg-white" />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium mb-1 block">Click-through URL (Optional)</label>
-                          <Input
-                            placeholder="https://jumia.com.ng/..."
-                            value={banner?.url || ""}
-                            onChange={(e) => {
-                              const newBanners = {
-                                ...(catalogSettings.banners || {}),
-                                [spreadId]: {
-                                  ...(banner || { image: "" }),
-                                  url: e.target.value
-                                }
-                              };
-                              setCatalogSettings({ ...catalogSettings, banners: newBanners });
-                            }}
-                            className="text-xs"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <button
+                className="ml-auto text-xs bg-orange-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-orange-700 transition whitespace-nowrap"
+                onClick={() => setActiveTab('banners')}
+              >Go to Banners →</button>
             </section>
 
             {/* Back Page Settings */}
@@ -1055,6 +979,139 @@ const Admin = () => {
               className="w-full"
             >
               <Save className="mr-2" size={18} /> Save Changes
+            </Button>
+          </div>
+        ) : activeTab === 'banners' ? (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Backend Only Notice */}
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-2xl p-5 flex items-start gap-4 shadow-lg">
+              <span className="text-3xl shrink-0">🔒</span>
+              <div>
+                <h2 className="text-lg font-black uppercase tracking-wide">Backend Only — Not Synced from Google Sheet</h2>
+                <p className="text-sm text-orange-100 mt-1">Banners and ads you configure here are saved directly to your Firebase backend. They will <strong>never</strong> be overwritten or removed by any Google Sheet sync. Update them whenever you like — they stay until <em>you</em> remove them.</p>
+              </div>
+            </div>
+
+            {/* Banner Slots */}
+            <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold">Ad Banners</h2>
+                <span className="text-xs text-gray-400 font-semibold">Max 200KB per image</span>
+              </div>
+              <p className="text-sm text-gray-500 mb-6">
+                Each spread (pair of pages) has a banner slot at the bottom of the right page. Upload an image and optionally link it to a product or promotion.
+              </p>
+              <div className="space-y-4">
+                {(() => {
+                  const bannerKeys = Object.keys(catalogSettings?.banners || {});
+                  const maxBannerIdx = bannerKeys
+                    .filter(key => key.startsWith('spread-'))
+                    .map(key => parseInt(key.split('-')[1]))
+                    .reduce((max, val) => Math.max(max, val), -1);
+                  const slotsCount = Math.max(10, Math.ceil(products.length / 10), maxBannerIdx + 1);
+
+                  return [...Array(slotsCount)].map((_, i) => {
+                    const spreadId = `spread-${i}`;
+                    const banner = catalogSettings.banners?.[spreadId];
+                    const hasImage = !!banner?.image;
+                    return (
+                      <div key={spreadId} className={`p-4 border rounded-xl transition-all ${hasImage ? 'border-orange-200 bg-orange-50/30' : 'border-gray-100 bg-gray-50/50'}`}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${hasImage ? 'bg-green-500' : 'bg-gray-300'}`} />
+                          <h3 className="font-bold text-sm">Spread {i + 1} – Right Page Ad Slot</h3>
+                          {hasImage && <span className="ml-auto text-[10px] bg-green-100 text-green-700 rounded-full px-2 py-0.5 font-black uppercase tracking-wider">Active</span>}
+                          {!hasImage && <span className="ml-auto text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 font-semibold uppercase tracking-wider">Empty</span>}
+                        </div>
+                        <div className="grid gap-3">
+                          <div className="flex items-end gap-3 flex-wrap">
+                            <div className="flex-1 min-w-[180px]">
+                              <label className="text-xs font-semibold mb-1 block text-gray-600">Upload Image</label>
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'banner', spreadId);
+                                }}
+                                disabled={uploading}
+                                className="text-xs"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-[180px]">
+                              <label className="text-xs font-semibold mb-1 block text-gray-600">Or paste image URL</label>
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="https://..."
+                                  value={banner?.image || ""}
+                                  onChange={(e) => {
+                                    const newBanners = {
+                                      ...(catalogSettings.banners || {}),
+                                      [spreadId]: { ...(banner || { image: "" }), image: e.target.value }
+                                    };
+                                    setCatalogSettings({ ...catalogSettings, banners: newBanners });
+                                  }}
+                                  className="text-xs"
+                                />
+                                {hasImage && (
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 text-destructive shrink-0"
+                                    title="Remove banner"
+                                    onClick={() => {
+                                      const newBanners = { ...(catalogSettings.banners || {}) };
+                                      delete newBanners[spreadId];
+                                      setCatalogSettings({ ...catalogSettings, banners: newBanners });
+                                    }}
+                                  >
+                                    <Trash2 size={14} />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            {hasImage && (
+                              <div className="shrink-0">
+                                <img src={banner!.image} alt="Preview" className="h-14 w-24 object-contain rounded-lg border bg-white shadow-sm" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold mb-1 block text-gray-600">Click-through URL (Optional)</label>
+                            <Input
+                              placeholder="https://jumia.com.ng/..."
+                              value={banner?.url || ""}
+                              onChange={(e) => {
+                                const newBanners = {
+                                  ...(catalogSettings.banners || {}),
+                                  [spreadId]: { ...(banner || { image: "" }), url: e.target.value }
+                                };
+                                setCatalogSettings({ ...catalogSettings, banners: newBanners });
+                              }}
+                              className="text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </section>
+
+            {/* Save Button */}
+            <Button
+              onClick={async () => {
+                try {
+                  // Only save the banners field — never touches products or sync timestamps
+                  await setDoc(doc(db, "settings", "catalog"), catalogSettings);
+                  toast.success("Banners saved to Firebase! These will not be affected by any Google Sheet sync.");
+                } catch (error) {
+                  console.error("Error saving banners:", error);
+                  toast.error("Failed to save banners");
+                }
+              }}
+              className="w-full bg-orange-500 hover:bg-orange-600"
+            >
+              <Save className="mr-2" size={18} /> Save Banners to Backend
             </Button>
           </div>
         ) : (
