@@ -58,6 +58,16 @@ const Index = () => {
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [highlightedProductId, setHighlightedProductId] = React.useState<number | null>(null);
 
+  // Helper to determine target page for a product
+  const getTargetPage = (productId: number) => {
+    const productIndex = products.findIndex(p => p.id === productId);
+    if (productIndex === -1) return 0;
+    const chunkIndex = Math.floor(productIndex / 10);
+    const indexInChunk = productIndex % 10;
+    const onLeftPage = indexInChunk < 6;
+    return 1 + (chunkIndex * 2) + (onLeftPage ? 0 : 1);
+  };
+
   React.useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener('resize', handleResize);
@@ -282,20 +292,50 @@ const Index = () => {
             onFocus={() => setIsSearchFocused(true)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && searchQuery.length > 1) {
-                const filtered = products.filter(p =>
-                  p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  p.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  p.category?.toLowerCase().includes(searchQuery.toLowerCase())
-                );
+                const searchLower = searchQuery.toLowerCase();
+                const filtered = products
+                  .filter(p =>
+                    p.name.toLowerCase().includes(searchLower) ||
+                    p.brand?.toLowerCase().includes(searchLower) ||
+                    p.category?.toLowerCase().includes(searchLower)
+                  )
+                  .sort((a, b) => {
+                    const aName = a.name.toLowerCase();
+                    const bName = b.name.toLowerCase();
+                    const aBrand = a.brand?.toLowerCase() || "";
+                    const bBrand = b.brand?.toLowerCase() || "";
+
+                    // Exact name match
+                    if (aName === searchLower && bName !== searchLower) return -1;
+                    if (bName === searchLower && aName !== searchLower) return 1;
+
+                    // Starts with name match
+                    if (aName.startsWith(searchLower) && !bName.startsWith(searchLower)) return -1;
+                    if (bName.startsWith(searchLower) && !aName.startsWith(searchLower)) return 1;
+
+                    // Brand match
+                    if (aBrand === searchLower && bBrand !== searchLower) return -1;
+                    if (bBrand === searchLower && aBrand !== searchLower) return 1;
+
+                    return 0;
+                  });
+
                 if (filtered.length > 0) {
                   const product = filtered[0];
-                  const productIndex = products.findIndex(p => p.id === product.id);
-                  const chunkIndex = Math.floor(productIndex / 10);
-                  const indexInChunk = productIndex % 10;
-                  const onLeftPage = indexInChunk < 6;
-                  const targetPage = 1 + (chunkIndex * 2) + (onLeftPage ? 0 : 1);
+                  const targetPage = getTargetPage(product.id);
+                  const book = bookRef.current?.pageFlip();
 
-                  bookRef.current?.pageFlip()?.flip(targetPage);
+                  if (book) {
+                    const currentPageIndex = book.getCurrentPageIndex();
+                    const isVisible = isDesktop
+                      ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
+                      : currentPageIndex === targetPage;
+
+                    if (!isVisible) {
+                      book.flip(targetPage);
+                    }
+                  }
+
                   setHighlightedProductId(product.id);
                   setSearchQuery("");
                   setIsSearchFocused(false);
@@ -318,29 +358,51 @@ const Index = () => {
         {isSearchFocused && searchQuery.length > 1 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             {(() => {
-              const filtered = products.filter(p =>
-                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.category?.toLowerCase().includes(searchQuery.toLowerCase())
-              );
+              const searchLower = searchQuery.toLowerCase();
+              const filtered = products
+                .filter(p =>
+                  p.name.toLowerCase().includes(searchLower) ||
+                  p.brand?.toLowerCase().includes(searchLower) ||
+                  p.category?.toLowerCase().includes(searchLower)
+                )
+                .sort((a, b) => {
+                  const aName = a.name.toLowerCase();
+                  const bName = b.name.toLowerCase();
+                  const aBrand = a.brand?.toLowerCase() || "";
+                  const bBrand = b.brand?.toLowerCase() || "";
+
+                  if (aName === searchLower && bName !== searchLower) return -1;
+                  if (bName === searchLower && aName !== searchLower) return 1;
+                  if (aName.startsWith(searchLower) && !bName.startsWith(searchLower)) return -1;
+                  if (bName.startsWith(searchLower) && !aName.startsWith(searchLower)) return 1;
+                  if (aBrand === searchLower && bBrand !== searchLower) return -1;
+                  if (bBrand === searchLower && aBrand !== searchLower) return 1;
+                  return 0;
+                });
 
               if (filtered.length === 0) {
                 return <div className="p-8 text-center text-gray-400 italic font-medium">No results found for "{searchQuery}"</div>;
               }
 
               return filtered.map((product) => {
-                const productIndex = products.findIndex(p => p.id === product.id);
-                const chunkIndex = Math.floor(productIndex / 10);
-                const indexInChunk = productIndex % 10;
-                const onLeftPage = indexInChunk < 6;
-                const targetPage = 1 + (chunkIndex * 2) + (onLeftPage ? 0 : 1);
+                const targetPage = getTargetPage(product.id);
 
                 return (
                   <button
                     key={product.id}
                     className="w-full p-3 flex items-center gap-4 hover:bg-jumia-purple/5 border-b border-gray-100 last:border-none transition-colors group"
                     onClick={() => {
-                      bookRef.current?.pageFlip()?.flip(targetPage);
+                      const book = bookRef.current?.pageFlip();
+                      if (book) {
+                        const currentPageIndex = book.getCurrentPageIndex();
+                        const isVisible = isDesktop
+                          ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
+                          : currentPageIndex === targetPage;
+
+                        if (!isVisible) {
+                          book.flip(targetPage);
+                        }
+                      }
                       setHighlightedProductId(product.id);
                       setSearchQuery("");
                       setIsSearchFocused(false);
