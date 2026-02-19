@@ -610,6 +610,7 @@ const Index = () => {
       >
         {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
         <HTMLFlipBook
+          key={isDesktop ? 'desktop' : 'mobile'}
           width={isDesktop ? 380 : 320}
           height={isDesktop ? 480 : 420}
           size="stretch"
