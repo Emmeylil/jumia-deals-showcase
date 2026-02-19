@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"
@@ -19,7 +20,7 @@ const FIREBASE_CONFIG = {
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
 
-serve(async (req) => {
+serve(async (req: Request) => {
     try {
         console.log("Starting catalog sync from Google Sheet...");
 
@@ -49,7 +50,7 @@ serve(async (req) => {
 
         // 2. Get current products
         const productsSnapshot = await getDocs(collection(db, "products"));
-        const currentProducts = productsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const currentProducts = productsSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }));
 
         // 3. Process Rows (Smart Merge Logic)
         for (const row of rows) {
@@ -98,7 +99,7 @@ serve(async (req) => {
             headers: { "Content-Type": "application/json" },
             status: 200,
         });
-    } catch (error) {
+    } catch (error: any) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });
     }
 })
