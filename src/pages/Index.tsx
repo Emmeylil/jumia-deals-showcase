@@ -742,9 +742,9 @@ const Index = () => {
               >
                 <div className="w-full h-full flex flex-row">
                   {/* Content Area */}
-                  <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1.5 md:gap-2 min-h-0">
+                  <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1 md:gap-1.5 min-h-0 overflow-hidden">
                     {/* Regular Products in dynamic grid */}
-                    <div className={`grid grid-cols-2 gap-1.5 md:gap-2 flex-1 min-h-0 ${hasBanner ? "" : "grid-rows-3"}`}>
+                    <div className={`grid grid-cols-2 gap-1.5 md:gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
                       {rightPageProducts.map((product) => (
                         <ProductCard
                           key={product.id}
@@ -756,7 +756,7 @@ const Index = () => {
 
                     {/* Featured Slot - Banner Placement (fixed height) */}
                     {hasBanner && (
-                      <div className="h-[110px] md:h-[130px] flex-shrink-0">
+                      <div className="h-[100px] md:h-[120px] flex-shrink-0">
                         <BannerCard image={banner.image} url={banner.url} />
                       </div>
                     )}
