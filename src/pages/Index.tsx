@@ -107,16 +107,26 @@ const Index = () => {
       .map(key => parseInt(key.split('-')[1]))
       .reduce((max, val) => Math.max(max, val), -1);
 
+    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
+
     while (i < displayProducts.length || spreadIndex <= maxBannerSpreadIdx) {
       const spreadId = `spread-${spreadIndex}`;
       const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
-      const size = hasBanner ? 10 : 12;
+
+      let size;
+      if (spreadIndex === 0 && hasLogosOnPage1) {
+        // Spread 0 Left is Logos, so only Right page is available for products
+        size = hasBanner ? 4 : 6;
+      } else {
+        size = hasBanner ? 10 : 12;
+      }
+
       chunks.push(displayProducts.slice(i, i + size));
       i += size;
       spreadIndex++;
     }
     return chunks;
-  }, [displayProducts, catalogSettings?.banners]);
+  }, [displayProducts, catalogSettings?.banners, catalogSettings?.brandLogos]);
 
   // Helper to determine target page for a product based on dynamic chunks
   const getTargetPage = (productId: number) => {
@@ -175,6 +185,27 @@ const Index = () => {
       updateTimeOnBook(totalSeconds);
     };
   }, []);
+
+  // Auto-flip logic
+  useEffect(() => {
+    if (loading || settingsLoading || !catalogSettings) return;
+
+    const autoFlipInterval = setInterval(() => {
+      const book = bookRef.current?.pageFlip();
+      if (!book) return;
+
+      const total = book.getPageCount();
+      const current = book.getCurrentPageIndex();
+
+      if (current >= total - 1) {
+        book.flip(0); // Loop back to cover
+      } else {
+        book.flipNext();
+      }
+    }, 10000);
+
+    return () => clearInterval(autoFlipInterval);
+  }, [loading, settingsLoading, catalogSettings, currentPage]); // Reset timer on page change/load
 
   const handleShare = () => {
     incrementShare();
@@ -709,11 +740,21 @@ const Index = () => {
           {/* DYNAMIC PAGES */}
           {productChunks.flatMap((chunk, index) => {
             const pageNum = index * 2 + 1;
-            const leftPageProducts = chunk.slice(0, 6);
+            const hasLogosOnPage1 = index === 0 && (catalogSettings?.brandLogos?.length ?? 0) > 0;
             const spreadId = `spread-${index}`;
             const banner = catalogSettings?.banners?.[spreadId];
             const hasBanner = !!banner?.image;
-            const rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
+
+            let leftPageProducts: any[] = [];
+            let rightPageProducts: any[] = [];
+
+            if (hasLogosOnPage1) {
+              leftPageProducts = []; // Logos will be shown instead
+              rightPageProducts = hasBanner ? chunk.slice(0, 4) : chunk.slice(0, 6);
+            } else {
+              leftPageProducts = chunk.slice(0, 6);
+              rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
+            }
 
             return [
               /* LEFT PAGE */
@@ -726,49 +767,8 @@ const Index = () => {
                   ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
                 }}
               >
-                <div className="w-full h-full flex flex-row">
-                  {/* Left Sidebar Header */}
-                  <div className="w-10 md:w-14 bg-[#009FE3] flex flex-col items-center py-3 md:py-6 relative shadow-lg z-10">
-                    <div className="bg-black/20 p-1 md:p-1.5 rounded-full mb-3 md:mb-6">
-                      <svg className="w-4 h-4 md:w-6 md:h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
-                    </div>
-                    <div className="flex-1 flex items-center justify-center">
-                      <h2 className="text-xl md:text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
-                        Best Deals
-                      </h2>
-                    </div>
-                  </div>
-
-                  {/* Content Area */}
-                  <div className="flex-1 p-1.5 md:p-2 grid grid-cols-2 grid-rows-3 gap-1.5 md:gap-2 content-start">
-                    {leftPageProducts.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        highlighted={product.id === highlightedProductId}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Page Number */}
-                <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">
-                  {pageNum}
-                </div>
-              </Page>,
-
-              /* RIGHT PAGE */
-              <Page
-                key={`page-${pageNum + 1}`}
-                id={`page-${pageNum + 1}`}
-                className="bg-[#E2E0F5] bg-cover bg-center"
-                style={{
-                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
-                  ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
-                }}
-              >
-                {/* DEDICATED BRAND LOGOS PAGE — replaces products on page 2 when logos are configured */}
-                {index === 0 && (catalogSettings?.brandLogos?.length ?? 0) > 0 ? (
+                {/* DEDICATED BRAND LOGOS PAGE — now on Page 1 (index 0) */}
+                {hasLogosOnPage1 ? (
                   <div className="w-full h-full flex flex-row">
                     {/* Brand Logos Content */}
                     <div className="flex-1 p-2 md:p-3 flex flex-col min-h-0 overflow-hidden">
@@ -810,7 +810,7 @@ const Index = () => {
                         )}
                       </div>
                     </div>
-                    {/* Right Sidebar */}
+                    {/* Left Sidebar Header */}
                     <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                       <div className="flex-1 flex items-center justify-center">
                         <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
@@ -823,36 +823,75 @@ const Index = () => {
                     </div>
                   </div>
                 ) : (
-                  /* NORMAL PRODUCT PAGE (when no brand logos configured, or index > 0) */
+                  /* NORMAL LEFT PAGE */
                   <div className="w-full h-full flex flex-row">
-                    <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1 md:gap-1.5 min-h-0 overflow-hidden">
-                      <div className={`grid grid-cols-2 gap-1.5 md:gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
-                        {rightPageProducts.map((product) => (
-                          <ProductCard
-                            key={product.id}
-                            product={product}
-                            highlighted={product.id === highlightedProductId}
-                          />
-                        ))}
+                    <div className="w-10 md:w-14 bg-[#009FE3] flex flex-col items-center py-3 md:py-6 relative shadow-lg z-10">
+                      <div className="bg-black/20 p-1 md:p-1.5 rounded-full mb-3 md:mb-6">
+                        <svg className="w-4 h-4 md:w-6 md:h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
                       </div>
-                      {hasBanner && (
-                        <div className="h-[100px] md:h-[120px] flex-shrink-0">
-                          <BannerCard image={banner.image} url={banner.url} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                       <div className="flex-1 flex items-center justify-center">
-                        <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
-                          Top Picks
+                        <h2 className="text-xl md:text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
+                          Best Deals
                         </h2>
                       </div>
-                      <div className="bg-purple-200 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
-                        <svg className="w-4 h-4 md:w-6 md:h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                      </div>
+                    </div>
+                    <div className="flex-1 p-1.5 md:p-2 grid grid-cols-2 grid-rows-3 gap-1.5 md:gap-2 content-start">
+                      {leftPageProducts.map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          highlighted={product.id === highlightedProductId}
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
+
+                {/* Page Number */}
+                <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">
+                  {pageNum}
+                </div>
+              </Page>,
+
+              /* RIGHT PAGE */
+              <Page
+                key={`page-${pageNum + 1}`}
+                id={`page-${pageNum + 1}`}
+                className="bg-[#E2E0F5] bg-cover bg-center"
+                style={{
+                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                  ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
+                }}
+              >
+                {/* NORMAL PRODUCT PAGE */}
+                <div className="w-full h-full flex flex-row">
+                  <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1 md:gap-1.5 min-h-0 overflow-hidden">
+                    <div className={`grid grid-cols-2 gap-1.5 md:gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
+                      {rightPageProducts.map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          highlighted={product.id === highlightedProductId}
+                        />
+                      ))}
+                    </div>
+                    {hasBanner && (
+                      <div className="h-[100px] md:h-[120px] flex-shrink-0">
+                        <BannerCard image={banner.image} url={banner.url} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
+                    <div className="flex-1 flex items-center justify-center">
+                      <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                        Top Picks
+                      </h2>
+                    </div>
+                    <div className="bg-purple-200 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
+                      <svg className="w-4 h-4 md:w-6 md:h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Page Number */}
                 <div className="absolute bottom-3 right-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
