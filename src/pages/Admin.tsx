@@ -462,54 +462,64 @@ const Admin = () => {
 
       for (const row of rows) {
         const sku = row[mapping.sku];
-        const category = row[mapping.category] || "";
-        const name = row[mapping.name] || "Unnamed Product";
-        const brand = row[mapping.brand] || "";
+        const categoryFromSheet = row[mapping.category] || "";
+        const nameFromSheet = row[mapping.name] || "Unnamed Product";
+        const brandFromSheet = (row[mapping.brand] || "").trim();
         const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
         const sheetPrice = cleanPrice(row[mapping.price]);
-
-        // Prepend brand to name if it's not already there for display purposes
-        const brandSafe = brand.trim();
-        const nameSafe = name.trim();
-        const displayName = (brandSafe && !nameSafe.toLowerCase().startsWith(brandSafe.toLowerCase()))
-          ? `${brandSafe} ${nameSafe}`
-          : nameSafe;
 
         const existingProduct = currentProducts.find(p => p.sku === sku);
 
         if (existingProduct) {
           const priceChangedInSheet = sheetPrice !== (existingProduct.lastSyncedPrice ?? -1);
           const oldPriceChangedInSheet = sheetOldPrice !== (existingProduct.lastSyncedOldPrice ?? -1);
+          const brandChangedInSheet = brandFromSheet !== (existingProduct.brand ?? "");
 
-          const updateData: any = {
-            category,
-            brand: brandSafe,
-            displayName,
-            lastSyncedPrice: sheetPrice,
-            lastSyncedOldPrice: sheetOldPrice
-          };
+          // Only update if something relevant (Price or Brand) changed
+          if (priceChangedInSheet || oldPriceChangedInSheet || brandChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
+            const updateData: any = {
+              brand: brandFromSheet,
+              lastSyncedPrice: sheetPrice,
+              lastSyncedOldPrice: sheetOldPrice
+            };
 
-          if (priceChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
-            updateData.price = sheetPrice;
+            // Prepend brand to EXISTING name (not sheet name) if it's not already there
+            const nameToUse = existingProduct.name || nameFromSheet;
+            const displayName = (brandFromSheet && !nameToUse.toLowerCase().startsWith(brandFromSheet.toLowerCase()))
+              ? `${brandFromSheet} ${nameToUse}`
+              : nameToUse;
+
+            updateData.displayName = displayName;
+
+            if (priceChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
+              updateData.price = sheetPrice;
+            }
+            if (oldPriceChangedInSheet || typeof existingProduct.lastSyncedOldPrice === 'undefined') {
+              updateData.oldPrice = sheetOldPrice;
+            }
+
+            updateData.prices = {
+              price: updateData.price ?? existingProduct.price,
+              oldPrice: updateData.oldPrice ?? existingProduct.oldPrice
+            };
+
+            await updateDoc(doc(db, "products", existingProduct.id.toString()), updateData);
           }
-          if (oldPriceChangedInSheet || typeof existingProduct.lastSyncedOldPrice === 'undefined') {
-            updateData.oldPrice = sheetOldPrice;
-          }
-
-          updateData.prices = {
-            price: updateData.price ?? existingProduct.price,
-            oldPrice: updateData.oldPrice ?? existingProduct.oldPrice
-          };
-
-          await updateDoc(doc(db, "products", existingProduct.id.toString()), updateData);
         } else {
+          // New product: Fetch details from Jumia, but use Sheet for Price and Brand
           const jumiaData = await fetchJumiaProductBySku(sku);
+
+          const nameToUse = jumiaData?.displayName || nameFromSheet;
+          const displayName = (brandFromSheet && !nameToUse.toLowerCase().startsWith(brandFromSheet.toLowerCase()))
+            ? `${brandFromSheet} ${nameToUse}`
+            : nameToUse;
+
           const productData: Product = {
             id: nextId,
             sku,
-            name: nameSafe,
-            brand: brandSafe,
-            category,
+            name: nameToUse,
+            brand: brandFromSheet,
+            category: categoryFromSheet, // Take initial category from sheet for new products
             displayName,
             image: jumiaData?.image || "https://premium.jumia.com.ng/assets/images/jumia-logo.png",
             url: jumiaData?.url ? (jumiaData.url.startsWith("http") ? jumiaData.url : `https://www.jumia.com.ng${jumiaData.url.startsWith("/") ? "" : "/"}${jumiaData.url}`) : `https://www.jumia.com.ng/catalog/?q=${sku}`,
