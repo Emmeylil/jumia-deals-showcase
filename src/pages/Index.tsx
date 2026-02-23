@@ -735,23 +735,6 @@ const Index = () => {
                   </div>
                 </div>
 
-                {/* Brand Logos Overlay — Page 1 */}
-                {index === 0 && (catalogSettings?.brandLogos || []).filter((b: any) => b.page === 1).length > 0 && (
-                  <div className="absolute bottom-5 left-10 right-0 bg-white/85 backdrop-blur-sm border-t border-gray-200/60 px-1 py-0.5 z-20">
-                    <p className="text-[5px] font-bold text-gray-400 uppercase tracking-widest text-center mb-0.5">Brand Partners</p>
-                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                      {(catalogSettings.brandLogos as any[]).filter(b => b.page === 1).map((b: any, i: number) => (
-                        <a key={i} href={b.linkUrl || '#'} target="_blank" rel="noopener noreferrer" title={b.name} className="flex items-center justify-center h-5 w-10 hover:opacity-80 transition-opacity">
-                          {b.logoUrl
-                            ? <img src={b.logoUrl} alt={b.name} className="max-h-full max-w-full object-contain" />
-                            : <span className="text-[6px] font-black text-gray-600 bg-gray-100 px-1 py-0.5 rounded leading-tight text-center">{b.name}</span>
-                          }
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Page Number */}
                 <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">
                   {pageNum}
