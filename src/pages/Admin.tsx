@@ -199,7 +199,7 @@ const Admin = () => {
       }
 
       setCatalogSettings(newSettings);
-      await setDoc(doc(db, "settings", "catalog"), newSettings);
+      await setDoc(doc(db, "settings", "catalog"), newSettings, { merge: true });
       toast.success(`${type === 'banner' ? 'Banner' : type === 'front' ? 'Front' : type === 'back' ? 'Back' : 'Inner'} uploaded and saved!`);
     } catch (error) {
       console.error("Upload error:", error);
@@ -243,10 +243,19 @@ const Admin = () => {
     // Using onSnapshot for real-time updates on settings too?
     const settingsUnsub = onSnapshot(doc(db, "settings", "catalog"), (snapshot: any) => {
       if (snapshot.exists()) {
-        // Merge with defaults to ensure new fields (like backgroundImage) exist
-        setCatalogSettings({ ...DEFAULT_SETTINGS, ...snapshot.data() } as CatalogSettings);
+        const data = snapshot.data();
+        // Deep-merge: keep all Firestore values for nested objects, fall back to defaults only for missing keys
+        setCatalogSettings({
+          ...DEFAULT_SETTINGS,
+          ...data,
+          frontPage: { ...DEFAULT_SETTINGS.frontPage, ...(data.frontPage || {}) },
+          backPage: { ...DEFAULT_SETTINGS.backPage, ...(data.backPage || {}) },
+          innerPages: { ...DEFAULT_SETTINGS.innerPages, ...(data.innerPages || {}) },
+          // Preserve banners & brandLogos exactly as stored — never let defaults clobber them
+          banners: data.banners !== undefined ? data.banners : DEFAULT_SETTINGS.banners,
+          brandLogos: data.brandLogos !== undefined ? data.brandLogos : DEFAULT_SETTINGS.brandLogos,
+        } as CatalogSettings);
       } else {
-        // Initialize if not exists
         setDoc(snapshot.ref, DEFAULT_SETTINGS);
       }
     });
@@ -958,7 +967,7 @@ const Admin = () => {
             <Button
               onClick={async () => {
                 try {
-                  await setDoc(doc(db, "settings", "catalog"), catalogSettings);
+                  await setDoc(doc(db, "settings", "catalog"), catalogSettings, { merge: true });
                   toast.success("Settings saved successfully!");
                 } catch (error) {
                   console.error("Error saving settings:", error);
@@ -1091,7 +1100,7 @@ const Admin = () => {
               onClick={async () => {
                 try {
                   // Only save the banners field — never touches products or sync timestamps
-                  await setDoc(doc(db, "settings", "catalog"), catalogSettings);
+                  await setDoc(doc(db, "settings", "catalog"), catalogSettings, { merge: true });
                   toast.success("Banners saved to Firebase! These will not be affected by any Google Sheet sync.");
                 } catch (error) {
                   console.error("Error saving banners:", error);
@@ -1227,7 +1236,7 @@ const Admin = () => {
             <Button
               onClick={async () => {
                 try {
-                  await setDoc(doc(db, "settings", "catalog"), catalogSettings);
+                  await setDoc(doc(db, "settings", "catalog"), catalogSettings, { merge: true });
                   toast.success("Brand logos saved!");
                 } catch (error) {
                   toast.error("Failed to save brand logos");
@@ -1352,7 +1361,7 @@ const Admin = () => {
                   <Button
                     onClick={async () => {
                       try {
-                        await setDoc(doc(db, "settings", "catalog"), catalogSettings);
+                        await setDoc(doc(db, "settings", "catalog"), catalogSettings, { merge: true });
                         toast.success("Featured product saved!");
                       } catch { toast.error("Failed to save"); }
                     }}
@@ -1366,7 +1375,7 @@ const Admin = () => {
                       onClick={async () => {
                         const updated = { ...catalogSettings, pinnedProductId: null };
                         setCatalogSettings(updated);
-                        await setDoc(doc(db, "settings", "catalog"), updated);
+                        await setDoc(doc(db, "settings", "catalog"), updated, { merge: true });
                         toast.success("Cleared — auto mode active");
                       }}
                       className="h-10 text-red-500 border-red-200"
@@ -1403,7 +1412,7 @@ const Admin = () => {
                       const updated = { ...catalogSettings, autoSyncInterval: parseInt(e.target.value) };
                       setCatalogSettings(updated);
                       try {
-                        await setDoc(doc(db, "settings", "catalog"), updated);
+                        await setDoc(doc(db, "settings", "catalog"), updated, { merge: true });
                         toast.success("Sync interval saved!");
                       } catch { toast.error("Failed to save interval"); }
                     }}
