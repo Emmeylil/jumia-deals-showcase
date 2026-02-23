@@ -61,6 +61,7 @@ interface CatalogSettings {
   };
   banners?: Record<string, Banner>;
   brandLogos?: Array<{ name: string; logoUrl: string; linkUrl: string; page: 1 | 2 }>;
+  pinnedProductId?: number | null;
   lastSyncTimestamp?: number;
   autoSyncInterval?: number; // in hours
 };
@@ -1263,8 +1264,18 @@ const Admin = () => {
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                   <Clock className="text-purple-500" size={24} />
-                  <span className="text-xl font-bold text-gray-900">{formatTime(stats?.timeOnBook || 0)}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Time on Book</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {(() => {
+                      const total = stats?.timeOnBook || 0;
+                      const readers = stats?.readers || 1;
+                      const avgSec = Math.round(total / readers);
+                      const m = Math.floor(avgSec / 60);
+                      const s = avgSec % 60;
+                      return m > 0 ? `${m}m ${s}s` : `${s}s`;
+                    })()}
+                  </span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Avg. Time on Book</span>
+                  <span className="text-[10px] text-gray-400">per reader</span>
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                   <Share2 className="text-pink-500" size={24} />
@@ -1312,6 +1323,71 @@ const Admin = () => {
                   </div>
                 </div>
               )}
+
+              {/* Most Popular Product Picker */}
+              <div className="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+                  <Trophy className="text-yellow-500" size={20} /> Pick Most Popular Product
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">Select the product to highlight as the #1 most popular. This overrides the automatic click-based ranking shown to visitors.</p>
+                <div className="flex gap-3 items-end flex-wrap">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-xs font-semibold text-gray-600 mb-1 block">Featured Product</label>
+                    <select
+                      className="w-full h-10 border border-gray-200 rounded-md text-sm px-3 bg-white"
+                      value={catalogSettings.pinnedProductId ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? null : parseInt(e.target.value);
+                        setCatalogSettings(prev => ({ ...prev, pinnedProductId: val }));
+                      }}
+                    >
+                      <option value="">— Auto (highest clicks) —</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>
+                          #{p.id} · {p.displayName || p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        await setDoc(doc(db, "settings", "catalog"), catalogSettings);
+                        toast.success("Featured product saved!");
+                      } catch { toast.error("Failed to save"); }
+                    }}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white h-10 px-5"
+                  >
+                    <Save size={15} className="mr-1" /> Save
+                  </Button>
+                  {catalogSettings.pinnedProductId && (
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        const updated = { ...catalogSettings, pinnedProductId: null };
+                        setCatalogSettings(updated);
+                        await setDoc(doc(db, "settings", "catalog"), updated);
+                        toast.success("Cleared — auto mode active");
+                      }}
+                      className="h-10 text-red-500 border-red-200"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                {catalogSettings.pinnedProductId && (() => {
+                  const p = products.find(p => p.id === catalogSettings.pinnedProductId);
+                  return p ? (
+                    <div className="mt-3 flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                      {p.image && <img src={p.image} alt="" className="w-10 h-10 object-contain" />}
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">{p.displayName || p.name}</p>
+                        <p className="text-xs text-yellow-700 font-semibold">✓ Pinned as Most Popular</p>
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
             </section>
 
             {/* Automation Settings */}
