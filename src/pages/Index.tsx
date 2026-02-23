@@ -735,6 +735,23 @@ const Index = () => {
                   </div>
                 </div>
 
+                {/* Brand Logos Overlay — Page 1 */}
+                {index === 0 && (catalogSettings?.brandLogos || []).filter((b: any) => b.page === 1).length > 0 && (
+                  <div className="absolute bottom-5 left-10 right-0 bg-white/85 backdrop-blur-sm border-t border-gray-200/60 px-1 py-0.5 z-20">
+                    <p className="text-[5px] font-bold text-gray-400 uppercase tracking-widest text-center mb-0.5">Brand Partners</p>
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      {(catalogSettings.brandLogos as any[]).filter(b => b.page === 1).map((b: any, i: number) => (
+                        <a key={i} href={b.linkUrl || '#'} target="_blank" rel="noopener noreferrer" title={b.name} className="flex items-center justify-center h-5 w-10 hover:opacity-80 transition-opacity">
+                          {b.logoUrl
+                            ? <img src={b.logoUrl} alt={b.name} className="max-h-full max-w-full object-contain" />
+                            : <span className="text-[6px] font-black text-gray-600 bg-gray-100 px-1 py-0.5 rounded leading-tight text-center">{b.name}</span>
+                          }
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Page Number */}
                 <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">
                   {pageNum}
@@ -751,40 +768,92 @@ const Index = () => {
                   ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
                 }}
               >
-                <div className="w-full h-full flex flex-row">
-                  {/* Content Area */}
-                  <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1 md:gap-1.5 min-h-0 overflow-hidden">
-                    {/* Regular Products in dynamic grid */}
-                    <div className={`grid grid-cols-2 gap-1.5 md:gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
-                      {rightPageProducts.map((product) => (
-                        <ProductCard
-                          key={product.id}
-                          product={product}
-                          highlighted={product.id === highlightedProductId}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Featured Slot - Banner Placement (fixed height) */}
-                    {hasBanner && (
-                      <div className="h-[100px] md:h-[120px] flex-shrink-0">
-                        <BannerCard image={banner.image} url={banner.url} />
+                {/* DEDICATED BRAND LOGOS PAGE — replaces products on page 2 when logos are configured */}
+                {index === 0 && (catalogSettings?.brandLogos?.length ?? 0) > 0 ? (
+                  <div className="w-full h-full flex flex-row">
+                    {/* Brand Logos Content */}
+                    <div className="flex-1 p-2 md:p-3 flex flex-col min-h-0 overflow-hidden">
+                      {/* Header */}
+                      <div className="text-center mb-1.5 flex-shrink-0">
+                        <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Our</p>
+                        <h2 className="text-sm md:text-base font-black text-gray-800 uppercase tracking-wide leading-tight">Brand Partners</h2>
+                        <div className="h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent mt-1" />
                       </div>
-                    )}
-                  </div>
-
-                  {/* Right Sidebar Header */}
-                  <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
-                    <div className="flex-1 flex items-center justify-center">
-                      <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
-                        Top Picks
-                      </h2>
+                      {/* Logo Grid */}
+                      <div className="flex-1 grid grid-cols-3 gap-1.5 md:gap-2 content-center">
+                        {(catalogSettings.brandLogos as any[]).map((b: any, i: number) =>
+                          b.linkUrl ? (
+                            <a
+                              key={i}
+                              href={b.linkUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={b.name}
+                              className="bg-white rounded-lg p-1.5 md:p-2 flex items-center justify-center shadow-sm hover:shadow-md hover:scale-105 transition-all border border-gray-100 aspect-[2/1]"
+                            >
+                              {b.logoUrl
+                                ? <img src={b.logoUrl} alt={b.name} className="max-h-full max-w-full object-contain" />
+                                : <span className="text-[7px] md:text-[9px] font-black text-gray-700 text-center leading-tight">{b.name}</span>
+                              }
+                            </a>
+                          ) : (
+                            <div
+                              key={i}
+                              title={b.name}
+                              className="bg-white rounded-lg p-1.5 md:p-2 flex items-center justify-center shadow-sm border border-gray-100 aspect-[2/1]"
+                            >
+                              {b.logoUrl
+                                ? <img src={b.logoUrl} alt={b.name} className="max-h-full max-w-full object-contain" />
+                                : <span className="text-[7px] md:text-[9px] font-black text-gray-700 text-center leading-tight">{b.name}</span>
+                              }
+                            </div>
+                          )
+                        )}
+                      </div>
                     </div>
-                    <div className="bg-purple-200 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
-                      <svg className="w-4 h-4 md:w-6 md:h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    {/* Right Sidebar */}
+                    <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
+                      <div className="flex-1 flex items-center justify-center">
+                        <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                          Partners
+                        </h2>
+                      </div>
+                      <div className="bg-purple-200 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
+                        <svg className="w-4 h-4 md:w-6 md:h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  /* NORMAL PRODUCT PAGE (when no brand logos configured, or index > 0) */
+                  <div className="w-full h-full flex flex-row">
+                    <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1 md:gap-1.5 min-h-0 overflow-hidden">
+                      <div className={`grid grid-cols-2 gap-1.5 md:gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
+                        {rightPageProducts.map((product) => (
+                          <ProductCard
+                            key={product.id}
+                            product={product}
+                            highlighted={product.id === highlightedProductId}
+                          />
+                        ))}
+                      </div>
+                      {hasBanner && (
+                        <div className="h-[100px] md:h-[120px] flex-shrink-0">
+                          <BannerCard image={banner.image} url={banner.url} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
+                      <div className="flex-1 flex items-center justify-center">
+                        <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                          Top Picks
+                        </h2>
+                      </div>
+                      <div className="bg-purple-200 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
+                        <svg className="w-4 h-4 md:w-6 md:h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Page Number */}
                 <div className="absolute bottom-3 right-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">

@@ -60,6 +60,7 @@ interface CatalogSettings {
     rightPageBackgroundColor?: string;
   };
   banners?: Record<string, Banner>;
+  brandLogos?: Array<{ name: string; logoUrl: string; linkUrl: string; page: 1 | 2 }>;
   lastSyncTimestamp?: number;
   autoSyncInterval?: number; // in hours
 };
@@ -90,6 +91,7 @@ const DEFAULT_SETTINGS: CatalogSettings = {
     rightPageBackgroundColor: "",
   },
   banners: {},
+  brandLogos: [],
   lastSyncTimestamp: 0,
   autoSyncInterval: 6, // default 6 hours
 };
@@ -129,7 +131,7 @@ const Admin = () => {
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
   const settingsRef = useRef(catalogSettings);
-  const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners" | "brandlogos">("products");
   const [uploading, setUploading] = useState(false);
 
   // Keep ref in sync with state for async access
@@ -609,6 +611,13 @@ const Admin = () => {
           >
             🖼️ Banners & Ads
             <span className="text-[9px] bg-orange-100 text-orange-700 font-black uppercase rounded px-1.5 py-0.5 tracking-wider">Backend Only</span>
+          </button>
+          <button
+            className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'brandlogos' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('brandlogos')}
+          >
+            🏷️ Brand Logos
+            <span className="text-[9px] bg-blue-100 text-blue-700 font-black uppercase rounded px-1.5 py-0.5 tracking-wider">Pages 1 & 2</span>
           </button>
           <button
             className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'settings' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
@@ -1091,6 +1100,141 @@ const Admin = () => {
               className="w-full bg-orange-500 hover:bg-orange-600"
             >
               <Save className="mr-2" size={18} /> Save Banners to Backend
+            </Button>
+          </div>
+        ) : activeTab === 'brandlogos' ? (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-5 flex items-start gap-4 shadow-lg">
+              <span className="text-3xl shrink-0">🏷️</span>
+              <div>
+                <h2 className="text-lg font-black uppercase tracking-wide">Brand Partner Logos</h2>
+                <p className="text-sm text-blue-100 mt-1">Page 2 is dedicated to your brand partners. Add each brand logo URL and an optional click-through link. All logos appear in a clean grid on page 2 of the catalog. Logos with no image URL show as a text badge.</p>
+              </div>
+            </div>
+
+            {/* Brand Logos List */}
+            <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Logo Entries</h2>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const newLogo = { name: '', logoUrl: '', linkUrl: '', page: 1 as 1 | 2 };
+                    setCatalogSettings(prev => ({ ...prev, brandLogos: [...(prev.brandLogos || []), newLogo] }));
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                >
+                  <Plus size={15} className="mr-1" /> Add Brand
+                </Button>
+              </div>
+
+              {(!catalogSettings.brandLogos || catalogSettings.brandLogos.length === 0) && (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-4xl mb-3">🏷️</p>
+                  <p className="font-semibold">No brand logos yet.</p>
+                  <p className="text-sm">Click "Add Brand" to get started.</p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {(catalogSettings.brandLogos || []).map((brand, idx) => (
+                  <div key={idx} className="border border-gray-200 rounded-xl p-4 grid gap-3">
+                    <div className="flex items-center gap-2">
+                      {/* Logo preview */}
+                      <div className="w-14 h-10 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {brand.logoUrl
+                          ? <img src={brand.logoUrl} alt={brand.name} className="max-w-full max-h-full object-contain p-1" />
+                          : <span className="text-[9px] text-gray-400 font-semibold text-center leading-tight px-1">{brand.name || 'Logo'}</span>
+                        }
+                      </div>
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs font-semibold text-gray-600 mb-1 block">Brand Name</label>
+                          <Input
+                            value={brand.name}
+                            placeholder="e.g. Samsung"
+                            className="text-xs h-9"
+                            onChange={(e) => {
+                              const updated = [...(catalogSettings.brandLogos || [])];
+                              updated[idx] = { ...updated[idx], name: e.target.value };
+                              setCatalogSettings(prev => ({ ...prev, brandLogos: updated }));
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-gray-600 mb-1 block">Show on Page</label>
+                          <select
+                            value={brand.page}
+                            className="w-full h-9 border border-gray-200 rounded-md text-xs px-2 bg-white"
+                            onChange={(e) => {
+                              const updated = [...(catalogSettings.brandLogos || [])];
+                              updated[idx] = { ...updated[idx], page: parseInt(e.target.value) as 1 | 2 };
+                              setCatalogSettings(prev => ({ ...prev, brandLogos: updated }));
+                            }}
+                          >
+                            <option value={1}>Page 1 (Left)</option>
+                            <option value={2}>Page 2 (Right)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
+                        title="Delete"
+                        onClick={() => {
+                          const updated = (catalogSettings.brandLogos || []).filter((_, i) => i !== idx);
+                          setCatalogSettings(prev => ({ ...prev, brandLogos: updated }));
+                        }}
+                      >
+                        <Trash2 size={15} />
+                      </Button>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 mb-1 block">Logo Image URL</label>
+                      <Input
+                        value={brand.logoUrl}
+                        placeholder="https://example.com/logo.png"
+                        className="text-xs h-9"
+                        onChange={(e) => {
+                          const updated = [...(catalogSettings.brandLogos || [])];
+                          updated[idx] = { ...updated[idx], logoUrl: e.target.value };
+                          setCatalogSettings(prev => ({ ...prev, brandLogos: updated }));
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 mb-1 block">Destination Link (Optional)</label>
+                      <Input
+                        value={brand.linkUrl}
+                        placeholder="https://jumia.com.ng/brand-page/"
+                        className="text-xs h-9"
+                        onChange={(e) => {
+                          const updated = [...(catalogSettings.brandLogos || [])];
+                          updated[idx] = { ...updated[idx], linkUrl: e.target.value };
+                          setCatalogSettings(prev => ({ ...prev, brandLogos: updated }));
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Save */}
+            <Button
+              onClick={async () => {
+                try {
+                  await setDoc(doc(db, "settings", "catalog"), catalogSettings);
+                  toast.success("Brand logos saved!");
+                } catch (error) {
+                  toast.error("Failed to save brand logos");
+                }
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              <Save className="mr-2" size={18} /> Save Brand Logos
             </Button>
           </div>
         ) : (
