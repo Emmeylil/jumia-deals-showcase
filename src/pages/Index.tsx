@@ -67,12 +67,28 @@ const Index = () => {
     return p ? parseInt(p) - 1 : 0;
   }, []); // Only once on mount
 
-  // Filter out products without valid images (out-of-stock products)
+  // Filter out products without valid images or names (out-of-stock products or sync errors)
   const displayProducts = React.useMemo(() => {
     return products.filter(p => {
-      if (!p.image) return false;
+      // 1. Basic check for existence
+      if (!p.image || !p.name) return false;
+
+      // 2. Filter by name/displayName patterns
+      const fullName = (p.displayName || p.name).toLowerCase();
+      const invalidNames = ["not found", "error:", "unnamed product", "no product"];
+      if (invalidNames.some(invalid => fullName.includes(invalid))) return false;
+
+      // 3. Filter by image patterns
       const img = p.image.trim().toLowerCase();
-      if (img === '' || img === '/placeholder.svg' || img === 'placeholder.svg') return false;
+      const invalidImages = [
+        'placeholder.svg',
+        '/placeholder.svg',
+        'jumia-logo.png', // The fallback logo used in Admin.tsx
+        'no-product'
+      ];
+
+      if (img === '' || invalidImages.some(invalid => img.includes(invalid))) return false;
+
       return true;
     });
   }, [products]);
