@@ -264,14 +264,15 @@ const Index = () => {
       for (let i = 0; i < totalPagesToCapture; i++) {
         setCaptureProgress({ current: i + 1, total: totalPagesToCapture });
 
-        const element = document.getElementById(`page-${i}`);
+        // Target the hidden capture elements instead of the flipbook ones
+        const element = document.getElementById(`pdf-page-${i}`);
         if (!element) {
-          console.warn(`Page element page-${i} not found`);
+          console.warn(`Hidden page element pdf-page-${i} not found`);
           continue;
         }
 
         const canvas = await html2canvas(element, options);
-        const imgData = canvas.toDataURL('image/jpeg', 0.85); // JPEG for smaller file size
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
 
         if (i > 0) {
           pdf.addPage([pdfWidth, pdfHeight], 'p');
@@ -279,6 +280,7 @@ const Index = () => {
 
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
+
 
       pdf.save(`jumia-deals-catalog-${new Date().toISOString().split('T')[0]}.pdf`);
 
@@ -958,8 +960,122 @@ const Index = () => {
           <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
+
+      {/* HIDDEN CAPTURE AREA FOR PDF GENERATION */}
+      <div
+        id="pdf-capture-container"
+        className="fixed top-0 left-0 -z-[5000] pointer-events-none opacity-0 overflow-hidden"
+        style={{ width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420 }}
+      >
+        {/* COVER PAGE */}
+        <div id="pdf-page-0" className="w-full h-full bg-white text-gray-900 border-none relative overflow-hidden bg-cover bg-center" style={{ width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420, ...(catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}), ...(catalogSettings?.frontPage?.backgroundColor ? { backgroundColor: catalogSettings.frontPage.backgroundColor } : {}) }}>
+          <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-center p-8">
+            <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 w-auto object-contain mb-4" />
+            <h1 className="text-4xl font-black tracking-tighter uppercase italic leading-tight text-gray-900">
+              {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
+              <span style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}>
+                {catalogSettings?.frontPage?.subtitle || "DEALS!"}
+              </span>
+            </h1>
+            <p className="text-sm font-bold tracking-widest uppercase opacity-70 text-gray-600">
+              {catalogSettings?.frontPage?.tagline || "Digital Catalog 2026"}
+            </p>
+          </div>
+        </div>
+
+        {/* DYNAMIC PAGES */}
+        {productChunks.flatMap((chunk, index) => {
+          const pageNum = index * 2 + 1;
+          const hasLogosOnPage1 = index === 0 && (catalogSettings?.brandLogos?.length ?? 0) > 0;
+          const spreadId = `spread-${index}`;
+          const banner = catalogSettings?.banners?.[spreadId];
+          const hasBanner = !!banner?.image;
+
+          let leftPageProducts: any[] = [];
+          let rightPageProducts: any[] = [];
+
+          if (hasLogosOnPage1) {
+            rightPageProducts = hasBanner ? chunk.slice(0, 4) : chunk.slice(0, 6);
+          } else {
+            leftPageProducts = chunk.slice(0, 6);
+            rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
+          }
+
+          return [
+            /* LEFT PAGE CAPTURE */
+            <div
+              key={`pdf-page-${pageNum}`}
+              id={`pdf-page-${pageNum}`}
+              className="w-full h-full bg-[#E6F7FF] bg-cover bg-center relative"
+              style={{
+                width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
+              }}
+            >
+              {hasLogosOnPage1 ? (
+                <div className="w-full h-full flex flex-col p-4">
+                  <h2 className="text-center text-sm font-black uppercase mb-4">Brand Partners</h2>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(catalogSettings.brandLogos as any[]).map((b: any, i: number) => (
+                      <div key={i} className="bg-white rounded p-1 flex items-center justify-center border aspect-[2/1]">
+                        {b.logoUrl ? <img src={b.logoUrl} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[8px]">{b.name}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-full p-2 grid grid-cols-2 grid-rows-3 gap-2">
+                  {leftPageProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                </div>
+              )}
+              <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">{pageNum}</div>
+            </div>,
+            /* RIGHT PAGE CAPTURE */
+            <div
+              key={`pdf-page-${pageNum + 1}`}
+              id={`pdf-page-${pageNum + 1}`}
+              className="w-full h-full bg-[#E2E0F5] bg-cover bg-center relative"
+              style={{
+                width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
+              }}
+            >
+              <div className="w-full h-full p-2 flex flex-col gap-2">
+                <div className={`grid grid-cols-2 gap-2 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
+                  {rightPageProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                </div>
+                {hasBanner && <div className="h-20"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-lg" /></div>}
+              </div>
+              <div className="absolute bottom-3 right-6 text-[10px] font-bold text-gray-400">Page {String(pageNum + 1).padStart(2, '0')}</div>
+            </div>
+          ];
+        })}
+
+        {/* BACK COVER CAPTURE */}
+        <div
+          id={`pdf-page-${1 + productChunks.length * 2}`}
+          className="w-full h-full bg-[#f5f5f5] text-gray-800 bg-cover bg-center relative flex flex-col items-center justify-center p-8 text-center"
+          style={{
+            width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+            ...(catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}),
+            ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
+          }}
+        >
+          <h2 className="text-xl font-black mb-2">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
+          <p className="text-xs text-gray-600 mb-4">{catalogSettings?.backPage?.description}</p>
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
+            alt="QR"
+            className="w-24 h-24 mb-4"
+          />
+          <p className="text-[10px] font-black opacity-50">JUMIA © {new Date().getFullYear()}</p>
+        </div>
+      </div>
     </div>
   );
 };
+
 
 export default Index;
