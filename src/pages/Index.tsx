@@ -255,10 +255,21 @@ const Index = () => {
       });
 
       const options = {
-        scale: 2, // Good balance of quality and file size
+        scale: 3, // High quality
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        windowWidth: pdfWidth,
+        windowHeight: pdfHeight,
+        onclone: (doc) => {
+          // Force rendering of certain elements if needed
+          const captureEl = doc.getElementById('pdf-capture-container');
+          if (captureEl) {
+            captureEl.style.opacity = '1';
+            captureEl.style.visibility = 'visible';
+            captureEl.style.left = '0';
+          }
+        }
       };
 
       for (let i = 0; i < totalPagesToCapture; i++) {
@@ -272,15 +283,15 @@ const Index = () => {
         }
 
         const canvas = await html2canvas(element, options);
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        // Using PNG for better quality on text/lines
+        const imgData = canvas.toDataURL('image/png');
 
         if (i > 0) {
           pdf.addPage([pdfWidth, pdfHeight], 'p');
         }
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       }
-
 
       pdf.save(`jumia-deals-catalog-${new Date().toISOString().split('T')[0]}.pdf`);
 
@@ -292,6 +303,7 @@ const Index = () => {
       setCaptureProgress({ current: 0, total: 0 });
     }
   };
+
 
 
 
@@ -964,20 +976,39 @@ const Index = () => {
       {/* HIDDEN CAPTURE AREA FOR PDF GENERATION */}
       <div
         id="pdf-capture-container"
-        className="fixed top-0 left-0 -z-[5000] pointer-events-none opacity-0 overflow-hidden"
-        style={{ width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420 }}
+        className="fixed top-[-9999px] left-[-9999px] z-[-5000] pointer-events-none"
+        style={{
+          width: isDesktop ? 380 : 320,
+          height: isDesktop ? 480 : 420,
+          fontFamily: "'Gotham', 'Inter', sans-serif"
+        }}
       >
         {/* COVER PAGE */}
-        <div id="pdf-page-0" className="w-full h-full bg-white text-gray-900 border-none relative overflow-hidden bg-cover bg-center" style={{ width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420, ...(catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}), ...(catalogSettings?.frontPage?.backgroundColor ? { backgroundColor: catalogSettings.frontPage.backgroundColor } : {}) }}>
-          <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-center p-8">
-            <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 w-auto object-contain mb-4" />
-            <h1 className="text-4xl font-black tracking-tighter uppercase italic leading-tight text-gray-900">
-              {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
-              <span style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}>
-                {catalogSettings?.frontPage?.subtitle || "DEALS!"}
-              </span>
-            </h1>
-            <p className="text-sm font-bold tracking-widest uppercase opacity-70 text-gray-600">
+        <div
+          id="pdf-page-0"
+          className="bg-white text-gray-900 border-none relative overflow-hidden bg-cover bg-center"
+          style={{
+            width: isDesktop ? 380 : 320,
+            height: isDesktop ? 480 : 420,
+            ...(catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}),
+            ...(catalogSettings?.frontPage?.backgroundColor ? { backgroundColor: catalogSettings.frontPage.backgroundColor } : {})
+          }}
+        >
+          <div className="w-full h-full flex flex-col items-center justify-center p-8 md:p-12 text-center bg-white relative overflow-hidden">
+            <div className="mb-8 z-10">
+              <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 md:h-16 w-auto object-contain" />
+            </div>
+
+            <div className="relative z-10">
+              <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-tight text-gray-900">
+                {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
+                <span style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}>
+                  {catalogSettings?.frontPage?.subtitle || "DEALS!"}
+                </span>
+              </h1>
+            </div>
+
+            <p className="text-sm md:text-lg font-bold tracking-widest uppercase mt-8 opacity-70 text-gray-600 z-10">
               {catalogSettings?.frontPage?.tagline || "Digital Catalog 2026"}
             </p>
           </div>
@@ -1006,47 +1037,62 @@ const Index = () => {
             <div
               key={`pdf-page-${pageNum}`}
               id={`pdf-page-${pageNum}`}
-              className="w-full h-full bg-[#E6F7FF] bg-cover bg-center relative"
+              className="bg-[#E6F7FF] bg-cover bg-center relative"
               style={{
                 width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
                 ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
                 ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
               }}
             >
-              {hasLogosOnPage1 ? (
-                <div className="w-full h-full flex flex-col p-4">
-                  <h2 className="text-center text-sm font-black uppercase mb-4">Brand Partners</h2>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(catalogSettings.brandLogos as any[]).map((b: any, i: number) => (
-                      <div key={i} className="bg-white rounded p-1 flex items-center justify-center border aspect-[2/1]">
-                        {b.logoUrl ? <img src={b.logoUrl} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[8px]">{b.name}</span>}
-                      </div>
-                    ))}
+              <div className="w-full h-full flex flex-row overflow-hidden">
+                {hasLogosOnPage1 ? (
+                  <div className="flex-1 p-3 flex flex-col min-h-0 overflow-hidden">
+                    <div className="text-center mb-2">
+                      <h2 className="text-sm font-black text-gray-800 uppercase tracking-wide">Brand Partners</h2>
+                    </div>
+                    <div className="flex-1 grid grid-cols-3 gap-2 content-center">
+                      {(catalogSettings.brandLogos as any[]).map((b: any, i: number) => (
+                        <div key={i} className="bg-white rounded-lg p-2 flex items-center justify-center border border-gray-100 aspect-[2/1]">
+                          {b.logoUrl ? <img src={b.logoUrl} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[9px] font-black text-gray-700">{b.name}</span>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                ) : (
+                  <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start overflow-hidden">
+                    {leftPageProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                  </div>
+                )}
+                {/* Simulated Sidebar */}
+                <div className="w-10 bg-[#009FE3] flex items-center justify-center">
+                  <h2 className="text-sm font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase">Best Deals</h2>
                 </div>
-              ) : (
-                <div className="w-full h-full p-2 grid grid-cols-2 grid-rows-3 gap-2">
-                  {leftPageProducts.map(p => <ProductCard key={p.id} product={p} />)}
-                </div>
-              )}
+              </div>
               <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">{pageNum}</div>
             </div>,
+
             /* RIGHT PAGE CAPTURE */
             <div
               key={`pdf-page-${pageNum + 1}`}
               id={`pdf-page-${pageNum + 1}`}
-              className="w-full h-full bg-[#E2E0F5] bg-cover bg-center relative"
+              className="bg-[#E2E0F5] bg-cover bg-center relative"
               style={{
                 width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
                 ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
                 ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
               }}
             >
-              <div className="w-full h-full p-2 flex flex-col gap-2">
-                <div className={`grid grid-cols-2 gap-2 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
-                  {rightPageProducts.map(p => <ProductCard key={p.id} product={p} />)}
+              <div className="w-full h-full flex flex-row overflow-hidden">
+                <div className="flex-1 p-2 flex flex-col gap-2 min-h-0 overflow-hidden">
+                  <div className={`grid grid-cols-2 gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
+                    {rightPageProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                  </div>
+                  {hasBanner && <div className="h-24"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-xl" /></div>}
                 </div>
-                {hasBanner && <div className="h-20"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-lg" /></div>}
+                {/* Simulated Sidebar */}
+                <div className="w-10 bg-[#E6E0F8] border-l border-white flex items-center justify-center">
+                  <h2 className="text-sm font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">Top Picks</h2>
+                </div>
               </div>
               <div className="absolute bottom-3 right-6 text-[10px] font-bold text-gray-400">Page {String(pageNum + 1).padStart(2, '0')}</div>
             </div>
@@ -1056,23 +1102,26 @@ const Index = () => {
         {/* BACK COVER CAPTURE */}
         <div
           id={`pdf-page-${1 + productChunks.length * 2}`}
-          className="w-full h-full bg-[#f5f5f5] text-gray-800 bg-cover bg-center relative flex flex-col items-center justify-center p-8 text-center"
+          className="bg-[#f5f5f5] text-gray-800 bg-cover bg-center relative flex flex-col items-center justify-center p-12 text-center"
           style={{
             width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
             ...(catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}),
             ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
           }}
         >
-          <h2 className="text-xl font-black mb-2">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
-          <p className="text-xs text-gray-600 mb-4">{catalogSettings?.backPage?.description}</p>
-          <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
-            alt="QR"
-            className="w-24 h-24 mb-4"
-          />
-          <p className="text-[10px] font-black opacity-50">JUMIA © {new Date().getFullYear()}</p>
+          <h2 className="text-2xl font-black mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
+          <p className="text-sm text-gray-600 mb-8">{catalogSettings?.backPage?.description}</p>
+          <div className="w-32 h-32 bg-white p-4 shadow-xl rounded-2xl mb-6">
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
+              alt="QR"
+              className="w-full h-full"
+            />
+          </div>
+          <p className="text-xs font-black opacity-50">JUMIA © {new Date().getFullYear()}</p>
         </div>
       </div>
+
     </div>
   );
 };
