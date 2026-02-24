@@ -36,8 +36,8 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
           alt={product.name}
           className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
           loading={lazy ? "lazy" : "eager"}
-          crossOrigin="anonymous"
         />
+
 
       </div>
 

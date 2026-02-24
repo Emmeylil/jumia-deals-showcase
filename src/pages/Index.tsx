@@ -996,8 +996,9 @@ const Index = () => {
         >
           <div className="w-full h-full flex flex-col items-center justify-center p-8 md:p-12 text-center bg-white relative overflow-hidden">
             <div className="mb-8 z-10">
-              <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 md:h-16 w-auto object-contain" crossOrigin="anonymous" />
+              <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 md:h-16 w-auto object-contain" />
             </div>
+
 
 
             <div className="relative z-10">
@@ -1089,7 +1090,8 @@ const Index = () => {
                   <div className={`grid grid-cols-2 gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
                     {rightPageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
                   </div>
-                  {hasBanner && <div className="h-24"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-xl" crossOrigin="anonymous" /></div>}
+                  {hasBanner && <div className="h-24"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-xl" /></div>}
+
 
                 </div>
                 {/* Simulated Sidebar */}
@@ -1119,8 +1121,8 @@ const Index = () => {
               src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
               alt="QR"
               className="w-full h-full"
-              crossOrigin="anonymous"
             />
+
 
           </div>
           <p className="text-xs font-black opacity-50">JUMIA © {new Date().getFullYear()}</p>
