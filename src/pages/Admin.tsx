@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
 import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw, LogOut } from "lucide-react";
-import { getStats, type StatsData } from "@/lib/stats";
+import { getStats, type StatsData, listenToActiveReaders } from "@/lib/stats";
+
 import BannerCard from "@/components/BannerCard";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -127,7 +128,9 @@ const Admin = () => {
 
   // Stats state
   const [stats, setStats] = useState<StatsData | null>(null);
+  const [activeReaders, setActiveReaders] = useState(0);
   const [productClicks, setProductClicks] = useState<Array<{ id: string, clicks: number, product?: Product }>>([]);
+
 
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
@@ -277,8 +280,18 @@ const Admin = () => {
         setLoading(false);
       }
     );
-    return () => unsubscribe();
+    // Listen to active readers in real-time
+    const presenceUnsub = listenToActiveReaders((count) => {
+      setActiveReaders(count);
+    });
+
+    return () => {
+      unsubscribe();
+      settingsUnsub();
+      presenceUnsub();
+    };
   }, []);
+
 
   const handleBulkFetch = async () => {
     const skus = skuInput
@@ -1266,11 +1279,21 @@ const Admin = () => {
                 <BarChart3 className="text-primary" /> Statistics
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
+                  <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-600 rounded-full border border-green-100 animate-pulse">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Live Now</span>
+                  </div>
+                  <Users className="text-green-600" size={24} />
+                  <span className="text-3xl font-black text-gray-900">{activeReaders}</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Active Readers</span>
+                </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
-                  <Users className="text-blue-500" size={24} />
+                  <BarChart3 className="text-blue-500" size={24} />
                   <span className="text-3xl font-bold text-gray-900">{stats?.views || 0}</span>
                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Views</span>
                 </div>
+
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                   <MousePointer2 className="text-orange-500" size={24} />
                   <span className="text-3xl font-bold text-gray-900">{stats?.clicks || 0}</span>

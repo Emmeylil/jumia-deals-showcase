@@ -1,5 +1,6 @@
 import { db } from "./firebase";
-import { doc, updateDoc, increment, getDoc, setDoc } from "@firebase/firestore";
+import { doc, updateDoc, increment, getDoc, setDoc, collection, onSnapshot, query, where, serverTimestamp, Timestamp } from "@firebase/firestore";
+
 
 const STATS_DOC_ID = "general";
 const STATS_COLLECTION = "stats";
@@ -74,7 +75,6 @@ export const getStats = async (): Promise<StatsData | null> => {
     }
     return null;
 };
-
 export const incrementProductClick = async (productId: string | number) => {
     const id = productId.toString();
     const productRef = doc(db, "product_clicks", id);
@@ -86,3 +86,24 @@ export const incrementProductClick = async (productId: string | number) => {
         await updateDoc(productRef, { clicks: increment(1) });
     }
 };
+
+export const updatePresence = async (sessionId: string) => {
+    const presenceRef = doc(db, "presence", sessionId);
+    await setDoc(presenceRef, {
+        lastSeen: serverTimestamp(),
+    }, { merge: true });
+};
+
+export const listenToActiveReaders = (callback: (count: number) => void) => {
+    // Consider active if seen in the last 2 minutes
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const q = query(
+        collection(db, "presence"),
+        where("lastSeen", ">=", Timestamp.fromDate(twoMinutesAgo))
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        callback(snapshot.size);
+    });
+};
+

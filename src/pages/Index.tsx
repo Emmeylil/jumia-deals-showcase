@@ -11,7 +11,8 @@ import { Loader2, Share2, Download, Search, X } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
-import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload } from "@/lib/stats";
+import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence } from "@/lib/stats";
+
 import { onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -172,16 +173,25 @@ const Index = () => {
 
   // Tracking
   useEffect(() => {
-    // Track view and reader on mount
+    // Unique session ID for presence tracking
+    let sessionId = sessionStorage.getItem("jumia_presence_id");
+    if (!sessionId) {
+      sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      sessionStorage.setItem("jumia_presence_id", sessionId);
+    }
+
+    // Initial updates
     incrementView();
     incrementReader();
+    updatePresence(sessionId);
 
     // Track time on book
     const startTime = Date.now();
+
+    // Heartbeat for presence & potentially time tracking
     const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      // Update every 10 seconds to avoid spamming writes, or just on unmount
-    }, 10000);
+      updatePresence(sessionId!);
+    }, 60000);
 
     return () => {
       clearInterval(interval);
@@ -189,6 +199,7 @@ const Index = () => {
       updateTimeOnBook(totalSeconds);
     };
   }, []);
+
 
   // Auto-flip logic
   useEffect(() => {
