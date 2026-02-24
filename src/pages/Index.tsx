@@ -1,6 +1,8 @@
 import React, { useRef, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
 import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+
 import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import BannerCard from "@/components/BannerCard";
@@ -59,7 +61,9 @@ const Index = () => {
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [highlightedProductId, setHighlightedProductId] = React.useState<number | null>(null);
   const [isCapturing, setIsCapturing] = React.useState(false);
+  const [captureProgress, setCaptureProgress] = React.useState({ current: 0, total: 0 });
   const [searchParams, setSearchParams] = useSearchParams();
+
 
   // Initial page from URL
   const initialPage = React.useMemo(() => {
@@ -236,75 +240,57 @@ const Index = () => {
       return;
     }
 
-    const currentIndex = book.getCurrentPageIndex();
-    const isMobile = window.innerWidth < 768;
-
-    let captureIds: string[] = [];
-
-    if (currentIndex === 0) {
-      captureIds.push("page-0");
-    } else {
-      if (isMobile) {
-        captureIds.push(`page-${currentIndex}`);
-      } else {
-        // Desktop spread
-        captureIds.push(`page-${currentIndex}`);
-        if (currentIndex % 2 !== 0) {
-          captureIds.push(`page-${currentIndex + 1}`);
-        }
-      }
-    }
-
-    const elements = captureIds.map(id => document.getElementById(id)).filter(Boolean) as HTMLElement[];
-
-    if (elements.length === 0) {
-      console.error("No pages found to capture");
-      setIsCapturing(false);
-      return;
-    }
-
     try {
-      let canvas;
+      const totalPagesToCapture = totalPages;
+      setCaptureProgress({ current: 0, total: totalPagesToCapture });
+
+      // Create PDF: p = portrait, pt = points, a4 = format
+      // Custom format based on page dimensions (isDesktop ? 380x480 : 320x420)
+      const pdfWidth = isDesktop ? 380 : 320;
+      const pdfHeight = isDesktop ? 480 : 420;
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'px',
+        format: [pdfWidth, pdfHeight]
+      });
+
       const options = {
-        scale: 3, // High resolution
+        scale: 2, // Good balance of quality and file size
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        allowTaint: true
       };
 
-      if (elements.length === 1) {
-        canvas = await html2canvas(elements[0], options);
-      } else {
-        // Individual captures
-        const canvas1 = await html2canvas(elements[0], options);
-        const canvas2 = await html2canvas(elements[1], options);
+      for (let i = 0; i < totalPagesToCapture; i++) {
+        setCaptureProgress({ current: i + 1, total: totalPagesToCapture });
 
-        const mergedCanvas = document.createElement('canvas');
-        mergedCanvas.width = canvas1.width + canvas2.width;
-        mergedCanvas.height = Math.max(canvas1.height, canvas2.height);
-        const ctx = mergedCanvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, mergedCanvas.width, mergedCanvas.height);
-          ctx.drawImage(canvas1, 0, 0);
-          ctx.drawImage(canvas2, canvas1.width, 0);
+        const element = document.getElementById(`page-${i}`);
+        if (!element) {
+          console.warn(`Page element page-${i} not found`);
+          continue;
         }
-        canvas = mergedCanvas;
+
+        const canvas = await html2canvas(element, options);
+        const imgData = canvas.toDataURL('image/jpeg', 0.85); // JPEG for smaller file size
+
+        if (i > 0) {
+          pdf.addPage([pdfWidth, pdfHeight], 'p');
+        }
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
 
-      const image = canvas.toDataURL("image/png", 1.0);
-      const link = document.createElement("a");
-      link.href = image;
-      link.download = `jumia-catalog-page-${currentIndex + 1}.png`;
-      link.click();
+      pdf.save(`jumia-deals-catalog-${new Date().toISOString().split('T')[0]}.pdf`);
 
     } catch (error) {
       console.error("Download failed:", error);
+      alert("Download failed. Please try again.");
     } finally {
       setIsCapturing(false);
+      setCaptureProgress({ current: 0, total: 0 });
     }
   };
+
 
 
   const handleAutoSync = async (settings: any) => {
@@ -469,15 +455,35 @@ const Index = () => {
       </div>
 
       {isCapturing && (
-        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
-            <Loader2 className="w-12 h-12 animate-spin text-jumia-purple" />
-            <p className="font-black text-jumia-purple uppercase tracking-widest animate-pulse">
-              Capturing High Quality Page...
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300 max-w-xs w-full">
+            <div className="relative">
+              <Loader2 className="w-16 h-16 animate-spin text-jumia-purple" />
+              <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-jumia-purple">
+                {Math.round((captureProgress.current / captureProgress.total) * 100)}%
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="font-black text-gray-900 uppercase tracking-widest mb-1">
+                Generating PDF
+              </p>
+              <p className="text-sm font-bold text-gray-500">
+                Processing page {captureProgress.current} of {captureProgress.total}
+              </p>
+            </div>
+            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-jumia-purple transition-all duration-300 ease-out"
+                style={{ width: `${(captureProgress.current / captureProgress.total) * 100}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 font-medium italic">
+              Please don't close this tab...
             </p>
           </div>
         </div>
       )}
+
 
       {/* Background with blur effect */}
       <div
