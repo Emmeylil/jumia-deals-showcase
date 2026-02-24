@@ -6,9 +6,11 @@ interface ProductCardProps {
   product: Product;
   compact?: boolean;
   highlighted?: boolean;
+  lazy?: boolean;
 }
 
-const ProductCard = ({ product, compact, highlighted }: ProductCardProps) => {
+const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCardProps) => {
+
   const discount = product.oldPrice
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
@@ -33,8 +35,10 @@ const ProductCard = ({ product, compact, highlighted }: ProductCardProps) => {
           src={product.image}
           alt={product.name}
           className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
-          loading="lazy"
+          loading={lazy ? "lazy" : "eager"}
+          crossOrigin="anonymous"
         />
+
       </div>
 
       {/* Product Name */}

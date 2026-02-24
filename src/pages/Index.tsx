@@ -996,8 +996,9 @@ const Index = () => {
         >
           <div className="w-full h-full flex flex-col items-center justify-center p-8 md:p-12 text-center bg-white relative overflow-hidden">
             <div className="mb-8 z-10">
-              <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 md:h-16 w-auto object-contain" />
+              <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 md:h-16 w-auto object-contain" crossOrigin="anonymous" />
             </div>
+
 
             <div className="relative z-10">
               <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-tight text-gray-900">
@@ -1060,8 +1061,9 @@ const Index = () => {
                   </div>
                 ) : (
                   <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start overflow-hidden">
-                    {leftPageProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                    {leftPageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
                   </div>
+
                 )}
                 {/* Simulated Sidebar */}
                 <div className="w-10 bg-[#009FE3] flex items-center justify-center">
@@ -1085,9 +1087,10 @@ const Index = () => {
               <div className="w-full h-full flex flex-row overflow-hidden">
                 <div className="flex-1 p-2 flex flex-col gap-2 min-h-0 overflow-hidden">
                   <div className={`grid grid-cols-2 gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
-                    {rightPageProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                    {rightPageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
                   </div>
-                  {hasBanner && <div className="h-24"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-xl" /></div>}
+                  {hasBanner && <div className="h-24"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-xl" crossOrigin="anonymous" /></div>}
+
                 </div>
                 {/* Simulated Sidebar */}
                 <div className="w-10 bg-[#E6E0F8] border-l border-white flex items-center justify-center">
@@ -1116,7 +1119,9 @@ const Index = () => {
               src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
               alt="QR"
               className="w-full h-full"
+              crossOrigin="anonymous"
             />
+
           </div>
           <p className="text-xs font-black opacity-50">JUMIA © {new Date().getFullYear()}</p>
         </div>
