@@ -201,26 +201,6 @@ const Index = () => {
   }, []);
 
 
-  // Auto-flip logic
-  useEffect(() => {
-    if (loading || settingsLoading || !catalogSettings) return;
-
-    const autoFlipInterval = setInterval(() => {
-      const book = bookRef.current?.pageFlip();
-      if (!book) return;
-
-      const total = book.getPageCount();
-      const current = book.getCurrentPageIndex();
-
-      if (current >= total - 1) {
-        book.flip(0); // Loop back to cover
-      } else {
-        book.flipNext();
-      }
-    }, 10000);
-
-    return () => clearInterval(autoFlipInterval);
-  }, [loading, settingsLoading, catalogSettings, currentPage]); // Reset timer on page change/load
 
   const handleShare = () => {
     incrementShare();
