@@ -1584,7 +1584,7 @@ const Admin = () => {
                   <div className="flex items-center gap-4 min-w-0 flex-1">
                     <img src={product.image} alt={product.name} className="w-16 h-16 object-contain flex-shrink-0" />
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-sm line-clamp-1">{product.displayName || product.name}</h3>
+                      <h3 className="font-semibold text-sm line-clamp-2">{product.displayName || product.name}</h3>
                       <div className="flex gap-2 text-[10px] text-muted-foreground uppercase tracking-tight">
                         <span>ID: {product.id}</span>
                         {product.sku && <span>• SKU: {product.sku}</span>}
