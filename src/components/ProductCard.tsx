@@ -42,8 +42,8 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
       </div>
 
       {/* Product Name */}
-      <div className="w-full text-center px-1 mb-1 shrink-0">
-        <h3 className="text-[11px] md:text-xs font-bold text-gray-900 leading-tight line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
+      <div className="w-full text-center px-1 mb-1 shrink-0 flex items-center justify-center min-h-[2.5rem]">
+        <h3 className="text-[11px] md:text-xs font-bold text-gray-900 leading-tight line-clamp-2">
           {(() => {
             const fullName = product.displayName || product.name;
             const words = fullName.split(' ');
