@@ -135,7 +135,7 @@ const Admin = () => {
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
   const settingsRef = useRef(catalogSettings);
-  const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners" | "brandlogos">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners" | "brandlogos" | "analytics">("products");
   const [uploading, setUploading] = useState(false);
 
   // Keep ref in sync with state for async access
@@ -653,6 +653,12 @@ const Admin = () => {
             <span className="text-[9px] bg-blue-100 text-blue-700 font-black uppercase rounded px-1.5 py-0.5 tracking-wider">Pages 1 & 2</span>
           </button>
           <button
+            className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'analytics' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            📊 Analytics
+          </button>
+          <button
             className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'settings' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             onClick={() => setActiveTab('settings')}
           >
@@ -1134,6 +1140,28 @@ const Admin = () => {
             >
               <Save className="mr-2" size={18} /> Save Banners to Backend
             </Button>
+          </div>
+        ) : activeTab === 'analytics' ? (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl p-5 flex items-start gap-4 shadow-lg mb-6">
+              <span className="text-3xl shrink-0">📊</span>
+              <div>
+                <h2 className="text-lg font-black uppercase tracking-wide">Live Analytics Report</h2>
+                <p className="text-sm text-purple-100 mt-1">Detailed tracking of engagement, product clicks, and visitor behavior via Looker Studio.</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px] flex items-center justify-center">
+              <iframe
+                width="100%"
+                height="800"
+                src="https://lookerstudio.google.com/embed/reporting/bfcb676b-6eb7-490a-9eca-822323f0440d/page/p_8tj1qygatd"
+                frameBorder="0"
+                style={{ border: 0 }}
+                allowFullScreen
+                sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              />
+            </div>
           </div>
         ) : activeTab === 'brandlogos' ? (
           <div className="space-y-6 animate-in fade-in duration-300">
