@@ -433,6 +433,60 @@ const Index = () => {
     setTotalPages(count);
   }, [productChunks.length]);
 
+  const performSearch = () => {
+    if (searchQuery.length <= 1) return;
+
+    const searchLower = searchQuery.toLowerCase();
+    const filtered = displayProducts
+      .filter(p =>
+        p.name.toLowerCase().includes(searchLower) ||
+        p.brand?.toLowerCase().includes(searchLower) ||
+        p.category?.toLowerCase().includes(searchLower)
+      )
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        const aBrand = a.brand?.toLowerCase() || "";
+        const bBrand = b.brand?.toLowerCase() || "";
+
+        // Exact name match
+        if (aName === searchLower && bName !== searchLower) return -1;
+        if (bName === searchLower && aName !== searchLower) return 1;
+
+        // Starts with name match
+        if (aName.startsWith(searchLower) && !bName.startsWith(searchLower)) return -1;
+        if (bName.startsWith(searchLower) && !aName.startsWith(searchLower)) return 1;
+
+        // Brand match
+        if (aBrand === searchLower && bBrand !== searchLower) return -1;
+        if (bBrand === searchLower && aBrand !== searchLower) return 1;
+
+        return 0;
+      });
+
+    if (filtered.length > 0) {
+      const product = filtered[0];
+      const targetPage = getTargetPage(product.id);
+      const book = bookRef.current?.pageFlip();
+
+      if (book) {
+        const currentPageIndex = book.getCurrentPageIndex();
+        const isVisible = isDesktop
+          ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
+          : currentPageIndex === targetPage;
+
+        if (!isVisible) {
+          book.flip(targetPage);
+        }
+      }
+
+      setHighlightedProductId(product.id);
+      setSearchQuery("");
+      setIsSearchFocused(false);
+      setTimeout(() => setHighlightedProductId(null), 5000);
+    }
+  };
+
   if (loading || settingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -507,9 +561,13 @@ const Index = () => {
       {/* Search Bar */}
       <div className="w-full max-w-md mb-2 md:mb-3 relative z-50 px-4 md:px-0 shrink-0">
         <div className="relative group">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-jumia-purple transition-colors">
+          <button
+            onClick={performSearch}
+            className="absolute inset-y-0 left-3 flex items-center z-10 text-gray-400 group-focus-within:text-jumia-purple transition-all hover:scale-110 active:scale-95"
+            title="Search"
+          >
             <Search size={18} />
-          </div>
+          </button>
           <Input
             type="text"
             placeholder="Search products, brands, or deals..."
@@ -518,56 +576,8 @@ const Index = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && searchQuery.length > 1) {
-                const searchLower = searchQuery.toLowerCase();
-                const filtered = displayProducts
-                  .filter(p =>
-                    p.name.toLowerCase().includes(searchLower) ||
-                    p.brand?.toLowerCase().includes(searchLower) ||
-                    p.category?.toLowerCase().includes(searchLower)
-                  )
-                  .sort((a, b) => {
-                    const aName = a.name.toLowerCase();
-                    const bName = b.name.toLowerCase();
-                    const aBrand = a.brand?.toLowerCase() || "";
-                    const bBrand = b.brand?.toLowerCase() || "";
-
-                    // Exact name match
-                    if (aName === searchLower && bName !== searchLower) return -1;
-                    if (bName === searchLower && aName !== searchLower) return 1;
-
-                    // Starts with name match
-                    if (aName.startsWith(searchLower) && !bName.startsWith(searchLower)) return -1;
-                    if (bName.startsWith(searchLower) && !aName.startsWith(searchLower)) return 1;
-
-                    // Brand match
-                    if (aBrand === searchLower && bBrand !== searchLower) return -1;
-                    if (bBrand === searchLower && aBrand !== searchLower) return 1;
-
-                    return 0;
-                  });
-
-                if (filtered.length > 0) {
-                  const product = filtered[0];
-                  const targetPage = getTargetPage(product.id);
-                  const book = bookRef.current?.pageFlip();
-
-                  if (book) {
-                    const currentPageIndex = book.getCurrentPageIndex();
-                    const isVisible = isDesktop
-                      ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
-                      : currentPageIndex === targetPage;
-
-                    if (!isVisible) {
-                      book.flip(targetPage);
-                    }
-                  }
-
-                  setHighlightedProductId(product.id);
-                  setSearchQuery("");
-                  setIsSearchFocused(false);
-                  setTimeout(() => setHighlightedProductId(null), 5000);
-                }
+              if (e.key === 'Enter') {
+                performSearch();
               }
             }}
           />
