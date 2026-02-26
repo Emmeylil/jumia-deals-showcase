@@ -490,10 +490,6 @@ const Index = () => {
         }
       }
 
-      if (product.url) {
-        window.open(product.url, '_blank');
-      }
-
       setHighlightedProductId(product.id);
       setSearchQuery("");
       setIsSearchFocused(false);
@@ -653,9 +649,6 @@ const Index = () => {
                         if (!isVisible) {
                           book.flip(targetPage);
                         }
-                      }
-                      if (product.url) {
-                        window.open(product.url, '_blank');
                       }
                       setHighlightedProductId(product.id);
                       setSearchQuery("");
