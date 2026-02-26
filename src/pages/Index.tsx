@@ -135,12 +135,22 @@ const Index = () => {
 
   // Helper to determine target page for a product based on dynamic chunks
   const getTargetPage = (productId: number) => {
+    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
+
     for (let chunkIdx = 0; chunkIdx < productChunks.length; chunkIdx++) {
       const chunk = productChunks[chunkIdx];
       const prodInChunkIdx = chunk.findIndex(p => p.id === productId);
+
       if (prodInChunkIdx !== -1) {
-        const onLeftPage = prodInChunkIdx < 6;
-        return 1 + (chunkIdx * 2) + (onLeftPage ? 0 : 1);
+        if (chunkIdx === 0 && hasLogosOnPage1) {
+          // Spread 0: Left is Logos (Page 1), Right is products (Page 2)
+          return 2;
+        }
+
+        // General case for spreads
+        const spreadStartPage = 1 + (chunkIdx * 2);
+        const onLeftPage = prodInChunkIdx < (chunkIdx === 0 && hasLogosOnPage1 ? 0 : 6);
+        return spreadStartPage + (onLeftPage ? 0 : 1);
       }
     }
     return 0;
@@ -480,6 +490,10 @@ const Index = () => {
         }
       }
 
+      if (product.url) {
+        window.open(product.url, '_blank');
+      }
+
       setHighlightedProductId(product.id);
       setSearchQuery("");
       setIsSearchFocused(false);
@@ -639,6 +653,9 @@ const Index = () => {
                         if (!isVisible) {
                           book.flip(targetPage);
                         }
+                      }
+                      if (product.url) {
+                        window.open(product.url, '_blank');
                       }
                       setHighlightedProductId(product.id);
                       setSearchQuery("");
