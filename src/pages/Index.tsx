@@ -606,7 +606,7 @@ const Index = () => {
           <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             {(() => {
               const searchLower = searchQuery.toLowerCase();
-              const filtered = products
+              const filtered = displayProducts
                 .filter(p =>
                   p.name.toLowerCase().includes(searchLower) ||
                   p.brand?.toLowerCase().includes(searchLower) ||
@@ -661,7 +661,7 @@ const Index = () => {
                     </div>
                     <div className="flex-1 text-left overflow-hidden">
                       <h4 className="font-bold text-gray-900 truncate text-sm leading-tight">{product.name}</h4>
-                      <p className="text-xs text-gray-500 font-semibold">{product.brand} • Page {targetPage + 1}</p>
+                      <p className="text-xs text-gray-500 font-semibold">{product.brand} • Page {targetPage}</p>
                     </div>
                     <div className="text-jumia-purple font-black text-sm whitespace-nowrap">
                       ₦{product.price.toLocaleString()}
