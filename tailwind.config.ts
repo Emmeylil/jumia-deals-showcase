@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Gotham", "Inter", "sans-serif"],
-        gotham: ["Gotham", "sans-serif"],
+        sans: ["Outfit", "Inter", "sans-serif"],
+        outfit: ["Outfit", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

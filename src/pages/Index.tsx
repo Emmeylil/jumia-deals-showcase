@@ -652,7 +652,7 @@ const Index = () => {
   }
 
   return (
-    <div className="h-[100dvh] font-gotham overflow-hidden flex flex-col items-center justify-between py-2 md:py-4 px-2 md:px-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal fixed inset-0">
+    <div className="h-[100dvh] font-outfit overflow-hidden flex flex-col items-center justify-between py-2 md:py-4 px-2 md:px-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal fixed inset-0">
 
       {/* Control Bar */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
