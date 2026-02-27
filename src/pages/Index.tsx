@@ -1449,7 +1449,7 @@ const Index = () => {
         style={{
           width: isDesktop ? 380 : 320,
           height: isDesktop ? 480 : 420,
-          fontFamily: "'Gotham', 'Inter', sans-serif"
+          fontFamily: "'Inter', sans-serif"
         }}
       >
         {/* COVER PAGE */}
