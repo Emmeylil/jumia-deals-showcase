@@ -7,13 +7,13 @@ import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
-import { Loader2, Share2, Download, Search, X, History, Flame, Trash2 } from "lucide-react";
+import { Loader2, Share2, Download, Search, X, History, Flame, Trash2, ExternalLink, MessageSquarePlus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
 import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct } from "@/lib/stats";
 
-import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit } from "firebase/firestore";
+import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
 import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
@@ -793,10 +793,10 @@ const Index = () => {
                     <div className="text-gray-400 italic font-medium">No results found in this catalogue for "{searchQuery}"</div>
                     <div className="h-px w-full bg-gray-100" />
                     <p className="text-[11px] text-gray-500 leading-relaxed max-w-[280px]">
-                      Would you like to explore the Jumia site for more options?
+                      Check <span className="font-bold text-jumia-purple">Jumia Mall</span> and explore more options!
                       <br />
                       <span className="text-[9px] opacity-60 font-medium">
-                        (Note: this may not be covered by benefits of this catalogue)
+                        (Note: The exclusive offers in this catalogue may not cover the products found on the main site)
                       </span>
                     </p>
                     <button
@@ -804,7 +804,7 @@ const Index = () => {
                       className="flex items-center gap-2 px-6 py-2.5 bg-jumia-purple text-white text-xs font-bold rounded-xl hover:bg-jumia-purple/90 active:scale-95 transition-all shadow-lg hover:shadow-jumia-purple/20"
                     >
                       <ExternalLink size={14} />
-                      Search on Jumia.com.ng
+                      Shop on Jumia Mall
                     </button>
                   </div>
                 );
@@ -1163,26 +1163,98 @@ const Index = () => {
           {/* BACK COVER */}
           <Page className="bg-[#f5f5f5] text-gray-800" id={`page-${1 + productChunks.length * 2}`}>
             <div
-              className="w-full h-full flex flex-col items-center justify-center p-4 md:p-12 text-center border-l border-gray-200 bg-cover bg-center"
+              className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8 text-center border-l border-gray-200 bg-cover bg-center overflow-y-auto"
               style={{
                 ...(catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}),
                 ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
               }}
             >
-              <h2 className="text-xl md:text-3xl font-black mb-2 md:mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
-              <p className="mb-4 md:mb-8 text-gray-600 text-sm md:text-base">{catalogSettings?.backPage?.description || "Visit Jumia.com.ng for even more amazing deals on all your favorite brands."}</p>
-              <div className="w-28 h-28 md:w-40 md:h-40 bg-white p-3 md:p-4 shadow-xl rounded-2xl mb-4 md:mb-6 transform hover:scale-105 transition-transform duration-300">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
-                  alt="QR Code"
-                  className="w-full h-full opacity-90"
-                />
-              </div>
-              <p className="text-[10px] md:text-xs font-bold text-blue-500 uppercase tracking-widest mb-6 md:mb-12">{catalogSettings?.backPage?.callToAction || "Scan to shop now"}</p>
+              {!suggestionSuccess ? (
+                <div className="w-full max-w-sm bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="bg-jumia-purple/10 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <MessageSquarePlus className="text-jumia-purple" size={24} />
+                  </div>
+                  <h2 className="text-lg font-black text-gray-900 mb-1">Missing something?</h2>
+                  <p className="text-[11px] text-gray-500 mb-6 font-medium">Suggest a product you'd like to see on Jumia!</p>
 
-              <div className="flex items-center gap-2 opacity-50 text-sm">
-                <span className="font-bold">{catalogSettings?.backPage?.footerText?.split('©')[0]?.trim() || "JUMIA"}</span>
-                <span>&copy; {new Date().getFullYear()}</span>
+                  <div className="space-y-3 text-left">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Product Name</label>
+                      <input
+                        className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all outline-none"
+                        placeholder="e.g. Baby Diapers"
+                        value={suggestionForm.name}
+                        onChange={(e) => setSuggestionForm(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Preferred Brand</label>
+                      <input
+                        className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all outline-none"
+                        placeholder="e.g. Pampers"
+                        value={suggestionForm.brand}
+                        onChange={(e) => setSuggestionForm(prev => ({ ...prev, brand: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Description</label>
+                      <textarea
+                        className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all outline-none resize-none"
+                        placeholder="Any specific features..."
+                        rows={2}
+                        value={suggestionForm.description}
+                        onChange={(e) => setSuggestionForm(prev => ({ ...prev, description: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    disabled={suggestionSubmitting || !suggestionForm.name}
+                    onClick={async () => {
+                      setSuggestionSubmitting(true);
+                      try {
+                        await setDoc(doc(collection(db, "product_suggestions")), {
+                          ...suggestionForm,
+                          timestamp: serverTimestamp()
+                        });
+                        setSuggestionSuccess(true);
+                        setTimeout(() => {
+                          setSuggestionSuccess(false);
+                          setSuggestionForm({ name: "", brand: "", description: "" });
+                        }, 3000);
+                      } catch (e) {
+                        console.error(e);
+                      } finally {
+                        setSuggestionSubmitting(false);
+                      }
+                    }}
+                    className="w-full mt-6 py-3 bg-jumia-purple text-white rounded-xl text-xs font-bold shadow-lg shadow-jumia-purple/20 hover:bg-jumia-purple/90 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-2"
+                  >
+                    {suggestionSubmitting ? <Loader2 size={16} className="animate-spin" /> : "Submit Suggestion"}
+                  </button>
+                </div>
+              ) : (
+                <div className="animate-in fade-in zoom-in duration-300">
+                  <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-lg">
+                    <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <h3 className="text-xl font-black text-gray-900">Thank You!</h3>
+                  <p className="text-sm text-gray-500 font-medium">We've received your suggestion.</p>
+                </div>
+              )}
+
+              <div className="mt-8 flex flex-col items-center">
+                <div className="w-20 h-20 bg-white p-2 shadow-lg rounded-xl mb-4">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
+                    alt="QR Code"
+                    className="w-full h-full opacity-90"
+                  />
+                </div>
+                <div className="flex items-center gap-2 opacity-30 text-[10px] font-black uppercase tracking-[0.2em]">
+                  <span>{catalogSettings?.backPage?.footerText?.split('©')[0]?.trim() || "JUMIA"}</span>
+                  <span>&copy; {new Date().getFullYear()}</span>
+                </div>
               </div>
             </div>
           </Page>

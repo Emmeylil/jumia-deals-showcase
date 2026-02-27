@@ -1,6 +1,8 @@
 import { type Product, formatPrice } from "@/data/products";
 import { incrementClick, incrementProductClick } from "@/lib/stats";
 import { addUTMParameters } from "@/lib/utils";
+import React from "react";
+import { Heart } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
@@ -15,9 +17,41 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
 
-  const handleClick = () => {
+  const [isWishlisted, setIsWishlisted] = React.useState(() => {
+    const saved = localStorage.getItem("jumia_wishlist");
+    if (!saved) return false;
+    const list = JSON.parse(saved);
+    return list.includes(product.id);
+  });
+
+  const handleClick = (e: React.MouseEvent) => {
+    // If clicking the heart, don't trigger the main card click
+    if ((e.target as HTMLElement).closest('.wishlist-btn')) return;
+
     incrementClick();
     incrementProductClick(product.id);
+  };
+
+  const toggleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const newStatus = !isWishlisted;
+    setIsWishlisted(newStatus);
+
+    const saved = localStorage.getItem("jumia_wishlist");
+    const list = saved ? JSON.parse(saved) : [];
+
+    const updatedList = newStatus
+      ? [...list, product.id]
+      : list.filter((id: any) => id !== product.id);
+
+    localStorage.setItem("jumia_wishlist", JSON.stringify(updatedList));
+
+    // If adding to wishlist, also take user to the product page on the main site to "sync"
+    if (newStatus && product.url) {
+      window.open(addUTMParameters(product.url), '_blank');
+    }
   };
 
   const content = (
@@ -28,6 +62,14 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
           -{discount}%
         </div>
       )}
+
+      {/* Wishlist Button */}
+      <button
+        onClick={toggleWishlist}
+        className={`wishlist-btn absolute top-2 left-2 z-10 w-7 h-7 flex items-center justify-center rounded-full transition-all shadow-sm ${isWishlisted ? 'bg-jumia-purple text-white' : 'bg-white/80 text-gray-400 hover:text-jumia-purple'}`}
+      >
+        <Heart size={14} fill={isWishlisted ? "currentColor" : "none"} />
+      </button>
 
       {/* Product Image */}
       <div className="flex-1 w-full flex items-center justify-center py-0 mt-1 min-h-0 max-h-[52%]">
