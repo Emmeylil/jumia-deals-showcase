@@ -16,7 +16,7 @@ import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, 
 import { db, isConfigured } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
 import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
-import { AlertCircle, Loader2, Share2, Download, Search, X, History, Flame, Trash2 } from "lucide-react";
+import { AlertCircle, Loader2, Share2, Download, Search, X, History, Flame, Trash2, Filter, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PageProps {
@@ -79,6 +79,16 @@ const Index = () => {
   const [suggestionSuccess, setSuggestionSuccess] = React.useState(false);
   const [suggestionSubmitting, setSuggestionSubmitting] = React.useState(false);
 
+  // Dynamic Category Filtering
+  const [activeCategoryFilter, setActiveCategoryFilter] = React.useState<string>("All");
+
+  const availableCategories = React.useMemo(() => {
+    const categories = (products || [])
+      .filter(p => p.category)
+      .map(p => p.category);
+    return ["All", ...Array.from(new Set(categories)).sort()];
+  }, [products]);
+
   // Initial page from URL
   const initialPage = React.useMemo(() => {
     const p = searchParams.get('page');
@@ -111,6 +121,11 @@ const Index = () => {
 
       return true;
     });
+
+    // Apply Active Category Filter
+    if (activeCategoryFilter !== "All") {
+      filtered = filtered.filter(p => p.category === activeCategoryFilter);
+    }
 
     // Prefer the category order from the Google Sheet (column A), fall back to PRODUCT_CATEGORIES
     const categoryOrder: string[] =
@@ -555,8 +570,8 @@ const Index = () => {
         />
       )}
 
-      {/* Search Bar */}
-      <div className="w-full max-w-md mb-2 md:mb-3 relative z-50 px-4 md:px-0 shrink-0">
+      {/* Search Bar & Category Filter */}
+      <div className="w-full max-w-md mb-2 md:mb-3 relative z-50 px-4 md:px-0 shrink-0 flex flex-col gap-2">
         <div className="relative group">
           <button
             onClick={performSearch}
@@ -586,6 +601,35 @@ const Index = () => {
               <X size={20} />
             </button>
           )}
+        </div>
+
+        {/* Category Filter Dropdown */}
+        <div className="relative flex items-center w-full">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <Filter size={16} className="text-gray-400" />
+          </div>
+          <select
+            value={activeCategoryFilter}
+            onChange={(e) => {
+              setActiveCategoryFilter(e.target.value);
+              // Reset flipbook to cover page whenever filter changes
+              if (bookRef.current) {
+                try {
+                  bookRef.current.pageFlip().flip(0);
+                } catch (e) {
+                  // Ignore if flipbook is not ready
+                }
+              }
+            }}
+            className="w-full pl-9 pr-8 py-2.5 appearance-none bg-white/95 backdrop-blur-md border-2 border-white/50 shadow-lg rounded-2xl text-sm font-semibold text-gray-700 outline-none focus:border-jumia-purple focus:ring-4 focus:ring-jumia-purple/20 transition-all cursor-pointer"
+          >
+            {availableCategories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+            <ChevronDown size={16} className="text-gray-500" />
+          </div>
         </div>
         {/* Search Suggestion UI (Recent & Popular) */}
         {isSearchFocused && searchQuery.length === 0 && (
