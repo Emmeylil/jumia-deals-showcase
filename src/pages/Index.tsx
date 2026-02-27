@@ -447,12 +447,10 @@ const Index = () => {
   const performSearch = () => {
     if (searchQuery.length <= 1) return;
 
-    const expandedQueries = expandQuery(searchQuery);
-
     const filtered = displayProducts
       .map(p => ({
         product: p,
-        score: getSemanticScore(p, expandedQueries)
+        score: getSemanticScore(p, searchQuery)
       }))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
@@ -588,12 +586,10 @@ const Index = () => {
         {isSearchFocused && searchQuery.length > 1 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             {(() => {
-              const expandedQueries = expandQuery(searchQuery);
-
               const filtered = displayProducts
                 .map(p => ({
                   product: p,
-                  score: getSemanticScore(p, expandedQueries)
+                  score: getSemanticScore(p, searchQuery)
                 }))
                 .filter(item => item.score > 0)
                 .sort((a, b) => b.score - a.score)
