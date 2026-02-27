@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc, query, orderBy, limit, getDocs } from "firebase/firestore";
@@ -140,6 +140,16 @@ const Admin = () => {
   const settingsRef = useRef(catalogSettings);
   const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners" | "brandlogos" | "analytics">("products");
   const [uploading, setUploading] = useState(false);
+
+  // Dynamic Categories
+  const availableCategories = useMemo(() => {
+    const categories = (products || [])
+      .filter(p => p.category)
+      .map(p => p.category);
+    // Merge with predefined categories to ensure they are always options
+    const allUnique = Array.from(new Set([...categories, ...PRODUCT_CATEGORIES]));
+    return allUnique.sort();
+  }, [products]);
 
   // Keep ref in sync with state for async access
   useEffect(() => {
@@ -1640,9 +1650,27 @@ const Admin = () => {
                     <img src={product.image} alt={product.name} className="w-16 h-16 object-contain flex-shrink-0" />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-sm line-clamp-2">{product.displayName || product.name}</h3>
-                      <div className="flex gap-2 text-[10px] text-muted-foreground uppercase tracking-tight">
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-tight mt-1">
                         <span>ID: {product.id}</span>
                         {product.sku && <span>• SKU: {product.sku}</span>}
+                        <select
+                          value={product.category || ""}
+                          onChange={async (e) => {
+                            const newCat = e.target.value;
+                            try {
+                              await updateDoc(doc(db, "products", product.id.toString()), { category: newCat });
+                              toast.success(`Updated to ${newCat || 'Uncategorized'}`);
+                            } catch (err) {
+                              toast.error("Failed to update category");
+                            }
+                          }}
+                          className="ml-2 h-6 border border-gray-200 bg-gray-50 rounded text-[10px] px-1 py-0 focus:ring-1 focus:border-jumia-purple focus:ring-jumia-purple outline-none cursor-pointer hover:bg-white transition-colors"
+                        >
+                          <option value="">Uncategorized</option>
+                          {availableCategories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -1684,7 +1712,7 @@ const Admin = () => {
                             onChange={(e) => setEditCategory(e.target.value)}
                           >
                             <option value="">Select Category</option>
-                            {PRODUCT_CATEGORIES.map(cat => (
+                            {availableCategories.map(cat => (
                               <option key={cat} value={cat}>{cat}</option>
                             ))}
                           </select>
