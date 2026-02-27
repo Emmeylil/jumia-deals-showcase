@@ -295,6 +295,19 @@ const Admin = () => {
     };
   }, []);
 
+  // Auto-sync trigger ONLY in Admin
+  useEffect(() => {
+    if (loading || !catalogSettings?.autoSyncInterval) return;
+
+    const lastSync = catalogSettings.lastSyncTimestamp || 0;
+    const intervalMs = catalogSettings.autoSyncInterval * 3600 * 1000;
+
+    if (Date.now() - lastSync >= intervalMs) {
+      console.log("Auto-syncing from Admin...");
+      handleSyncFromSheet(true);
+    }
+  }, [loading, catalogSettings?.autoSyncInterval, catalogSettings?.lastSyncTimestamp]);
+
 
   const handleBulkFetch = async () => {
     const skus = skuInput

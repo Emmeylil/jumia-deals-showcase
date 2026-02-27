@@ -232,27 +232,29 @@ const Index = () => {
   }, []);
 
   React.useEffect(() => {
-    // Subscribe to settings
-    const unsubscribe = onSnapshot(doc(db, "settings", "catalog"), (snapshot: any) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        // Deep merge for safe access
-        setCatalogSettings({
-          ...DEFAULT_SETTINGS,
-          ...data,
-          innerPages: { ...DEFAULT_SETTINGS.innerPages, ...data.innerPages },
-          frontPage: { ...DEFAULT_SETTINGS.frontPage, ...data.frontPage },
-          backPage: { ...DEFAULT_SETTINGS.backPage, ...data.backPage },
-        });
-      } else {
-        console.warn("Catalog settings do not exist in Firestore!");
+    // Fetch settings statically via getDoc
+    const fetchSettings = async () => {
+      try {
+        if (!db) return;
+        const snapshot = await getDoc(doc(db, "settings", "catalog"));
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setCatalogSettings({
+            ...DEFAULT_SETTINGS,
+            ...data,
+            innerPages: { ...DEFAULT_SETTINGS.innerPages, ...data.innerPages },
+            frontPage: { ...DEFAULT_SETTINGS.frontPage, ...data.frontPage },
+            backPage: { ...DEFAULT_SETTINGS.backPage, ...data.backPage },
+          });
+        }
+      } catch (error) {
+        console.error("Error loading catalog settings:", error);
+      } finally {
+        setSettingsLoading(false);
       }
-      setSettingsLoading(false);
-    }, (error) => {
-      console.error("Error loading catalog settings:", error);
-      setSettingsLoading(false);
-    });
-    return () => unsubscribe();
+    };
+
+    fetchSettings();
   }, []);
 
   // Tracking
@@ -313,8 +315,8 @@ const Index = () => {
       return;
     }
 
+    const totalPagesToCapture = totalPages;
     try {
-      const totalPagesToCapture = totalPages;
       setCaptureProgress({ current: 0, total: totalPagesToCapture });
 
       // Create PDF: p = portrait, pt = points, a4 = format
@@ -377,196 +379,6 @@ const Index = () => {
     }
   };
 
-  const handleAutoSync = async (settings: any) => {
-    if (!settings?.autoSyncInterval) return;
-
-    // Check if interval passed
-    const lastSync = settings.lastSyncTimestamp || 0;
-    const intervalMs = settings.autoSyncInterval * 3600 * 1000;
-
-    if (Date.now() - lastSync < intervalMs) return;
-
-    console.log("Auto-syncing catalog from sheet...");
-    try {
-      const sheetUrl = import.meta.env.VITE_SHEET_URL;
-      if (!sheetUrl) return;
-      const response = await fetch(sheetUrl);
-      const csvText = await response.text();
-
-      const lines = csvText.split('\n');
-      if (lines.length === 0) return;
-
-      const parseCsvLine = (line: string) => {
-        const result = [];
-        let current = "";
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"') inQuotes = !inQuotes;
-          else if (char === ',' && !inQuotes) {
-            result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-            current = "";
-          } else current += char;
-        }
-        result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-        return result;
-      };
-
-      const headerRow = parseCsvLine(lines[0]);
-      const colMap: Record<string, number> = {};
-      headerRow.forEach((col, idx) => {
-        const norm = col.toLowerCase().replace(/[^a-z]/g, '');
-        if (norm === 'category') colMap.category = idx;
-        else if (norm === 'sku') colMap.sku = idx;
-        else if (norm === 'productname' || norm === 'name') colMap.name = idx;
-        else if (norm === 'brandname' || norm === 'brand') colMap.brand = idx;
-        else if (norm === 'oldprice') colMap.oldPrice = idx;
-        else if (norm === 'newprice' || norm === 'price') colMap.price = idx;
-      });
-
-      const mapping = {
-        category: colMap.category ?? 0,
-        sku: colMap.sku ?? 1,
-        name: colMap.name ?? 2,
-        brand: colMap.brand ?? 3,
-        oldPrice: colMap.oldPrice ?? 4,
-        price: colMap.price ?? 5
-      };
-
-      const rows = lines.slice(1).map(parseCsvLine).filter(row => row.length > 2 && row[mapping.sku]);
-      if (rows.length === 0) return;
-
-      const cleanPrice = (val: string) => {
-        if (!val) return 0;
-        const digits = val.replace(/[^\d.]/g, '');
-        if (!digits) return 0;
-        const numeric = parseFloat(digits);
-        return isNaN(numeric) ? 0 : Math.round(numeric);
-      };
-
-      for (const row of rows) {
-        const sku = row[mapping.sku];
-        const category = row[mapping.category] || "";
-        const name = row[mapping.name] || "Unnamed Product";
-        const brand = row[mapping.brand] || "";
-        const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
-        const sheetPrice = cleanPrice(row[mapping.price]);
-
-        // Prepend brand to name if it's not already there for display purposes
-        const brandSafe = brand.trim();
-        const nameSafe = name.trim();
-        const displayName = (brandSafe && !nameSafe.toLowerCase().startsWith(brandSafe.toLowerCase()))
-          ? `${brandSafe} ${nameSafe}`
-          : nameSafe;
-
-        const existingProduct = products.find(p => p.sku === sku);
-
-        if (existingProduct) {
-          const priceChangedInSheet = sheetPrice !== (existingProduct.lastSyncedPrice ?? -1);
-          const oldPriceChangedInSheet = sheetOldPrice !== (existingProduct.lastSyncedOldPrice ?? -1);
-
-          if (priceChangedInSheet || oldPriceChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
-            const updateData: any = {
-              displayName,
-              brand: brandSafe,
-              category,
-              lastSyncedPrice: sheetPrice,
-              lastSyncedOldPrice: sheetOldPrice
-            };
-
-            if (priceChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
-              updateData.price = sheetPrice;
-            }
-            if (oldPriceChangedInSheet || typeof existingProduct.lastSyncedOldPrice === 'undefined') {
-              updateData.oldPrice = sheetOldPrice;
-            }
-
-            updateData.prices = {
-              price: updateData.price ?? existingProduct.price,
-              oldPrice: updateData.oldPrice ?? existingProduct.oldPrice
-            };
-
-            await updateDoc(doc(db, "products", existingProduct.id.toString()), updateData);
-          }
-        }
-      }
-
-      // Collect the ordered list of unique categories as they appear in the sheet (top→bottom)
-      const sheetCategoryOrder: string[] = [];
-      const seenCats = new Set<string>();
-      for (const row of rows) {
-        const cat = (row[mapping.category] || "").trim();
-        if (cat && !seenCats.has(cat)) {
-          sheetCategoryOrder.push(cat);
-          seenCats.add(cat);
-        }
-      }
-
-      await updateDoc(doc(db, "settings", "catalog"), {
-        lastSyncTimestamp: Date.now(),
-        ...(sheetCategoryOrder.length > 0 ? { sheetCategoryOrder } : {})
-      });
-    } catch (error) {
-      console.error("Auto-sync failed:", error);
-    }
-  };
-
-  React.useEffect(() => {
-    if (!loading && !settingsLoading && catalogSettings) {
-      handleAutoSync(catalogSettings);
-    }
-  }, [loading, settingsLoading]);
-
-  // Bootstrap: if sheetCategoryOrder is missing (first run / old data), fetch it now
-  React.useEffect(() => {
-    if (settingsLoading || catalogSettings?.sheetCategoryOrder?.length) return;
-    const sheetUrl = import.meta.env.VITE_SHEET_URL;
-    if (!sheetUrl) return;
-
-    (async () => {
-      try {
-        const response = await fetch(sheetUrl);
-        const csvText = await response.text();
-        const lines = csvText.split('\n');
-        if (lines.length < 2) return;
-
-        const parseCsvLine = (line: string) => {
-          const result: string[] = [];
-          let current = "";
-          let inQuotes = false;
-          for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') inQuotes = !inQuotes;
-            else if (char === ',' && !inQuotes) {
-              result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-              current = "";
-            } else current += char;
-          }
-          result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-          return result;
-        };
-
-        const headerRow = parseCsvLine(lines[0]);
-        const categoryColIdx = headerRow.findIndex(h =>
-          h.toLowerCase().replace(/[^a-z]/g, '') === 'category'
-        );
-        if (categoryColIdx === -1) return;
-
-        const order: string[] = [];
-        const seen = new Set<string>();
-        for (const line of lines.slice(1)) {
-          const row = parseCsvLine(line);
-          const cat = (row[categoryColIdx] || "").trim();
-          if (cat && !seen.has(cat)) { order.push(cat); seen.add(cat); }
-        }
-        if (order.length > 0) {
-          await updateDoc(doc(db, "settings", "catalog"), { sheetCategoryOrder: order });
-        }
-      } catch (e) {
-        console.error("Category order bootstrap failed:", e);
-      }
-    })();
-  }, [settingsLoading, catalogSettings?.sheetCategoryOrder]);
 
   // Calculate total pages for centering logic
   React.useEffect(() => {
