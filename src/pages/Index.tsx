@@ -7,7 +7,6 @@ import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
-import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
 import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct } from "@/lib/stats";
@@ -16,7 +15,7 @@ import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, 
 import { db, isConfigured } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
 import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
-import { AlertCircle, Loader2, Share2, Download, Search, X, History, Flame, Trash2, Filter, ChevronDown } from "lucide-react";
+import { AlertCircle, Loader2, Share2, Download, Search, X, History, Flame, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PageProps {
@@ -70,7 +69,6 @@ const Index = () => {
   const [highlightedProductId, setHighlightedProductId] = React.useState<number | null>(null);
   const [isCapturing, setIsCapturing] = React.useState(false);
   const [captureProgress, setCaptureProgress] = React.useState({ current: 0, total: 0 });
-  const [searchParams, setSearchParams] = useSearchParams();
   const [popularKeywords, setPopularKeywords] = React.useState<{ keyword: string, count: number }[]>([]);
   const [popularCategories, setPopularCategories] = React.useState<{ category: string, count: number }[]>([]);
 
@@ -89,13 +87,6 @@ const Index = () => {
     return ["All", ...Array.from(new Set(categories)).sort()];
   }, [products]);
 
-  // Initial page from URL
-  const initialPage = React.useMemo(() => {
-    const p = searchParams.get('page');
-    if (!p) return 0;
-    const parsed = parseInt(p);
-    return isNaN(parsed) ? 0 : Math.max(0, parsed - 1);
-  }, []); // Only once on mount
 
   // Filter out products without valid images or names (out-of-stock products or sync errors)
   const displayProducts = React.useMemo(() => {
@@ -301,20 +292,25 @@ const Index = () => {
     };
   }, []);
 
+  const handleCategorySelect = (category: string) => {
+    setActiveCategoryFilter(category);
+    setSearchQuery("");
+    setIsSearchFocused(false);
+  };
+
   const handleShare = () => {
     incrementShare();
-    const shareUrl = window.location.href;
-    const pageText = currentPage === 0 ? "the cover" : `Page ${currentPage + 1}`;
+    const shareUrl = window.location.origin + window.location.pathname;
     if (navigator.share) {
       navigator.share({
         title: 'Jumia Deals Catalog',
-        text: `Check out these hot deals on ${pageText} of the Jumia Catalog!`,
+        text: `Check out these hot deals on the Jumia Catalog!`,
         url: shareUrl,
       }).catch(console.error);
     } else {
       // Fallback
       navigator.clipboard.writeText(shareUrl);
-      alert("Link to " + pageText + " copied to clipboard!");
+      alert("Link copied to clipboard!");
     }
   };
 
@@ -422,11 +418,7 @@ const Index = () => {
     };
   }, []);
 
-  const handleCategorySelect = (category: string) => {
-    setActiveCategoryFilter(category);
-    setSearchQuery("");
-    setIsSearchFocused(false);
-  };
+
 
   const performSearch = () => {
     if (searchQuery.trim().length <= 1) return;
@@ -612,37 +604,7 @@ const Index = () => {
           )}
         </div>
 
-        {/* Category Filter Dropdown */}
-        <div className="relative flex items-center w-full">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <Filter size={16} className="text-gray-400" />
-          </div>
-          <select
-            id="category-filter"
-            name="categoryFilter"
-            aria-label="Filter by category"
-            value={activeCategoryFilter}
-            onChange={(e) => {
-              setActiveCategoryFilter(e.target.value);
-              // Reset flipbook to cover page whenever filter changes
-              if (bookRef.current) {
-                try {
-                  bookRef.current.pageFlip().flip(0);
-                } catch (e) {
-                  // Ignore if flipbook is not ready
-                }
-              }
-            }}
-            className="w-full pl-9 pr-8 py-2.5 appearance-none bg-white/95 backdrop-blur-md border-2 border-white/50 shadow-lg rounded-2xl text-sm font-semibold text-gray-700 outline-none focus:border-jumia-purple focus:ring-4 focus:ring-jumia-purple/20 transition-all cursor-pointer"
-          >
-            {availableCategories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-            <ChevronDown size={16} className="text-gray-500" />
-          </div>
-        </div>
+
         {/* Search Suggestion UI (Recent & Popular) */}
         {isSearchFocused && searchQuery.length === 0 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -732,7 +694,7 @@ const Index = () => {
                             {emojis[cat] || "📂"}
                           </div>
                         )}
-                        {emojis[cat]} {cat.toLowerCase()}
+                        {emojis[cat]} {cat}
                       </button>
                     );
                   })
@@ -744,7 +706,7 @@ const Index = () => {
                       onClick={() => handleCategorySelect(cat)}
                       className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-jumia-purple/10 rounded-full text-xs font-bold text-gray-700 border border-gray-100"
                     >
-                      {cat.toLowerCase()}
+                      {cat}
                     </button>
                   ))
                 )}
@@ -956,14 +918,11 @@ const Index = () => {
           mobileScrollSupport={true}
           usePortrait={!isDesktop}
           flippingTime={1000}
-          startPage={initialPage > 0 ? initialPage : 0}
           drawShadow={true}
           useMouseEvents={true}
           onFlip={(e) => {
             const newPage = e.data;
             setCurrentPage(newPage);
-            // Update URL silently
-            setSearchParams({ page: (newPage + 1).toString() }, { replace: true });
           }}
         >
           {/* COVER PAGE */}
