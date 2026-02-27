@@ -732,6 +732,48 @@ const Index = () => {
         {/* Search Results Dropdown */}
         {isSearchFocused && searchQuery.length > 1 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* SEARCH-EXCLUSIVE CATEGORY BAR */}
+            {categoryNav.length > 0 && (
+              <div className="p-3 border-b border-gray-100 bg-gray-50/30 sticky top-0 z-10 backdrop-blur-sm">
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
+                  {categoryNav.map((cat) => {
+                    const emojis: Record<string, string> = {
+                      "Appliances": "🍳",
+                      "Phones & Tablets": "📱",
+                      "Health & Beauty": "💄",
+                      "Home & Office": "🏡",
+                      "Electronics": "📺",
+                      "Fashion": "👔",
+                      "Supermarket": "🛒",
+                      "Computing": "💻",
+                      "Gaming": "🎮"
+                    };
+                    const targetPage = getCategoryPage(cat);
+                    const isActive = activeCategoryOnPage === cat;
+
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => {
+                          const book = bookRef.current?.pageFlip();
+                          if (book) book.flip(targetPage);
+                          setIsSearchFocused(false);
+                          setSearchQuery("");
+                        }}
+                        className={`snap-start flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all active:scale-95 whitespace-nowrap border ${isActive
+                          ? "bg-jumia-purple text-white border-jumia-purple shadow-md"
+                          : "bg-white text-gray-700 border-gray-200 hover:border-jumia-purple/30 hover:text-jumia-purple shadow-sm"
+                          }`}
+                      >
+                        <span>{emojis[cat as keyof typeof emojis] ?? "📂"}</span>
+                        <span>{cat}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {(() => {
               const filtered = displayProducts
                 .map(p => ({
@@ -761,56 +803,59 @@ const Index = () => {
                       }}
                       className="flex items-center gap-2 px-6 py-2.5 bg-jumia-purple text-white text-xs font-bold rounded-xl hover:bg-jumia-purple/90 active:scale-95 transition-all shadow-lg hover:shadow-jumia-purple/20"
                     >
-                      {/* Shop Icon removed temporarily */}
                       Shop on Jumia Mall
                     </button>
                   </div>
                 );
               }
 
-              return filtered.map((product) => {
-                const targetPage = getTargetPage(product.id);
+              return (
+                <div className="divide-y divide-gray-100">
+                  {filtered.map((product) => {
+                    const targetPage = getTargetPage(product.id);
 
-                return (
-                  <button
-                    key={product.id}
-                    className="w-full p-3 flex items-center gap-4 hover:bg-jumia-purple/5 border-b border-gray-100 last:border-none transition-colors group"
-                    onClick={() => {
-                      const book = bookRef.current?.pageFlip();
-                      if (book) {
-                        const currentPageIndex = book.getCurrentPageIndex();
-                        const isVisible = isDesktop
-                          ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
-                          : currentPageIndex === targetPage;
+                    return (
+                      <button
+                        key={product.id}
+                        className="w-full p-3 flex items-center gap-4 hover:bg-jumia-purple/5 border-b border-gray-100 last:border-none transition-colors group"
+                        onClick={() => {
+                          const book = bookRef.current?.pageFlip();
+                          if (book) {
+                            const currentPageIndex = book.getCurrentPageIndex();
+                            const isVisible = isDesktop
+                              ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
+                              : currentPageIndex === targetPage;
 
-                        if (!isVisible) {
-                          book.flip(targetPage);
-                        }
-                      }
-                      setHighlightedProductId(product.id);
-                      setSearchQuery("");
-                      setIsSearchFocused(false);
+                            if (!isVisible) {
+                              book.flip(targetPage);
+                            }
+                          }
+                          setHighlightedProductId(product.id);
+                          setSearchQuery("");
+                          setIsSearchFocused(false);
 
-                      // Log the search-to-product mapping
-                      logSearchToProduct(searchQuery, product.id, product.category);
-                      if (product.category) logCategorySearch(product.category);
+                          // Log the search-to-product mapping
+                          logSearchToProduct(searchQuery, product.id, product.category);
+                          if (product.category) logCategorySearch(product.category);
 
-                      setTimeout(() => setHighlightedProductId(null), 5000);
-                    }}
-                  >
-                    <div className="w-12 h-12 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 p-1">
-                      <img src={product.image} alt="" className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div className="flex-1 text-left overflow-hidden">
-                      <h4 className="font-bold text-gray-900 truncate text-sm leading-tight">{product.name}</h4>
-                      <p className="text-xs text-gray-500 font-semibold">{product.brand} {product.category ? `• ${product.category}` : ''} • Page {targetPage}</p>
-                    </div>
-                    <div className="text-jumia-purple font-black text-sm whitespace-nowrap">
-                      ₦{product.price.toLocaleString()}
-                    </div>
-                  </button>
-                );
-              });
+                          setTimeout(() => setHighlightedProductId(null), 5000);
+                        }}
+                      >
+                        <div className="w-12 h-12 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 p-1">
+                          <img src={product.image} alt="" className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
+                        </div>
+                        <div className="flex-1 text-left overflow-hidden">
+                          <h4 className="font-bold text-gray-900 truncate text-sm leading-tight">{product.name}</h4>
+                          <p className="text-xs text-gray-500 font-semibold">{product.brand} {product.category ? `• ${product.category}` : ''} • Page {targetPage}</p>
+                        </div>
+                        <div className="text-jumia-purple font-black text-sm whitespace-nowrap">
+                          ₦{product.price.toLocaleString()}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
             })()}
           </div>
         )}
@@ -837,45 +882,6 @@ const Index = () => {
         )}
       </div>
 
-      {/* Category Navigation Strip */}
-      {categoryNav.length > 0 && (
-        <div className="w-full max-w-md px-4 md:px-0 shrink-0 -mt-1 mb-1 z-40 relative">
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
-            {categoryNav.map((cat) => {
-              const emojis: Record<string, string> = {
-                "Appliances": "🍳",
-                "Phones & Tablets": "📱",
-                "Health & Beauty": "💄",
-                "Home & Office": "🏡",
-                "Electronics": "📺",
-                "Fashion": "👔",
-                "Supermarket": "🛒",
-                "Computing": "💻",
-                "Gaming": "🎮"
-              };
-              const targetPage = getCategoryPage(cat);
-              const isActive = activeCategoryOnPage === cat;
-
-              return (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    const book = bookRef.current?.pageFlip();
-                    if (book) book.flip(targetPage);
-                  }}
-                  className={`snap-start flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all active:scale-95 whitespace-nowrap border ${isActive
-                    ? "bg-jumia-purple text-white border-jumia-purple shadow-md shadow-jumia-purple/30"
-                    : "bg-white/90 text-gray-700 border-white/50 hover:bg-white hover:border-jumia-purple/30 hover:text-jumia-purple shadow-sm"
-                    }`}
-                >
-                  <span>{emojis[cat as keyof typeof emojis] ?? "📂"}</span>
-                  <span>{cat}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <div
         className="relative z-10 w-full max-w-6xl flex-1 min-h-0 flex justify-center items-center transition-all duration-700 ease-in-out"
