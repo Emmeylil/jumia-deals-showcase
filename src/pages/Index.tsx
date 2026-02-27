@@ -584,7 +584,7 @@ const Index = () => {
             aria-label="Search catalog"
             type="text"
             placeholder="Search products, brands, or deals..."
-            className="pl-10 pr-10 py-7 bg-white/95 backdrop-blur-md border-2 border-white/50 shadow-2xl rounded-2xl focus:ring-4 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all text-gray-900 placeholder:text-gray-400 font-medium"
+            className="pl-10 pr-10 py-7 bg-white/20 backdrop-blur-md border-2 border-white/40 shadow-2xl rounded-2xl focus:ring-4 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all text-gray-900 placeholder:text-gray-400 font-medium"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
@@ -607,7 +607,7 @@ const Index = () => {
 
         {/* Search Suggestion UI (Recent & Popular) */}
         {isSearchFocused && searchQuery.length === 0 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             {recentSearches.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3 px-1">
@@ -746,7 +746,7 @@ const Index = () => {
 
         {/* Search Results Dropdown */}
         {isSearchFocused && searchQuery.length > 1 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             {/* SEARCH-EXCLUSIVE CATEGORY BAR */}
             {categoryNav.length > 0 && (
               <div className="p-3 border-b border-gray-100 bg-gray-50/30 sticky top-0 z-10 backdrop-blur-sm">
@@ -872,7 +872,7 @@ const Index = () => {
 
         {/* Auto-complete Suggestions (when typing but not specifically searching yet) */}
         {isSearchFocused && searchQuery.length > 0 && searchQuery.length <= 1 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 z-50 overflow-hidden divide-y divide-gray-50">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 z-50 overflow-hidden divide-y divide-gray-50/50">
             <div className="p-2 bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4">Popular Categories</div>
             {PRODUCT_CATEGORIES.slice(0, 5).map(cat => (
               <button
@@ -1278,12 +1278,12 @@ const Index = () => {
       <div className="flex items-center gap-8 z-50 shrink-0 pb-1 md:pb-0 mt-2">
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
-          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-gray-100 bg-white shadow-md' : 'bg-transparent text-white'}`}
+          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-jumia-purple/10 bg-white/20 backdrop-blur-md shadow-lg border border-white/50' : 'bg-transparent text-white'}`}
         >
           <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" /></svg>
         </button>
 
-        <div className="bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full shadow-xl flex items-center gap-3 border border-white/20">
+        <div className="bg-white/20 backdrop-blur-md px-6 py-2.5 rounded-full shadow-xl flex items-center gap-3 border border-white/40">
           <span className="text-sm font-black text-jumia-purple">
             {currentPage + 1} <span className="opacity-30 mx-1">/</span> {totalPages}
           </span>
@@ -1291,7 +1291,7 @@ const Index = () => {
 
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipNext()}
-          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-gray-100 bg-white shadow-md' : 'bg-transparent text-white'}`}
+          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-jumia-purple/10 bg-white/20 backdrop-blur-md shadow-lg border border-white/50' : 'bg-transparent text-white'}`}
         >
           <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
         </button>
