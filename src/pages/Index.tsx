@@ -879,7 +879,7 @@ const Index = () => {
                       </div>
                       <div className="flex-1 flex items-center justify-center">
                         <h2 className="text-xl md:text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
-                          {predominantCategory}
+                          Best Deals
                         </h2>
                       </div>
                     </div>
@@ -932,7 +932,7 @@ const Index = () => {
                   <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                     <div className="flex-1 flex items-center justify-center">
                       <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
-                        {predominantCategory === "Best Deals" ? "Top Picks" : predominantCategory}
+                        Top Picks
                       </h2>
                     </div>
                     <div className="bg-purple-200 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
@@ -1123,7 +1123,7 @@ const Index = () => {
                 {/* Simulated Sidebar */}
                 <div className="w-10 bg-[#009FE3] flex items-center justify-center">
                   <h2 className="text-sm font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase">
-                    {predominantCategory}
+                    Best Deals
                   </h2>
                 </div>
               </div>
@@ -1153,7 +1153,7 @@ const Index = () => {
                 {/* Simulated Sidebar */}
                 <div className="w-10 bg-[#E6E0F8] border-l border-white flex items-center justify-center">
                   <h2 className="text-sm font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
-                    {predominantCategory === "Best Deals" ? "Top Picks" : predominantCategory}
+                    Top Picks
                   </h2>
                 </div>
               </div>
