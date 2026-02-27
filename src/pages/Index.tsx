@@ -117,8 +117,12 @@ const Index = () => {
       return true;
     });
 
-    // Sort by category to group them
-    const categoryOrder = PRODUCT_CATEGORIES as unknown as string[];
+    // Prefer the category order from the Google Sheet (column A), fall back to PRODUCT_CATEGORIES
+    const categoryOrder: string[] =
+      (catalogSettings?.sheetCategoryOrder as string[] | undefined)?.length
+        ? (catalogSettings.sheetCategoryOrder as string[])
+        : (PRODUCT_CATEGORIES as unknown as string[]);
+
     return filtered.sort((a, b) => {
       const catA = a.category || "";
       const catB = b.category || "";
@@ -130,7 +134,7 @@ const Index = () => {
       if (indexB === -1) return -1;
       return indexA - indexB;
     });
-  }, [products]);
+  }, [products, catalogSettings?.sheetCategoryOrder]);
 
   // Chunk products into groups (10 if banner exists, 12 if not)
   const productChunks = React.useMemo(() => {
@@ -189,6 +193,39 @@ const Index = () => {
     }
     return 0;
   };
+
+  // Returns the first book page index that contains a product of the given category
+  const getCategoryPage = (category: string) => {
+    const firstProduct = displayProducts.find(p => p.category === category);
+    if (!firstProduct) return 0;
+    return getTargetPage(firstProduct.id);
+  };
+
+  // Ordered list of categories that actually have products in the current catalog
+  // Respects the Google Sheet column-A order when available
+  const categoryNav = React.useMemo(() => {
+    const present = new Set(displayProducts.map(p => p.category).filter(Boolean));
+    const preferredOrder: string[] =
+      (catalogSettings?.sheetCategoryOrder as string[] | undefined)?.length
+        ? (catalogSettings.sheetCategoryOrder as string[])
+        : (PRODUCT_CATEGORIES as unknown as string[]);
+    return preferredOrder.filter(c => present.has(c));
+  }, [displayProducts, catalogSettings?.sheetCategoryOrder]);
+
+  // Which category is actually dominant on the current spread
+  const activeCategoryOnPage = React.useMemo(() => {
+    // currentPage 0 = cover, 1+ = inner spreads; spreadIndex = Math.floor((currentPage - 1) / 2)
+    if (currentPage === 0) return null;
+    const spreadIndex = Math.floor((currentPage - 1) / 2);
+    const chunk = productChunks[spreadIndex];
+    if (!chunk || chunk.length === 0) return null;
+    // Tally categories on this spread and return the most common one
+    const tally: Record<string, number> = {};
+    for (const p of chunk) {
+      if (p.category) tally[p.category] = (tally[p.category] ?? 0) + 1;
+    }
+    return Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  }, [currentPage, productChunks]);
 
   React.useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
@@ -456,7 +493,21 @@ const Index = () => {
         }
       }
 
-      await updateDoc(doc(db, "settings", "catalog"), { lastSyncTimestamp: Date.now() });
+      // Collect the ordered list of unique categories as they appear in the sheet (top→bottom)
+      const sheetCategoryOrder: string[] = [];
+      const seenCats = new Set<string>();
+      for (const row of rows) {
+        const cat = (row[mapping.category] || "").trim();
+        if (cat && !seenCats.has(cat)) {
+          sheetCategoryOrder.push(cat);
+          seenCats.add(cat);
+        }
+      }
+
+      await updateDoc(doc(db, "settings", "catalog"), {
+        lastSyncTimestamp: Date.now(),
+        ...(sheetCategoryOrder.length > 0 ? { sheetCategoryOrder } : {})
+      });
     } catch (error) {
       console.error("Auto-sync failed:", error);
     }
@@ -467,6 +518,57 @@ const Index = () => {
       handleAutoSync(catalogSettings);
     }
   }, [loading, settingsLoading]);
+
+  // Bootstrap: if sheetCategoryOrder is missing (first run / old data), fetch it now
+  React.useEffect(() => {
+    if (settingsLoading || catalogSettings?.sheetCategoryOrder?.length) return;
+    const sheetUrl = import.meta.env.VITE_SHEET_URL;
+    if (!sheetUrl) return;
+
+    (async () => {
+      try {
+        const response = await fetch(sheetUrl);
+        const csvText = await response.text();
+        const lines = csvText.split('\n');
+        if (lines.length < 2) return;
+
+        const parseCsvLine = (line: string) => {
+          const result: string[] = [];
+          let current = "";
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') inQuotes = !inQuotes;
+            else if (char === ',' && !inQuotes) {
+              result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+              current = "";
+            } else current += char;
+          }
+          result.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+          return result;
+        };
+
+        const headerRow = parseCsvLine(lines[0]);
+        const categoryColIdx = headerRow.findIndex(h =>
+          h.toLowerCase().replace(/[^a-z]/g, '') === 'category'
+        );
+        if (categoryColIdx === -1) return;
+
+        const order: string[] = [];
+        const seen = new Set<string>();
+        for (const line of lines.slice(1)) {
+          const row = parseCsvLine(line);
+          const cat = (row[categoryColIdx] || "").trim();
+          if (cat && !seen.has(cat)) { order.push(cat); seen.add(cat); }
+        }
+        if (order.length > 0) {
+          await updateDoc(doc(db, "settings", "catalog"), { sheetCategoryOrder: order });
+        }
+      } catch (e) {
+        console.error("Category order bootstrap failed:", e);
+      }
+    })();
+  }, [settingsLoading, catalogSettings?.sheetCategoryOrder]);
 
 
   // Calculate total pages for centering logic
@@ -893,6 +995,46 @@ const Index = () => {
           </div>
         )}
       </div>
+
+      {/* Category Navigation Strip */}
+      {categoryNav.length > 0 && (
+        <div className="w-full max-w-md px-4 md:px-0 shrink-0 -mt-1 mb-1 z-40 relative">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
+            {categoryNav.map((cat) => {
+              const emojis: Record<string, string> = {
+                "Appliances": "🍳",
+                "Phones & Tablets": "📱",
+                "Health & Beauty": "💄",
+                "Home & Office": "🏡",
+                "Electronics": "📺",
+                "Fashion": "👔",
+                "Supermarket": "🛒",
+                "Computing": "💻",
+                "Gaming": "🎮"
+              };
+              const targetPage = getCategoryPage(cat);
+              const isActive = activeCategoryOnPage === cat;
+
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    const book = bookRef.current?.pageFlip();
+                    if (book) book.flip(targetPage);
+                  }}
+                  className={`snap-start flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all active:scale-95 whitespace-nowrap border ${isActive
+                    ? "bg-jumia-purple text-white border-jumia-purple shadow-md shadow-jumia-purple/30"
+                    : "bg-white/90 text-gray-700 border-white/50 hover:bg-white hover:border-jumia-purple/30 hover:text-jumia-purple shadow-sm"
+                    }`}
+                >
+                  <span>{emojis[cat] ?? "📂"}</span>
+                  <span>{cat}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div
         className="relative z-10 w-full max-w-6xl flex-1 min-h-0 flex justify-center items-center transition-all duration-700 ease-in-out"
