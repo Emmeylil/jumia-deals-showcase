@@ -777,7 +777,26 @@ const Index = () => {
                 .map(item => item.product);
 
               if (filtered.length === 0) {
-                return <div className="p-8 text-center text-gray-400 italic font-medium">No results found for "{searchQuery}"</div>;
+                return (
+                  <div className="p-8 text-center flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="text-gray-400 italic font-medium">No results found in this catalogue for "{searchQuery}"</div>
+                    <div className="h-px w-full bg-gray-100" />
+                    <p className="text-[11px] text-gray-500 leading-relaxed max-w-[280px]">
+                      Would you like to explore the Jumia site for more options?
+                      <br />
+                      <span className="text-[9px] opacity-60 font-medium">
+                        (Note: this may not be covered by benefits of this catalogue)
+                      </span>
+                    </p>
+                    <button
+                      onClick={() => window.open(`https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(searchQuery)}`, '_blank')}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-jumia-purple text-white text-xs font-bold rounded-xl hover:bg-jumia-purple/90 active:scale-95 transition-all shadow-lg hover:shadow-jumia-purple/20"
+                    >
+                      <ExternalLink size={14} />
+                      Search on Jumia.com.ng
+                    </button>
+                  </div>
+                );
               }
 
               return filtered.map((product) => {
