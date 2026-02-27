@@ -899,7 +899,6 @@ const Index = () => {
                 .map(item => item.product);
 
               if (filtered.length === 0) {
-<<<<<<< HEAD
                 return (
                   <div className="p-8 text-center flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300">
                     <div className="text-gray-400 italic font-medium">No results found in this catalogue for "{searchQuery}"</div>
@@ -923,9 +922,6 @@ const Index = () => {
                     </button>
                   </div>
                 );
-=======
-                return <div className="p-8 text-center text-gray-400 italic font-medium">No results found for "{searchQuery}"</div>;
->>>>>>> parent of 7ab78ae (Implementing External Search Integration)
               }
 
               return filtered.map((product) => {
