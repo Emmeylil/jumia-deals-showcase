@@ -73,7 +73,7 @@ const Index = () => {
   const [popularCategories, setPopularCategories] = React.useState<{ category: string, count: number }[]>([]);
 
   // Suggestion Form State
-  const [suggestionForm, setSuggestionForm] = React.useState({ name: "", brand: "", description: "" });
+  const [suggestionForm, setSuggestionForm] = React.useState({ name: "", brand: "", description: "", email: "", phone: "" });
   const [suggestionSuccess, setSuggestionSuccess] = React.useState(false);
   const [suggestionSubmitting, setSuggestionSubmitting] = React.useState(false);
 
@@ -1219,6 +1219,32 @@ const Index = () => {
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, description: e.target.value }))}
                       />
                     </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="suggestionEmail" className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Email</label>
+                        <input
+                          id="suggestionEmail"
+                          name="suggestionEmail"
+                          type="email"
+                          className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all outline-none"
+                          placeholder="e.g. john@example.com"
+                          value={suggestionForm.email}
+                          onChange={(e) => setSuggestionForm(prev => ({ ...prev, email: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="suggestionPhone" className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Phone</label>
+                        <input
+                          id="suggestionPhone"
+                          name="suggestionPhone"
+                          type="tel"
+                          className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all outline-none"
+                          placeholder="e.g. 08012345678"
+                          value={suggestionForm.phone}
+                          onChange={(e) => setSuggestionForm(prev => ({ ...prev, phone: e.target.value }))}
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <button
@@ -1233,7 +1259,7 @@ const Index = () => {
                         setSuggestionSuccess(true);
                         setTimeout(() => {
                           setSuggestionSuccess(false);
-                          setSuggestionForm({ name: "", brand: "", description: "" });
+                          setSuggestionForm({ name: "", brand: "", description: "", email: "", phone: "" });
                         }, 3000);
                       } catch (e) {
                         console.error(e);

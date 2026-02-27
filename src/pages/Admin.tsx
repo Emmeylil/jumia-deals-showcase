@@ -133,12 +133,14 @@ const Admin = () => {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [activeReaders, setActiveReaders] = useState(0);
   const [productClicks, setProductClicks] = useState<Array<{ id: string, clicks: number, product?: Product }>>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
 
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
   const settingsRef = useRef(catalogSettings);
-  const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners" | "brandlogos" | "analytics">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners" | "brandlogos" | "analytics" | "suggestions">("products");
   const [uploading, setUploading] = useState(false);
 
   // Dynamic Categories
@@ -298,10 +300,19 @@ const Admin = () => {
       setActiveReaders(count);
     });
 
+    // Listen to suggestions
+    setSuggestionsLoading(true);
+    const suggestionsQuery = query(collection(db, "product_suggestions"), orderBy("timestamp", "desc"));
+    const suggestionsUnsub = onSnapshot(suggestionsQuery, (snapshot) => {
+      setSuggestions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setSuggestionsLoading(false);
+    });
+
     return () => {
       unsubscribe();
       settingsUnsub();
       presenceUnsub();
+      suggestionsUnsub();
     };
   }, []);
 
@@ -625,6 +636,16 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteSuggestion = async (id: string) => {
+    if (!confirm("Delete this suggestion?")) return;
+    try {
+      await deleteDoc(doc(db, "product_suggestions", id));
+      toast.success("Suggestion deleted");
+    } catch (error) {
+      toast.error("Delete failed");
+    }
+  };
+
   const handleDeleteAll = async () => {
     if (!confirm("ARE YOU SURE? This will delete ALL products from the catalog. This action cannot be undone.")) return;
 
@@ -694,6 +715,13 @@ const Admin = () => {
             onClick={() => setActiveTab('analytics')}
           >
             📊 Analytics
+          </button>
+          <button
+            className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'suggestions' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('suggestions')}
+          >
+            💡 Suggestions
+            <span className="text-[9px] bg-amber-100 text-amber-700 font-black uppercase rounded px-1.5 py-0.5 tracking-wider">{suggestions.length}</span>
           </button>
           <button
             className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'settings' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
@@ -1199,6 +1227,65 @@ const Admin = () => {
                 sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
               />
             </div>
+          </div>
+        ) : activeTab === 'suggestions' ? (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-2xl p-5 flex items-start gap-4 shadow-lg">
+              <span className="text-3xl shrink-0">💡</span>
+              <div>
+                <h2 className="text-lg font-black uppercase tracking-wide">Customer Suggestions</h2>
+                <p className="text-sm text-amber-100 mt-1">Manage product requests submitted by customers through the digital catalog.</p>
+              </div>
+            </div>
+
+            {suggestionsLoading ? (
+              <div className="p-8 text-center text-gray-400">
+                <Loader2 className="animate-spin inline-block mb-2" />
+                <p>Loading suggestions...</p>
+              </div>
+            ) : suggestions.length === 0 ? (
+              <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center flex flex-col items-center gap-3">
+                <span className="text-4xl opacity-20">📂</span>
+                <p className="font-bold text-gray-400">No suggestions yet!</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {suggestions.map((s) => (
+                  <div key={s.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between group hover:border-amber-200 transition-colors">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-black text-gray-900 uppercase tracking-tight">{s.name}</h3>
+                        {s.brand && <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full font-bold text-gray-500 uppercase">{s.brand}</span>}
+                      </div>
+                      <p className="text-sm text-gray-600 line-clamp-2 italic">"{s.description || "No description provided"}"</p>
+                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                        {s.email && (
+                          <a href={`mailto:${s.email}`} className="text-[10px] font-bold text-jumia-purple bg-jumia-purple/5 px-2 py-0.5 rounded-md hover:bg-jumia-purple/10 transition-colors flex items-center gap-1">
+                            📧 {s.email}
+                          </a>
+                        )}
+                        {s.phone && (
+                          <a href={`tel:${s.phone}`} className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-md hover:bg-teal-100 transition-colors flex items-center gap-1">
+                            📞 {s.phone}
+                          </a>
+                        )}
+                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                          🕒 {s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString('en-NG', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                      onClick={() => handleDeleteSuggestion(s.id)}
+                    >
+                      <Trash2 size={18} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ) : activeTab === 'brandlogos' ? (
           <div className="space-y-6 animate-in fade-in duration-300">
