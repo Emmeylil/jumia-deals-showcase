@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import {
-  initializeFirestore,
+  getFirestore,
   persistentLocalCache,
   persistentMultipleTabManager
 } from "firebase/firestore";
@@ -45,11 +45,7 @@ let storageInstance: any;
 if (isConfigured) {
   try {
     const app = initializeApp(firebaseConfig);
-    dbInstance = initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-      })
-    });
+    dbInstance = getFirestore(app);
     authInstance = getAuth(app);
     storageInstance = getStorage(app);
   } catch (error) {
