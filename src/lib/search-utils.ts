@@ -202,3 +202,40 @@ export function getSemanticScore(
 
     return score;
 }
+
+/**
+ * Guesses the product category based on its name and keywords.
+ */
+export function autoCategorizeProduct(name: string): string {
+    const norm = name.toLowerCase();
+
+    // Ordered by specificity to ensure better matching
+    if (norm.includes("phone") || norm.includes("smartphone") || norm.includes("tablet") || norm.includes("ipad") || norm.includes("iphone") || norm.includes("tecno") || norm.includes("infinix"))
+        return "Phones & Tablets";
+
+    if (norm.includes("tv") || norm.includes("television") || norm.includes("audio") || norm.includes("speaker") || norm.includes("home theatre") || norm.includes("camera") || norm.includes("video"))
+        return "Electronics";
+
+    if (norm.includes("fridge") || norm.includes("refrigerator") || norm.includes("freezer") || norm.includes("microwave") || norm.includes("cooker") || norm.includes("oven") || norm.includes("blender") || norm.includes("kettle") || norm.includes("washer") || norm.includes("washing machine") || norm.includes("fan"))
+        return "Appliances";
+
+    if (norm.includes("laptop") || norm.includes("computer") || norm.includes("desktop") || norm.includes("monitor") || norm.includes("keyboard") || norm.includes("mouse") || norm.includes("printer") || norm.includes("hard drive"))
+        return "Computing";
+
+    if (norm.includes("playstation") || norm.includes("ps5") || norm.includes("ps4") || norm.includes("xbox") || norm.includes("nintendo") || norm.includes("gaming") || norm.includes("joystick") || norm.includes("controller"))
+        return "Gaming";
+
+    if (norm.includes("shirt") || norm.includes("shoe") || norm.includes("sneaker") || norm.includes("dress") || norm.includes("trousers") || norm.includes("fashion") || norm.includes("watch") || norm.includes("jewelry") || norm.includes("bag"))
+        return "Fashion";
+
+    if (norm.includes("perfume") || norm.includes("cream") || norm.includes("soap") || norm.includes("shampoo") || norm.includes("makeup") || norm.includes("skin") || norm.includes("hair") || norm.includes("health") || norm.includes("beauty"))
+        return "Health & Beauty";
+
+    if (norm.includes("desk") || norm.includes("chair") || norm.includes("table") || norm.includes("office") || norm.includes("decor") || norm.includes("furniture") || norm.includes("bed") || norm.includes("mattress"))
+        return "Home & Office";
+
+    if (norm.includes("milo") || norm.includes("milk") || norm.includes("sugar") || norm.includes("oil") || norm.includes("rice") || norm.includes("pasta") || norm.includes("detergent") || norm.includes("supermarket") || norm.includes("grocery"))
+        return "Supermarket";
+
+    return "";
+}

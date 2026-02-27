@@ -11,6 +11,8 @@ import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
 import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw, LogOut } from "lucide-react";
 import { getStats, type StatsData, listenToActiveReaders } from "@/lib/stats";
+import { PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/constants";
+import { autoCategorizeProduct } from "@/lib/search-utils";
 
 import BannerCard from "@/components/BannerCard";
 import { signOut } from "firebase/auth";
@@ -126,6 +128,7 @@ const Admin = () => {
   const [editPrice, setEditPrice] = useState("");
   const [editOldPrice, setEditOldPrice] = useState("");
   const [editTags, setEditTags] = useState("");
+  const [editCategory, setEditCategory] = useState("");
 
   // Stats state
   const [stats, setStats] = useState<StatsData | null>(null);
@@ -477,11 +480,15 @@ const Admin = () => {
 
       for (const row of rows) {
         const sku = row[mapping.sku];
-        const categoryFromSheet = row[mapping.category] || "";
+        const sheetCategory = row[mapping.category] || "";
         const nameFromSheet = row[mapping.name] || "Unnamed Product";
         const brandFromSheet = (row[mapping.brand] || "").trim();
         const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
         const sheetPrice = cleanPrice(row[mapping.price]);
+
+        // Intelligent Categorization: favor predefined list, otherwise auto-categorize
+        let categoryToUse = PRODUCT_CATEGORIES.find(c => c.toLowerCase() === sheetCategory.toLowerCase()) ||
+          autoCategorizeProduct(nameFromSheet);
 
         const existingProduct = currentProducts.find(p => p.sku === sku);
 
@@ -518,6 +525,11 @@ const Admin = () => {
               oldPrice: updateData.oldPrice ?? existingProduct.oldPrice
             };
 
+            // Only update category if it's currently empty
+            if (!existingProduct.category) {
+              updateData.category = categoryToUse;
+            }
+
             await updateDoc(doc(db, "products", existingProduct.id.toString()), updateData);
           }
         } else {
@@ -534,7 +546,7 @@ const Admin = () => {
             sku,
             name: nameToUse,
             brand: brandFromSheet,
-            category: categoryFromSheet, // Take initial category from sheet for new products
+            category: categoryToUse, // Use mapped or auto-categorized value
             displayName,
             image: jumiaData?.image || "https://premium.jumia.com.ng/assets/images/jumia-logo.png",
             url: jumiaData?.url ? (jumiaData.url.startsWith("http") ? jumiaData.url : `https://www.jumia.com.ng${jumiaData.url.startsWith("/") ? "" : "/"}${jumiaData.url}`) : `https://www.jumia.com.ng/catalog/?q=${sku}`,
@@ -564,7 +576,7 @@ const Admin = () => {
     }
   };
 
-  const handleUpdateProduct = async (id: number, name: string, price: number, oldPrice: number, searchTags?: string) => {
+  const handleUpdateProduct = async (id: number, name: string, price: number, oldPrice: number, searchTags?: string, category?: string) => {
     try {
       const productRef = doc(db, "products", id.toString());
       await updateDoc(productRef, {
@@ -573,7 +585,8 @@ const Admin = () => {
         price,
         oldPrice,
         prices: { price, oldPrice },
-        searchTags: searchTags || ""
+        searchTags: searchTags || "",
+        category: category || ""
       });
       toast.success("Product updated");
       setEditingId(null);
@@ -1674,11 +1687,24 @@ const Admin = () => {
                             className="h-8 text-sm"
                           />
                         </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] text-muted-foreground">Category</label>
+                          <select
+                            className="w-full h-8 border rounded-md text-xs px-2 bg-white"
+                            value={editCategory}
+                            onChange={(e) => setEditCategory(e.target.value)}
+                          >
+                            <option value="">Select Category</option>
+                            {PRODUCT_CATEGORIES.map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                        </div>
                         <Button
                           size="icon"
                           variant="ghost"
                           className="mt-3 self-end"
-                          onClick={() => handleUpdateProduct(product.id, editName, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0, editTags)}
+                          onClick={() => handleUpdateProduct(product.id, editName, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0, editTags, editCategory)}
                         >
                           <Save size={16} />
                         </Button>
@@ -1699,6 +1725,7 @@ const Admin = () => {
                           setEditPrice(product.price.toString());
                           setEditOldPrice(product.oldPrice.toString());
                           setEditTags(product.searchTags || "");
+                          setEditCategory(product.category || "");
                         }}
                       >
                         <Edit2 size={16} />
