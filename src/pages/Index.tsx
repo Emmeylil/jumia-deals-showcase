@@ -82,6 +82,10 @@ const Index = () => {
   const [popularKeywords, setPopularKeywords] = React.useState<{ keyword: string, count: number }[]>([]);
   const [popularCategories, setPopularCategories] = React.useState<{ category: string, count: number }[]>([]);
 
+  // Suggestion Form State
+  const [suggestionForm, setSuggestionForm] = React.useState({ name: "", brand: "", description: "" });
+  const [suggestionSuccess, setSuggestionSuccess] = React.useState(false);
+  const [suggestionSubmitting, setSuggestionSubmitting] = React.useState(false);
 
   // Initial page from URL
   const initialPage = React.useMemo(() => {
