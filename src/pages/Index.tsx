@@ -16,7 +16,7 @@ import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incre
 import { onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
-import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP } from "@/lib/constants";
+import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
 
 interface PageProps {
   children: React.ReactNode;
@@ -76,7 +76,7 @@ const Index = () => {
 
   // Filter out products without valid images or names (out-of-stock products or sync errors)
   const displayProducts = React.useMemo(() => {
-    return products.filter(p => {
+    const filtered = products.filter(p => {
       // 1. Basic check for existence
       if (!p.image || !p.name) return false;
 
@@ -97,6 +97,20 @@ const Index = () => {
       if (img === '' || invalidImages.some(invalid => img.includes(invalid))) return false;
 
       return true;
+    });
+
+    // Sort by category to group them
+    const categoryOrder = PRODUCT_CATEGORIES as unknown as string[];
+    return filtered.sort((a, b) => {
+      const catA = a.category || "";
+      const catB = b.category || "";
+      if (catA === catB) return (a.brand || "").localeCompare(b.brand || "");
+      const indexA = categoryOrder.indexOf(catA);
+      const indexB = categoryOrder.indexOf(catB);
+      if (indexA === -1 && indexB === -1) return catA.localeCompare(catB);
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
     });
   }, [products]);
 
@@ -582,6 +596,22 @@ const Index = () => {
             </button>
           )}
         </div>
+        {/* Search Results Dropdown */}
+        {isSearchFocused && searchQuery.length > 1 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            {(() => {
+              const filtered = displayProducts
+                .map(p => ({
+                  product: p,
+                  score: getSemanticScore(p, searchQuery)
+                }))
+                .filter(item => item.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .map(item => item.product);
+
+              if (filtered.length === 0) {
+                return <div className="p-8 text-center text-gray-400 italic font-medium">No results found for "{searchQuery}"</div>;
+              }
 
               return filtered.map((product) => {
                 const targetPage = getTargetPage(product.id);
@@ -630,7 +660,7 @@ const Index = () => {
           <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 z-50 overflow-hidden divide-y divide-gray-50">
             <div className="p-2 bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4">Popular Categories</div>
             {PRODUCT_CATEGORIES.slice(0, 5).map(cat => (
-              <button 
+              <button
                 key={cat}
                 className="w-full text-left p-3 px-4 hover:bg-jumia-purple/5 transition-colors flex items-center gap-3 text-sm font-bold text-gray-700"
                 onClick={() => {
@@ -753,12 +783,26 @@ const Index = () => {
             let rightPageProducts: any[] = [];
 
             if (hasLogosOnPage1) {
-              leftPageProducts = []; // Logos will be shown instead
+              leftPageProducts = [];
               rightPageProducts = hasBanner ? chunk.slice(0, 4) : chunk.slice(0, 6);
             } else {
               leftPageProducts = chunk.slice(0, 6);
               rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
             }
+
+            const allPageProducts = [...leftPageProducts, ...rightPageProducts];
+            const categories = allPageProducts.map(p => p.category).filter(Boolean);
+            const predominantCategory = categories.length > 0
+              ? categories.reduce((acc, curr) => (categories.filter(v => v === curr).length > categories.filter(v => v === acc).length ? curr : acc))
+              : "Best Deals";
+
+            const categoryBrands = (predominantCategory && predominantCategory !== "Best Deals")
+              ? (CATEGORY_BRAND_MAP[predominantCategory as ProductCategory] || [])
+              : [];
+
+            const relevantBrandLogos = (catalogSettings?.brandLogos as any[] || []).filter(b =>
+              categoryBrands.some(cb => b.name.toLowerCase().includes(cb.toLowerCase()))
+            ).slice(0, 4);
 
             return [
               /* LEFT PAGE */
@@ -835,7 +879,7 @@ const Index = () => {
                       </div>
                       <div className="flex-1 flex items-center justify-center">
                         <h2 className="text-xl md:text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
-                          Best Deals
+                          {predominantCategory}
                         </h2>
                       </div>
                     </div>
@@ -888,7 +932,7 @@ const Index = () => {
                   <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                     <div className="flex-1 flex items-center justify-center">
                       <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
-                        Top Picks
+                        {predominantCategory === "Best Deals" ? "Top Picks" : predominantCategory}
                       </h2>
                     </div>
                     <div className="bg-purple-200 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
@@ -897,9 +941,18 @@ const Index = () => {
                   </div>
                 </div>
 
-                {/* Page Number */}
-                <div className="absolute bottom-3 right-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Page {String(pageNum + 1).padStart(2, '0')}
+                {/* Page Number & Relevant Brands */}
+                <div className="absolute bottom-3 left-6 right-6 flex justify-between items-center">
+                  <div className="flex gap-2">
+                    {relevantBrandLogos.map((b, i) => (
+                      <div key={i} className="h-4 md:h-6 bg-white/50 rounded-md p-1 shadow-sm">
+                        <img src={b.logoUrl} alt={b.name} className="h-full object-contain" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Page {String(pageNum + 1).padStart(2, '0')}
+                  </div>
                 </div>
               </Page>
             ];
@@ -934,184 +987,214 @@ const Index = () => {
         </HTMLFlipBook>
       </div>
 
-      {/* BOTTOM NAVIGATION CONTROLS */ }
-  <div className="flex items-center gap-8 z-50 shrink-0 pb-1 md:pb-0 mt-2">
-    <button
-      onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
-      className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-gray-100 bg-white shadow-md' : 'bg-transparent text-white'}`}
-    >
-      <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" /></svg>
-    </button>
+      {/* BOTTOM NAVIGATION CONTROLS */}
+      <div className="flex items-center gap-8 z-50 shrink-0 pb-1 md:pb-0 mt-2">
+        <button
+          onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
+          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-gray-100 bg-white shadow-md' : 'bg-transparent text-white'}`}
+        >
+          <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" /></svg>
+        </button>
 
-    <div className="bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full shadow-xl flex items-center gap-3 border border-white/20">
-      <span className="text-sm font-black text-jumia-purple">
-        {currentPage + 1} <span className="opacity-30 mx-1">/</span> {totalPages}
-      </span>
-    </div>
-
-    <button
-      onClick={() => bookRef.current?.pageFlip()?.flipNext()}
-      className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-gray-100 bg-white shadow-md' : 'bg-transparent text-white'}`}
-    >
-      <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
-    </button>
-  </div>
-
-  {/* HIDDEN CAPTURE AREA FOR PDF GENERATION */ }
-  <div
-    id="pdf-capture-container"
-    className="fixed top-[-9999px] left-[-9999px] z-[-5000] pointer-events-none"
-    style={{
-      width: isDesktop ? 380 : 320,
-      height: isDesktop ? 480 : 420,
-      fontFamily: "'Gotham', 'Inter', sans-serif"
-    }}
-  >
-    {/* COVER PAGE */}
-    <div
-      id="pdf-page-0"
-      className="bg-white text-gray-900 border-none relative overflow-hidden bg-cover bg-center"
-      style={{
-        width: isDesktop ? 380 : 320,
-        height: isDesktop ? 480 : 420,
-        ...(catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}),
-        ...(catalogSettings?.frontPage?.backgroundColor ? { backgroundColor: catalogSettings.frontPage.backgroundColor } : {})
-      }}
-    >
-      <div className="w-full h-full flex flex-col items-center justify-center p-8 md:p-12 text-center bg-white relative overflow-hidden">
-        <div className="mb-8 z-10">
-          <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 md:h-16 w-auto object-contain" />
+        <div className="bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full shadow-xl flex items-center gap-3 border border-white/20">
+          <span className="text-sm font-black text-jumia-purple">
+            {currentPage + 1} <span className="opacity-30 mx-1">/</span> {totalPages}
+          </span>
         </div>
 
-
-
-        <div className="relative z-10">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-tight text-gray-900">
-            {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
-            <span style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}>
-              {catalogSettings?.frontPage?.subtitle || "DEALS!"}
-            </span>
-          </h1>
-        </div>
-
-        <p className="text-sm md:text-lg font-bold tracking-widest uppercase mt-8 opacity-70 text-gray-600 z-10">
-          {catalogSettings?.frontPage?.tagline || "Digital Catalog 2026"}
-        </p>
+        <button
+          onClick={() => bookRef.current?.pageFlip()?.flipNext()}
+          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-gray-100 bg-white shadow-md' : 'bg-transparent text-white'}`}
+        >
+          <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
+        </button>
       </div>
-    </div>
 
-    {/* DYNAMIC PAGES */}
-    {productChunks.flatMap((chunk, index) => {
-      const pageNum = index * 2 + 1;
-      const hasLogosOnPage1 = index === 0 && (catalogSettings?.brandLogos?.length ?? 0) > 0;
-      const spreadId = `spread-${index}`;
-      const banner = catalogSettings?.banners?.[spreadId];
-      const hasBanner = !!banner?.image;
-
-      let leftPageProducts: any[] = [];
-      let rightPageProducts: any[] = [];
-
-      if (hasLogosOnPage1) {
-        rightPageProducts = hasBanner ? chunk.slice(0, 4) : chunk.slice(0, 6);
-      } else {
-        leftPageProducts = chunk.slice(0, 6);
-        rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
-      }
-
-      return [
-        /* LEFT PAGE CAPTURE */
+      {/* HIDDEN CAPTURE AREA FOR PDF GENERATION */}
+      <div
+        id="pdf-capture-container"
+        className="fixed top-[-9999px] left-[-9999px] z-[-5000] pointer-events-none"
+        style={{
+          width: isDesktop ? 380 : 320,
+          height: isDesktop ? 480 : 420,
+          fontFamily: "'Gotham', 'Inter', sans-serif"
+        }}
+      >
+        {/* COVER PAGE */}
         <div
-          key={`pdf-page-${pageNum}`}
-          id={`pdf-page-${pageNum}`}
-          className="bg-[#E6F7FF] bg-cover bg-center relative"
+          id="pdf-page-0"
+          className="bg-white text-gray-900 border-none relative overflow-hidden bg-cover bg-center"
           style={{
-            width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
-            ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
-            ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
+            width: isDesktop ? 380 : 320,
+            height: isDesktop ? 480 : 420,
+            ...(catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}),
+            ...(catalogSettings?.frontPage?.backgroundColor ? { backgroundColor: catalogSettings.frontPage.backgroundColor } : {})
           }}
         >
-          <div className="w-full h-full flex flex-row overflow-hidden">
-            {hasLogosOnPage1 ? (
-              <div className="flex-1 p-3 flex flex-col min-h-0 overflow-hidden">
-                <div className="text-center mb-2">
-                  <h2 className="text-sm font-black text-gray-800 uppercase tracking-wide">Brand Partners</h2>
+          <div className="w-full h-full flex flex-col items-center justify-center p-8 md:p-12 text-center bg-white relative overflow-hidden">
+            <div className="mb-8 z-10">
+              <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 md:h-16 w-auto object-contain" />
+            </div>
+
+
+
+            <div className="relative z-10">
+              <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-tight text-gray-900">
+                {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
+                <span style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}>
+                  {catalogSettings?.frontPage?.subtitle || "DEALS!"}
+                </span>
+              </h1>
+            </div>
+
+            <p className="text-sm md:text-lg font-bold tracking-widest uppercase mt-8 opacity-70 text-gray-600 z-10">
+              {catalogSettings?.frontPage?.tagline || "Digital Catalog 2026"}
+            </p>
+          </div>
+        </div>
+
+        {/* DYNAMIC PAGES */}
+        {productChunks.flatMap((chunk, index) => {
+          const pageNum = index * 2 + 1;
+          const hasLogosOnPage1 = index === 0 && (catalogSettings?.brandLogos?.length ?? 0) > 0;
+          const spreadId = `spread-${index}`;
+          const banner = catalogSettings?.banners?.[spreadId];
+          const hasBanner = !!banner?.image;
+
+          let leftPageProducts: any[] = [];
+          let rightPageProducts: any[] = [];
+
+          if (hasLogosOnPage1) {
+            rightPageProducts = hasBanner ? chunk.slice(0, 4) : chunk.slice(0, 6);
+          } else {
+            leftPageProducts = chunk.slice(0, 6);
+            rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
+          }
+
+          // Determine page category (majority category in chunks)
+          const allPageProducts = [...leftPageProducts, ...rightPageProducts];
+          const categories = allPageProducts.map(p => p.category).filter(Boolean);
+          const predominantCategory = categories.length > 0
+            ? categories.reduce((acc, curr) => (categories.filter(v => v === curr).length > categories.filter(v => v === acc).length ? curr : acc))
+            : "Best Deals";
+
+          // Relevant brands for this category from our map
+          const categoryBrands = predominantCategory && predominantCategory !== "Best Deals"
+            ? CATEGORY_BRAND_MAP[predominantCategory as ProductCategory] || []
+            : [];
+
+          // Filter catalogSettings.brandLogos to only show those in categoryBrands
+          const relevantBrandLogos = (catalogSettings?.brandLogos as any[] || []).filter(b =>
+            categoryBrands.some(cb => b.name.toLowerCase().includes(cb.toLowerCase()))
+          ).slice(0, 4);
+
+          return [
+            /* LEFT PAGE CAPTURE */
+            <div
+              key={`pdf-page-${pageNum}`}
+              id={`pdf-page-${pageNum}`}
+              className="bg-[#E6F7FF] bg-cover bg-center relative"
+              style={{
+                width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
+              }}
+            >
+              <div className="w-full h-full flex flex-row overflow-hidden">
+                {hasLogosOnPage1 ? (
+                  <div className="flex-1 p-3 flex flex-col min-h-0 overflow-hidden">
+                    <div className="text-center mb-2">
+                      <h2 className="text-sm font-black text-gray-800 uppercase tracking-wide">Brand Partners</h2>
+                    </div>
+                    <div className="flex-1 grid grid-cols-3 gap-2 content-center">
+                      {(catalogSettings.brandLogos as any[]).map((b: any, i: number) => (
+                        <div key={i} className="bg-white rounded-lg p-2 flex items-center justify-center border border-gray-100 aspect-[2/1]">
+                          {b.logoUrl ? <img src={b.logoUrl} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[9px] font-black text-gray-700">{b.name}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start overflow-hidden">
+                    {leftPageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
+                  </div>
+
+                )}
+                {/* Simulated Sidebar */}
+                <div className="w-10 bg-[#009FE3] flex items-center justify-center">
+                  <h2 className="text-sm font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase">
+                    {predominantCategory}
+                  </h2>
                 </div>
-                <div className="flex-1 grid grid-cols-3 gap-2 content-center">
-                  {(catalogSettings.brandLogos as any[]).map((b: any, i: number) => (
-                    <div key={i} className="bg-white rounded-lg p-2 flex items-center justify-center border border-gray-100 aspect-[2/1]">
-                      {b.logoUrl ? <img src={b.logoUrl} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[9px] font-black text-gray-700">{b.name}</span>}
+              </div>
+              <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">{pageNum}</div>
+            </div>,
+
+            /* RIGHT PAGE CAPTURE */
+            <div
+              key={`pdf-page-${pageNum + 1}`}
+              id={`pdf-page-${pageNum + 1}`}
+              className="bg-[#E2E0F5] bg-cover bg-center relative"
+              style={{
+                width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
+              }}
+            >
+              <div className="w-full h-full flex flex-row overflow-hidden">
+                <div className="flex-1 p-2 flex flex-col gap-2 min-h-0 overflow-hidden">
+                  <div className={`grid grid-cols-2 gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
+                    {rightPageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
+                  </div>
+                  {hasBanner && <div className="h-24"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-xl" /></div>}
+
+
+                </div>
+                {/* Simulated Sidebar */}
+                <div className="w-10 bg-[#E6E0F8] border-l border-white flex items-center justify-center">
+                  <h2 className="text-sm font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                    {predominantCategory === "Best Deals" ? "Top Picks" : predominantCategory}
+                  </h2>
+                </div>
+              </div>
+              <div className="absolute bottom-3 left-6 right-6 flex justify-between items-center">
+                <div className="flex gap-2">
+                  {relevantBrandLogos.map((b, i) => (
+                    <div key={i} className="h-4 md:h-6 bg-white/50 rounded-md p-1 shadow-sm">
+                      <img src={b.logoUrl} alt={b.name} className="h-full object-contain" />
                     </div>
                   ))}
                 </div>
+                <div className="text-[10px] font-bold text-gray-400">Page {String(pageNum + 1).padStart(2, '0')}</div>
               </div>
-            ) : (
-              <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start overflow-hidden">
-                {leftPageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
-              </div>
-
-            )}
-            {/* Simulated Sidebar */}
-            <div className="w-10 bg-[#009FE3] flex items-center justify-center">
-              <h2 className="text-sm font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase">Best Deals</h2>
             </div>
-          </div>
-          <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">{pageNum}</div>
-        </div>,
+          ];
+        })}
 
-        /* RIGHT PAGE CAPTURE */
+        {/* BACK COVER CAPTURE */}
         <div
-          key={`pdf-page-${pageNum + 1}`}
-          id={`pdf-page-${pageNum + 1}`}
-          className="bg-[#E2E0F5] bg-cover bg-center relative"
+          id={`pdf-page-${1 + productChunks.length * 2}`}
+          className="bg-[#f5f5f5] text-gray-800 bg-cover bg-center relative flex flex-col items-center justify-center p-12 text-center"
           style={{
             width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
-            ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
-            ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
+            ...(catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}),
+            ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
           }}
         >
-          <div className="w-full h-full flex flex-row overflow-hidden">
-            <div className="flex-1 p-2 flex flex-col gap-2 min-h-0 overflow-hidden">
-              <div className={`grid grid-cols-2 gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
-                {rightPageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
-              </div>
-              {hasBanner && <div className="h-24"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-xl" /></div>}
+          <h2 className="text-2xl font-black mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
+          <p className="text-sm text-gray-600 mb-8">{catalogSettings?.backPage?.description}</p>
+          <div className="w-32 h-32 bg-white p-4 shadow-xl rounded-2xl mb-6">
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
+              alt="QR"
+              className="w-full h-full"
+            />
 
 
-            </div>
-            {/* Simulated Sidebar */}
-            <div className="w-10 bg-[#E6E0F8] border-l border-white flex items-center justify-center">
-              <h2 className="text-sm font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">Top Picks</h2>
-            </div>
           </div>
-          <div className="absolute bottom-3 right-6 text-[10px] font-bold text-gray-400">Page {String(pageNum + 1).padStart(2, '0')}</div>
+          <p className="text-xs font-black opacity-50">JUMIA © {new Date().getFullYear()}</p>
         </div>
-      ];
-    })}
-
-    {/* BACK COVER CAPTURE */}
-    <div
-      id={`pdf-page-${1 + productChunks.length * 2}`}
-      className="bg-[#f5f5f5] text-gray-800 bg-cover bg-center relative flex flex-col items-center justify-center p-12 text-center"
-      style={{
-        width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
-        ...(catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}),
-        ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
-      }}
-    >
-      <h2 className="text-2xl font-black mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
-      <p className="text-sm text-gray-600 mb-8">{catalogSettings?.backPage?.description}</p>
-      <div className="w-32 h-32 bg-white p-4 shadow-xl rounded-2xl mb-6">
-        <img
-          src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
-          alt="QR"
-          className="w-full h-full"
-        />
-
-
       </div>
-      <p className="text-xs font-black opacity-50">JUMIA © {new Date().getFullYear()}</p>
-    </div>
-  </div>
 
     </div >
   );
