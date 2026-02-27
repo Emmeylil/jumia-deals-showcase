@@ -7,6 +7,11 @@ import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
+import { useSearchParams } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import catalogBg from "@/assets/catalog-bg.jpg";
+import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct } from "@/lib/stats";
+
 import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, serverTimestamp } from "firebase/firestore";
 import { db, isConfigured } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
