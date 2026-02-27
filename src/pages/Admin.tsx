@@ -385,6 +385,7 @@ const Admin = () => {
             price: item.price,
             oldPrice: item.oldPrice || Math.round(item.price * 1.2),
           },
+          searchTags: "",
         };
         await setDoc(doc(db, "products", nextId.toString()), productData);
         nextId++;
@@ -541,7 +542,8 @@ const Admin = () => {
             oldPrice: sheetOldPrice || Math.round(sheetPrice * 1.2),
             prices: { price: sheetPrice, oldPrice: sheetOldPrice || Math.round(sheetPrice * 1.2) },
             lastSyncedPrice: sheetPrice,
-            lastSyncedOldPrice: sheetOldPrice
+            lastSyncedOldPrice: sheetOldPrice,
+            searchTags: ""
           };
           await setDoc(doc(db, "products", nextId.toString()), productData);
           nextId++;
@@ -1619,15 +1621,18 @@ const Admin = () => {
                         <span>ID: {product.id}</span>
                         {product.sku && <span>• SKU: {product.sku}</span>}
                       </div>
-                      {product.searchTags && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {product.searchTags.split(',').map((tag, i) => (
+                      <div className="flex flex-wrap gap-1 mt-2 items-center">
+                        <span className="text-[9px] text-muted-foreground font-bold uppercase mr-1">Tags:</span>
+                        {product.searchTags ? (
+                          product.searchTags.split(',').map((tag, i) => (
                             <span key={i} className="text-[9px] bg-jumia-purple/10 text-jumia-purple px-1.5 py-0.5 rounded font-bold uppercase">
                               {tag.trim()}
                             </span>
-                          ))}
-                        </div>
-                      )}
+                          ))
+                        ) : (
+                          <span className="text-[9px] text-gray-300 italic">No tags added (Click edit to add)</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
