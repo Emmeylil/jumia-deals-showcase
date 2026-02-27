@@ -426,13 +426,6 @@ const Index = () => {
     setActiveCategoryFilter(category);
     setSearchQuery("");
     setIsSearchFocused(false);
-    if (bookRef.current) {
-      try {
-        bookRef.current.pageFlip().flip(0);
-      } catch (e) {
-        // Ignore if not ready
-      }
-    }
   };
 
   const performSearch = () => {
@@ -594,6 +587,9 @@ const Index = () => {
             <Search size={18} />
           </button>
           <Input
+            id="search-input"
+            name="searchQuery"
+            aria-label="Search catalog"
             type="text"
             placeholder="Search products, brands, or deals..."
             className="pl-10 pr-10 py-7 bg-white/95 backdrop-blur-md border-2 border-white/50 shadow-2xl rounded-2xl focus:ring-4 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all text-gray-900 placeholder:text-gray-400 font-medium"
@@ -622,6 +618,9 @@ const Index = () => {
             <Filter size={16} className="text-gray-400" />
           </div>
           <select
+            id="category-filter"
+            name="categoryFilter"
+            aria-label="Filter by category"
             value={activeCategoryFilter}
             onChange={(e) => {
               setActiveCategoryFilter(e.target.value);
@@ -917,11 +916,7 @@ const Index = () => {
               <button
                 key={cat}
                 className="w-full text-left p-3 px-4 hover:bg-jumia-purple/5 transition-colors flex items-center gap-3 text-sm font-bold text-gray-700"
-                onClick={() => {
-                  setSearchQuery(cat);
-                  // Trigger search immediately
-                  setTimeout(performSearch, 10);
-                }}
+                onClick={() => handleCategorySelect(cat)}
               >
                 <Search size={14} className="text-gray-400" />
                 {cat}
@@ -946,7 +941,7 @@ const Index = () => {
       >
         {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
         <HTMLFlipBook
-          key={isDesktop ? 'desktop' : 'mobile'}
+          key={(isDesktop ? 'desktop_' : 'mobile_') + activeCategoryFilter}
           width={isDesktop ? 380 : 320}
           height={isDesktop ? 480 : 420}
           size="stretch"
@@ -1232,8 +1227,10 @@ const Index = () => {
 
                   <div className="space-y-3 text-left">
                     <div>
-                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Product Name</label>
+                      <label htmlFor="suggestionName" className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Product Name</label>
                       <input
+                        id="suggestionName"
+                        name="suggestionName"
                         className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all outline-none"
                         placeholder="e.g. Baby Diapers"
                         value={suggestionForm.name}
@@ -1241,8 +1238,10 @@ const Index = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Preferred Brand</label>
+                      <label htmlFor="suggestionBrand" className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Preferred Brand</label>
                       <input
+                        id="suggestionBrand"
+                        name="suggestionBrand"
                         className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all outline-none"
                         placeholder="e.g. Pampers"
                         value={suggestionForm.brand}
@@ -1250,8 +1249,10 @@ const Index = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Description</label>
+                      <label htmlFor="suggestionDescription" className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Description</label>
                       <textarea
+                        id="suggestionDescription"
+                        name="suggestionDescription"
                         className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all outline-none resize-none"
                         placeholder="Any specific features..."
                         rows={2}
