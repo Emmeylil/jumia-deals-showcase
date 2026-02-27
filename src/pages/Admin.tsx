@@ -498,9 +498,12 @@ const Admin = () => {
         const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
         const sheetPrice = cleanPrice(row[mapping.price]);
 
-        // Intelligent Categorization: favor predefined list, otherwise auto-categorize
-        let categoryToUse = PRODUCT_CATEGORIES.find(c => c.toLowerCase() === sheetCategory.toLowerCase()) ||
-          autoCategorizeProduct(nameFromSheet);
+        // Intelligent Categorization: Trust the sheet if provided natively!
+        // If Sheet Column A has text, we use it exactly as provided.
+        // If Sheet Column A is empty, we fall back to auto-categorization.
+        const categoryToUse = sheetCategory.trim() !== ""
+          ? sheetCategory.trim()
+          : autoCategorizeProduct(nameFromSheet);
 
         const existingProduct = currentProducts.find(p => p.sku === sku);
 
@@ -508,11 +511,13 @@ const Admin = () => {
           const priceChangedInSheet = sheetPrice !== (existingProduct.lastSyncedPrice ?? -1);
           const oldPriceChangedInSheet = sheetOldPrice !== (existingProduct.lastSyncedOldPrice ?? -1);
           const brandChangedInSheet = brandFromSheet !== (existingProduct.brand ?? "");
+          const categoryChangedInSheet = categoryToUse !== (existingProduct.category ?? "");
 
-          // Only update if something relevant (Price or Brand) changed
-          if (priceChangedInSheet || oldPriceChangedInSheet || brandChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
+          // Update if Price, Brand, OR Category changed in the sheet
+          if (priceChangedInSheet || oldPriceChangedInSheet || brandChangedInSheet || categoryChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
             const updateData: any = {
               brand: brandFromSheet,
+              category: categoryToUse, // ALWAYS use the fresh category logic
               lastSyncedPrice: sheetPrice,
               lastSyncedOldPrice: sheetOldPrice
             };
@@ -536,11 +541,6 @@ const Admin = () => {
               price: updateData.price ?? existingProduct.price,
               oldPrice: updateData.oldPrice ?? existingProduct.oldPrice
             };
-
-            // Only update category if it's currently empty
-            if (!existingProduct.category) {
-              updateData.category = categoryToUse;
-            }
 
             await updateDoc(doc(db, "products", existingProduct.id.toString()), updateData);
           }
