@@ -15,6 +15,7 @@ import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incre
 
 import { onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { expandQuery, getSemanticScore, normalizeText } from "@/lib/search-utils";
 
 interface PageProps {
   children: React.ReactNode;
@@ -446,36 +447,18 @@ const Index = () => {
   const performSearch = () => {
     if (searchQuery.length <= 1) return;
 
-    const searchLower = searchQuery.toLowerCase();
+    const expandedQueries = expandQuery(searchQuery);
+
     const filtered = displayProducts
-      .filter(p =>
-        p.name.toLowerCase().includes(searchLower) ||
-        p.brand?.toLowerCase().includes(searchLower) ||
-        p.category?.toLowerCase().includes(searchLower)
-      )
-      .sort((a, b) => {
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        const aBrand = a.brand?.toLowerCase() || "";
-        const bBrand = b.brand?.toLowerCase() || "";
-
-        // Exact name match
-        if (aName === searchLower && bName !== searchLower) return -1;
-        if (bName === searchLower && aName !== searchLower) return 1;
-
-        // Starts with name match
-        if (aName.startsWith(searchLower) && !bName.startsWith(searchLower)) return -1;
-        if (bName.startsWith(searchLower) && !aName.startsWith(searchLower)) return 1;
-
-        // Brand match
-        if (aBrand === searchLower && bBrand !== searchLower) return -1;
-        if (bBrand === searchLower && aBrand !== searchLower) return 1;
-
-        return 0;
-      });
+      .map(p => ({
+        product: p,
+        score: getSemanticScore(p, expandedQueries)
+      }))
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score);
 
     if (filtered.length > 0) {
-      const product = filtered[0];
+      const { product } = filtered[0];
       const targetPage = getTargetPage(product.id);
       const book = bookRef.current?.pageFlip();
 
@@ -605,27 +588,16 @@ const Index = () => {
         {isSearchFocused && searchQuery.length > 1 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             {(() => {
-              const searchLower = searchQuery.toLowerCase();
-              const filtered = displayProducts
-                .filter(p =>
-                  p.name.toLowerCase().includes(searchLower) ||
-                  p.brand?.toLowerCase().includes(searchLower) ||
-                  p.category?.toLowerCase().includes(searchLower)
-                )
-                .sort((a, b) => {
-                  const aName = a.name.toLowerCase();
-                  const bName = b.name.toLowerCase();
-                  const aBrand = a.brand?.toLowerCase() || "";
-                  const bBrand = b.brand?.toLowerCase() || "";
+              const expandedQueries = expandQuery(searchQuery);
 
-                  if (aName === searchLower && bName !== searchLower) return -1;
-                  if (bName === searchLower && aName !== searchLower) return 1;
-                  if (aName.startsWith(searchLower) && !bName.startsWith(searchLower)) return -1;
-                  if (bName.startsWith(searchLower) && !aName.startsWith(searchLower)) return 1;
-                  if (aBrand === searchLower && bBrand !== searchLower) return -1;
-                  if (bBrand === searchLower && aBrand !== searchLower) return 1;
-                  return 0;
-                });
+              const filtered = displayProducts
+                .map(p => ({
+                  product: p,
+                  score: getSemanticScore(p, expandedQueries)
+                }))
+                .filter(item => item.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .map(item => item.product);
 
               if (filtered.length === 0) {
                 return <div className="p-8 text-center text-gray-400 italic font-medium">No results found for "{searchQuery}"</div>;
