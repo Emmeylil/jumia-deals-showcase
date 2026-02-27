@@ -31,19 +31,32 @@ const requiredEnvVars = [
 
 const missingVars = requiredEnvVars.filter(key => !import.meta.env[key]);
 
-if (missingVars.length > 0) {
-  // We throw a descriptive error that our ErrorBoundary will catch and display nicely
-  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+// Export configuration status for UI feedback
+export const isConfigured = missingVars.length === 0;
+
+if (!isConfigured) {
+  console.warn(`Missing required environment variables: ${missingVars.join(', ')}`);
 }
 
-const app = initializeApp(firebaseConfig);
+let dbInstance: any;
+let authInstance: any;
+let storageInstance: any;
 
-// Initialize Firestore with modern persistent cache settings (replaces deprecated enableIndexedDbPersistence)
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
-});
+if (isConfigured) {
+  try {
+    const app = initializeApp(firebaseConfig);
+    dbInstance = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
+    authInstance = getAuth(app);
+    storageInstance = getStorage(app);
+  } catch (error) {
+    console.error("Firebase initialization failed:", error);
+  }
+}
 
-export const auth = getAuth(app);
-export const storage = getStorage(app);
+export const db = dbInstance;
+export const auth = authInstance;
+export const storage = storageInstance;

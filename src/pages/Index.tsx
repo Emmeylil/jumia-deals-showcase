@@ -7,25 +7,12 @@ import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
-import {
-  Loader2,
-  Share2,
-  Download,
-  Search,
-  X,
-  History,
-  Flame,
-  Trash2
-} from "lucide-react";
-import { useSearchParams } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import catalogBg from "@/assets/catalog-bg.jpg";
-import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct } from "@/lib/stats";
-
 import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, isConfigured } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
 import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
+import { AlertCircle, Loader2, Share2, Download, Search, X, History, Flame, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface PageProps {
   children: React.ReactNode;
@@ -90,8 +77,49 @@ const Index = () => {
   // Initial page from URL
   const initialPage = React.useMemo(() => {
     const p = searchParams.get('page');
-    return p ? parseInt(p) - 1 : 0;
+    if (!p) return 0;
+    const parsed = parseInt(p);
+    return isNaN(parsed) ? 0 : Math.max(0, parsed - 1);
   }, []); // Only once on mount
+
+  if (!isConfigured) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 border border-amber-100 text-center animate-in fade-in zoom-in duration-500">
+          <div className="bg-amber-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-8 h-8 text-amber-500" />
+          </div>
+          <h1 className="text-xl font-black text-gray-900 mb-2">Connection Pending</h1>
+          <p className="text-gray-500 text-sm mb-6 font-medium leading-relaxed">
+            The catalog is waiting for its configuration. If you are the administrator, please ensure environment variables are set.
+          </p>
+          <div className="bg-gray-50 rounded-xl p-4 text-[10px] font-mono text-gray-400 break-all mb-6">
+            Status: Awaiting Firebase API Key
+          </div>
+          <Button
+            onClick={() => window.location.reload()}
+            className="w-full bg-jumia-purple text-white rounded-xl py-6 font-bold shadow-lg shadow-jumia-purple/20 transition-all active:scale-95"
+          >
+            Retry Connection
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading || settingsLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
+        <div className="relative mb-6">
+          <div className="w-20 h-20 border-4 border-gray-100 rounded-full" />
+          <div className="w-20 h-20 border-4 border-jumia-purple rounded-full border-t-transparent animate-spin absolute inset-0" />
+          <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="w-10 h-10 absolute inset-0 m-auto animate-pulse" />
+        </div>
+        <h2 className="text-lg font-black text-gray-900 uppercase tracking-widest animate-pulse">Loading Catalog</h2>
+        <p className="text-xs text-gray-400 font-bold mt-2 uppercase tracking-wide">Fetching the latest deals...</p>
+      </div>
+    );
+  }
 
   // Filter out products without valid images or names (out-of-stock products or sync errors)
   const displayProducts = React.useMemo(() => {
@@ -1028,7 +1056,7 @@ const Index = () => {
                     : "bg-white/90 text-gray-700 border-white/50 hover:bg-white hover:border-jumia-purple/30 hover:text-jumia-purple shadow-sm"
                     }`}
                 >
-                  <span>{emojis[cat] ?? "📂"}</span>
+                  <span>{emojis[cat as keyof typeof emojis] ?? "📂"}</span>
                   <span>{cat}</span>
                 </button>
               );
