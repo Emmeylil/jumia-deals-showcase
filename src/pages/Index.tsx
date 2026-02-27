@@ -99,7 +99,7 @@ const Index = () => {
 
   // Filter out products without valid images or names (out-of-stock products or sync errors)
   const displayProducts = React.useMemo(() => {
-    const filtered = (products || []).filter(p => {
+    let filtered = (products || []).filter(p => {
       // 1. Basic check for existence
       if (!p.image || !p.name) return false;
 
@@ -422,6 +422,19 @@ const Index = () => {
     };
   }, []);
 
+  const handleCategorySelect = (category: string) => {
+    setActiveCategoryFilter(category);
+    setSearchQuery("");
+    setIsSearchFocused(false);
+    if (bookRef.current) {
+      try {
+        bookRef.current.pageFlip().flip(0);
+      } catch (e) {
+        // Ignore if not ready
+      }
+    }
+  };
+
   const performSearch = () => {
     if (searchQuery.trim().length <= 1) return;
 
@@ -710,10 +723,7 @@ const Index = () => {
                     return (
                       <button
                         key={`cat-${i}`}
-                        onClick={() => {
-                          setSearchQuery(cat);
-                          setTimeout(performSearch, 10);
-                        }}
+                        onClick={() => handleCategorySelect(cat)}
                         className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-bold text-gray-700 border border-gray-100 hover:border-jumia-purple/20 shadow-sm"
                       >
                         {sampleProduct ? (
@@ -732,7 +742,7 @@ const Index = () => {
                   PRODUCT_CATEGORIES.slice(0, 6).map((cat, i) => (
                     <button
                       key={`fallback-cat-${i}`}
-                      onClick={() => { setSearchQuery(cat); setTimeout(performSearch, 10); }}
+                      onClick={() => handleCategorySelect(cat)}
                       className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-jumia-purple/10 rounded-full text-xs font-bold text-gray-700 border border-gray-100"
                     >
                       {cat.toLowerCase()}
@@ -798,12 +808,7 @@ const Index = () => {
                     return (
                       <button
                         key={cat}
-                        onClick={() => {
-                          const book = bookRef.current?.pageFlip();
-                          if (book) book.flip(targetPage);
-                          setIsSearchFocused(false);
-                          setSearchQuery("");
-                        }}
+                        onClick={() => handleCategorySelect(cat)}
                         className={`snap-start flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all active:scale-95 whitespace-nowrap border ${isActive
                           ? "bg-jumia-purple text-white border-jumia-purple shadow-md"
                           : "bg-white text-gray-700 border-gray-200 hover:border-jumia-purple/30 hover:text-jumia-purple shadow-sm"
