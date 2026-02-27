@@ -1,5 +1,5 @@
 import { db } from "./lib/firebase";
-import { collection, doc, setDoc, getDocs } from "@firebase/firestore";
+import { collection, doc, setDoc, getDocs } from "firebase/firestore";
 import { products } from "./data/products";
 
 async function migrateProducts() {

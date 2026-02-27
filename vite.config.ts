@@ -18,4 +18,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-firebase': ['firebase/app', 'firebase/firestore', 'firebase/auth', 'firebase/storage'],
+          'vendor-pdf': ['jspdf', 'html2canvas'],
+          'vendor-ui': ['lucide-react', 'recharts', 'embla-carousel-react'],
+        }
+      }
+    }
+  }
 }));

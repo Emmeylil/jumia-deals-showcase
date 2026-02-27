@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { doc, updateDoc, increment, getDoc, setDoc, collection, onSnapshot, query, where, serverTimestamp, Timestamp } from "@firebase/firestore";
+import { doc, updateDoc, increment, getDoc, setDoc, collection, onSnapshot, query, where, serverTimestamp, Timestamp } from "firebase/firestore";
 
 
 const STATS_DOC_ID = "general";

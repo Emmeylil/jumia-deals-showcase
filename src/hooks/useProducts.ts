@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy } from "@firebase/firestore";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { type Product } from "@/data/products";
 
 export const useProducts = () => {
