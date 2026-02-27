@@ -7,7 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
-import { Loader2, Share2, Download, Search, X } from "lucide-react";
+import { Loader2, Share2, Download, Search, X, History, Flame, Trash2 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
@@ -62,6 +62,10 @@ const Index = () => {
   const [isDesktop, setIsDesktop] = React.useState(window.innerWidth >= 768);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
+  const [recentSearches, setRecentSearches] = React.useState<string[]>(() => {
+    const saved = localStorage.getItem("recent_searches");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [highlightedProductId, setHighlightedProductId] = React.useState<number | null>(null);
   const [isCapturing, setIsCapturing] = React.useState(false);
   const [captureProgress, setCaptureProgress] = React.useState({ current: 0, total: 0 });
@@ -460,7 +464,16 @@ const Index = () => {
   }, [productChunks.length]);
 
   const performSearch = () => {
-    if (searchQuery.length <= 1) return;
+    if (searchQuery.trim().length <= 1) return;
+
+    // Save to recent searches
+    const cleanQuery = searchQuery.trim();
+    setRecentSearches(prev => {
+      const filtered = prev.filter(s => s !== cleanQuery);
+      const updated = [cleanQuery, ...filtered].slice(0, 5);
+      localStorage.setItem("recent_searches", JSON.stringify(updated));
+      return updated;
+    });
 
     const filtered = displayProducts
       .map(p => ({
@@ -596,6 +609,160 @@ const Index = () => {
             </button>
           )}
         </div>
+        {/* Search Suggestion UI (Recent & Popular) */}
+        {isSearchFocused && searchQuery.length === 0 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            {recentSearches.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                    <History size={16} className="text-gray-400" />
+                    Recently searched
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setRecentSearches([]);
+                      localStorage.removeItem("recent_searches");
+                    }}
+                    className="text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {recentSearches.map((s, i) => {
+                    const mathingProduct = displayProducts.find(p =>
+                      p.name.toLowerCase().includes(s.toLowerCase()) ||
+                      p.displayName?.toLowerCase().includes(s.toLowerCase())
+                    );
+
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setSearchQuery(s);
+                          setTimeout(performSearch, 10);
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100/50 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-transparent hover:border-jumia-purple/20"
+                      >
+                        <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-200">
+                          {mathingProduct?.image ? (
+                            <img src={mathingProduct.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Search size={10} className="text-gray-400" />
+                          )}
+                        </div>
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                  <Flame size={16} className="text-orange-500" />
+                  Popular right now
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {PRODUCT_CATEGORIES.slice(0, 8).map((cat, i) => {
+                  // Find a representative image for this category from top products
+                  const sampleProduct = displayProducts.find(p => p.category === cat);
+                  const emojis: Record<string, string> = {
+                    "Appliances": "🍳",
+                    "Phones & Tablets": "📱",
+                    "Health & Beauty": "💄",
+                    "Home & Office": "🏡",
+                    "Electronics": "📺",
+                    "Fashion": "👔",
+                    "Supermarket": "🛒",
+                    "Computing": "💻",
+                    "Gaming": "🎮"
+                  };
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setSearchQuery(cat);
+                        setTimeout(performSearch, 10);
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-bold text-gray-700 border border-gray-100 hover:border-jumia-purple/20 shadow-sm"
+                    >
+                      {sampleProduct ? (
+                        <img src={sampleProduct.image} alt="" className="w-5 h-5 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px]">
+                          {emojis[cat] || "🔥"}
+                        </div>
+                      )}
+                      {emojis[cat]} {cat.toLowerCase()}
+                    </button>
+                  );
+                })}
+                {/* Additional simulated "popular" terms from images */}
+                <button
+                  onClick={() => { setSearchQuery("jewelry"); setTimeout(performSearch, 10); }}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
+                >
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
+                    <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
+                  </div>
+                  🔥 female jewellery
+                </button>
+                <button
+                  onClick={() => { setSearchQuery("watches"); setTimeout(performSearch, 10); }}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
+                >
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100 ring-2 ring-blue-500/20">
+                    <img src="https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
+                  </div>
+                  wristwatches
+                </button>
+                <button
+                  onClick={() => { setSearchQuery("clothes"); setTimeout(performSearch, 10); }}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
+                >
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
+                    <img src="https://images.unsplash.com/photo-1516762689617-e1cffcef479d?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
+                  </div>
+                  🔥 men clothes for men
+                </button>
+                <button
+                  onClick={() => { setSearchQuery("phone gadgets"); setTimeout(performSearch, 10); }}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
+                >
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
+                    <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
+                  </div>
+                  phone gadgets
+                </button>
+                <button
+                  onClick={() => { setSearchQuery("jewelry sale"); setTimeout(performSearch, 10); }}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
+                >
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
+                    <img src="https://images.unsplash.com/photo-1573408302185-9146fe634ad0?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
+                  </div>
+                  jewelry sale
+                </button>
+                <button
+                  onClick={() => { setSearchQuery("toys"); setTimeout(performSearch, 10); }}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
+                >
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
+                    <img src="https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
+                  </div>
+                  stupid toys
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Search Results Dropdown */}
         {isSearchFocused && searchQuery.length > 1 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
