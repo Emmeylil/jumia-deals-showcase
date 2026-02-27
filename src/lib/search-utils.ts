@@ -121,7 +121,7 @@ export function expandQuery(query: string): string[] {
  * Scores are higher for exact matches, prefix matches, and matching more query terms.
  */
 export function getSemanticScore(
-    product: { name: string; brand?: string; category?: string; displayName?: string },
+    product: { name: string; brand?: string; category?: string; displayName?: string; searchTags?: string },
     rawQuery: string
 ): number {
     const normalizedQuery = normalizeText(rawQuery);
@@ -130,9 +130,23 @@ export function getSemanticScore(
     const searchName = normalizeText(product.displayName || product.name);
     const searchBrand = normalizeText(product.brand || "");
     const searchCategory = normalizeText(product.category || "");
-    const fullText = `${searchName} ${searchBrand} ${searchCategory}`;
+    const searchTags = normalizeText(product.searchTags || "");
+    const fullText = `${searchName} ${searchBrand} ${searchCategory} ${searchTags}`;
 
     let score = 0;
+
+    // 0. Custom Search Tags Match (Highest Priority)
+    // If query matches any tag exactly or is contained in tags
+    if (searchTags) {
+        const tags = searchTags.split(" ").filter(t => t.length > 0);
+        // Exact tag match boost
+        if (tags.some(tag => tag === normalizedQuery)) {
+            score += 1000;
+        } else if (searchTags.includes(normalizedQuery)) {
+            // Partial tag match (phrase match in tags)
+            score += 800;
+        }
+    }
 
     // 1. Exact Name/Brand Match (Absolute top)
     if (searchName === normalizedQuery) score += 500;

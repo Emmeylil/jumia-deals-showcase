@@ -30,6 +30,7 @@ export interface Product {
   discountPercentage?: number;
   lastSyncedPrice?: number;
   lastSyncedOldPrice?: number;
+  searchTags?: string;
 }
 
 export const products: Product[] = [

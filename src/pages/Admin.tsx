@@ -125,6 +125,7 @@ const Admin = () => {
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editOldPrice, setEditOldPrice] = useState("");
+  const [editTags, setEditTags] = useState("");
 
   // Stats state
   const [stats, setStats] = useState<StatsData | null>(null);
@@ -561,7 +562,7 @@ const Admin = () => {
     }
   };
 
-  const handleUpdateProduct = async (id: number, name: string, price: number, oldPrice: number) => {
+  const handleUpdateProduct = async (id: number, name: string, price: number, oldPrice: number, searchTags?: string) => {
     try {
       const productRef = doc(db, "products", id.toString());
       await updateDoc(productRef, {
@@ -570,6 +571,7 @@ const Admin = () => {
         price,
         oldPrice,
         prices: { price, oldPrice },
+        searchTags: searchTags || ""
       });
       toast.success("Product updated");
       setEditingId(null);
@@ -1617,6 +1619,15 @@ const Admin = () => {
                         <span>ID: {product.id}</span>
                         {product.sku && <span>• SKU: {product.sku}</span>}
                       </div>
+                      {product.searchTags && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {product.searchTags.split(',').map((tag, i) => (
+                            <span key={i} className="text-[9px] bg-jumia-purple/10 text-jumia-purple px-1.5 py-0.5 rounded font-bold uppercase">
+                              {tag.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1649,11 +1660,20 @@ const Admin = () => {
                             className="w-24 h-8 text-sm"
                           />
                         </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] text-muted-foreground">Search Tags (comma-separated)</label>
+                          <Input
+                            value={editTags}
+                            onChange={(e) => setEditTags(e.target.value)}
+                            placeholder="e.g. tv, television, electronics"
+                            className="h-8 text-sm"
+                          />
+                        </div>
                         <Button
                           size="icon"
                           variant="ghost"
                           className="mt-3 self-end"
-                          onClick={() => handleUpdateProduct(product.id, editName, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0)}
+                          onClick={() => handleUpdateProduct(product.id, editName, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0, editTags)}
                         >
                           <Save size={16} />
                         </Button>
@@ -1673,6 +1693,7 @@ const Admin = () => {
                           setEditName(product.displayName || product.name);
                           setEditPrice(product.price.toString());
                           setEditOldPrice(product.oldPrice.toString());
+                          setEditTags(product.searchTags || "");
                         }}
                       >
                         <Edit2 size={16} />
