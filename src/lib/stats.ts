@@ -107,3 +107,58 @@ export const listenToActiveReaders = (callback: (count: number) => void) => {
     });
 };
 
+export const logSearchKeyword = async (keyword: string) => {
+    if (!keyword || keyword.trim().length <= 1) return;
+    const cleanKeyword = keyword.trim().toLowerCase();
+    const keywordRef = doc(db, "search_keywords", cleanKeyword);
+    const snapshot = await getDoc(keywordRef);
+
+    if (!snapshot.exists()) {
+        await setDoc(keywordRef, {
+            keyword: cleanKeyword,
+            count: 1,
+            lastSearched: serverTimestamp()
+        });
+    } else {
+        await updateDoc(keywordRef, {
+            count: increment(1),
+            lastSearched: serverTimestamp()
+        });
+    }
+};
+
+export const logCategorySearch = async (category: string) => {
+    if (!category) return;
+    const categoryRef = doc(db, "search_categories", category);
+    const snapshot = await getDoc(categoryRef);
+
+    if (!snapshot.exists()) {
+        await setDoc(categoryRef, {
+            category,
+            count: 1,
+            lastSearched: serverTimestamp()
+        });
+    } else {
+        await updateDoc(categoryRef, {
+            count: increment(1),
+            lastSearched: serverTimestamp()
+        });
+    }
+};
+
+export const logSearchToProduct = async (keyword: string, productId: string | number, category?: string) => {
+    if (!keyword) return;
+    const cleanKeyword = keyword.trim().toLowerCase();
+    const pid = productId.toString();
+    const logId = `${cleanKeyword}_${pid}`;
+    const logRef = doc(db, "search_analytics", logId);
+
+    await setDoc(logRef, {
+        keyword: cleanKeyword,
+        productId: pid,
+        category: category || "unknown",
+        timestamp: serverTimestamp(),
+        count: increment(1)
+    }, { merge: true });
+};
+

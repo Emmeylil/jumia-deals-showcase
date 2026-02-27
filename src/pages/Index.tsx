@@ -11,9 +11,9 @@ import { Loader2, Share2, Download, Search, X, History, Flame, Trash2 } from "lu
 import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
-import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence } from "@/lib/stats";
+import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct } from "@/lib/stats";
 
-import { onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
 import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
@@ -70,6 +70,8 @@ const Index = () => {
   const [isCapturing, setIsCapturing] = React.useState(false);
   const [captureProgress, setCaptureProgress] = React.useState({ current: 0, total: 0 });
   const [searchParams, setSearchParams] = useSearchParams();
+  const [popularKeywords, setPopularKeywords] = React.useState<{ keyword: string, count: number }[]>([]);
+  const [popularCategories, setPopularCategories] = React.useState<{ category: string, count: number }[]>([]);
 
 
   // Initial page from URL
@@ -463,6 +465,25 @@ const Index = () => {
     setTotalPages(count);
   }, [productChunks.length]);
 
+  // Fetch Popular Suggestions
+  useEffect(() => {
+    const keywordsQuery = query(collection(db, "search_keywords"), orderBy("count", "desc"), limit(8));
+    const categoriesQuery = query(collection(db, "search_categories"), orderBy("count", "desc"), limit(8));
+
+    const unsubKeywords = onSnapshot(keywordsQuery, (snap) => {
+      setPopularKeywords(snap.docs.map(doc => doc.data() as any));
+    });
+
+    const unsubCategories = onSnapshot(categoriesQuery, (snap) => {
+      setPopularCategories(snap.docs.map(doc => doc.data() as any));
+    });
+
+    return () => {
+      unsubKeywords();
+      unsubCategories();
+    };
+  }, []);
+
   const performSearch = () => {
     if (searchQuery.trim().length <= 1) return;
 
@@ -474,6 +495,8 @@ const Index = () => {
       localStorage.setItem("recent_searches", JSON.stringify(updated));
       return updated;
     });
+
+    logSearchKeyword(cleanQuery);
 
     const filtered = displayProducts
       .map(p => ({
@@ -668,96 +691,84 @@ const Index = () => {
                 </h3>
               </div>
               <div className="flex flex-wrap gap-2">
-                {PRODUCT_CATEGORIES.slice(0, 8).map((cat, i) => {
-                  // Find a representative image for this category from top products
-                  const sampleProduct = displayProducts.find(p => p.category === cat);
-                  const emojis: Record<string, string> = {
-                    "Appliances": "🍳",
-                    "Phones & Tablets": "📱",
-                    "Health & Beauty": "💄",
-                    "Home & Office": "🏡",
-                    "Electronics": "📺",
-                    "Fashion": "👔",
-                    "Supermarket": "🛒",
-                    "Computing": "💻",
-                    "Gaming": "🎮"
-                  };
+                {/* Dynamic Popular Categories */}
+                {popularCategories.length > 0 ? (
+                  popularCategories.map((item, i) => {
+                    const cat = item.category;
+                    const sampleProduct = displayProducts.find(p => p.category === cat);
+                    const emojis: Record<string, string> = {
+                      "Appliances": "🍳",
+                      "Phones & Tablets": "📱",
+                      "Health & Beauty": "💄",
+                      "Home & Office": "🏡",
+                      "Electronics": "📺",
+                      "Fashion": "👔",
+                      "Supermarket": "🛒",
+                      "Computing": "💻",
+                      "Gaming": "🎮"
+                    };
+
+                    return (
+                      <button
+                        key={`cat-${i}`}
+                        onClick={() => {
+                          setSearchQuery(cat);
+                          setTimeout(performSearch, 10);
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-bold text-gray-700 border border-gray-100 hover:border-jumia-purple/20 shadow-sm"
+                      >
+                        {sampleProduct ? (
+                          <img src={sampleProduct.image} alt="" className="w-5 h-5 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px]">
+                            {emojis[cat] || "📂"}
+                          </div>
+                        )}
+                        {emojis[cat]} {cat.toLowerCase()}
+                      </button>
+                    );
+                  })
+                ) : (
+                  // Fallback to initial predefined categories if no analytics yet
+                  PRODUCT_CATEGORIES.slice(0, 6).map((cat, i) => (
+                    <button
+                      key={`fallback-cat-${i}`}
+                      onClick={() => { setSearchQuery(cat); setTimeout(performSearch, 10); }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-jumia-purple/10 rounded-full text-xs font-bold text-gray-700 border border-gray-100"
+                    >
+                      {cat.toLowerCase()}
+                    </button>
+                  ))
+                )}
+
+                {/* Dynamic Popular Keywords */}
+                {popularKeywords.map((item, i) => {
+                  const kw = item.keyword;
+                  const matchingProduct = displayProducts.find(p =>
+                    p.name.toLowerCase().includes(kw.toLowerCase()) ||
+                    p.displayName?.toLowerCase().includes(kw.toLowerCase())
+                  );
 
                   return (
                     <button
-                      key={i}
+                      key={`kw-${i}`}
                       onClick={() => {
-                        setSearchQuery(cat);
+                        setSearchQuery(kw);
                         setTimeout(performSearch, 10);
                       }}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-bold text-gray-700 border border-gray-100 hover:border-jumia-purple/20 shadow-sm"
+                      className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
                     >
-                      {sampleProduct ? (
-                        <img src={sampleProduct.image} alt="" className="w-5 h-5 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px]">
-                          {emojis[cat] || "🔥"}
-                        </div>
-                      )}
-                      {emojis[cat]} {cat.toLowerCase()}
+                      <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
+                        {matchingProduct?.image ? (
+                          <img src={matchingProduct.image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Search size={10} className="text-gray-400" />
+                        )}
+                      </div>
+                      {kw}
                     </button>
                   );
                 })}
-                {/* Additional simulated "popular" terms from images */}
-                <button
-                  onClick={() => { setSearchQuery("jewelry"); setTimeout(performSearch, 10); }}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
-                >
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
-                    <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
-                  </div>
-                  🔥 female jewellery
-                </button>
-                <button
-                  onClick={() => { setSearchQuery("watches"); setTimeout(performSearch, 10); }}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
-                >
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100 ring-2 ring-blue-500/20">
-                    <img src="https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
-                  </div>
-                  wristwatches
-                </button>
-                <button
-                  onClick={() => { setSearchQuery("clothes"); setTimeout(performSearch, 10); }}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
-                >
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
-                    <img src="https://images.unsplash.com/photo-1516762689617-e1cffcef479d?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
-                  </div>
-                  🔥 men clothes for men
-                </button>
-                <button
-                  onClick={() => { setSearchQuery("phone gadgets"); setTimeout(performSearch, 10); }}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
-                >
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
-                    <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
-                  </div>
-                  phone gadgets
-                </button>
-                <button
-                  onClick={() => { setSearchQuery("jewelry sale"); setTimeout(performSearch, 10); }}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
-                >
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
-                    <img src="https://images.unsplash.com/photo-1573408302185-9146fe634ad0?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
-                  </div>
-                  jewelry sale
-                </button>
-                <button
-                  onClick={() => { setSearchQuery("toys"); setTimeout(performSearch, 10); }}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
-                >
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
-                    <img src="https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=50&h=50&fit=crop" alt="" className="w-full h-full object-cover" />
-                  </div>
-                  stupid toys
-                </button>
               </div>
             </div>
           </div>
@@ -821,6 +832,11 @@ const Index = () => {
                       setHighlightedProductId(product.id);
                       setSearchQuery("");
                       setIsSearchFocused(false);
+
+                      // Log the search-to-product mapping
+                      logSearchToProduct(searchQuery, product.id, product.category);
+                      if (product.category) logCategorySearch(product.category);
+
                       setTimeout(() => setHighlightedProductId(null), 5000);
                     }}
                   >
