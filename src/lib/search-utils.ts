@@ -91,13 +91,7 @@ export function expandQuery(query: string): string[] {
         // Add synonyms for original word
         const synonyms = SYNONYM_MAP[word] || [];
         synonyms.forEach(syn => {
-            const normSyn = normalizeText(syn);
-            expandedTerms.add(normSyn);
-            if (normSyn.includes(" ")) {
-                normSyn.split(" ").forEach(sw => {
-                    if (sw.length > 3) expandedTerms.add(sw);
-                });
-            }
+            normalizeText(syn).split(" ").forEach(sw => expandedTerms.add(sw));
         });
 
         // Add stem
@@ -107,8 +101,7 @@ export function expandQuery(query: string): string[] {
             // Check synonyms for stem
             const stemSynonyms = SYNONYM_MAP[stem] || [];
             stemSynonyms.forEach(syn => {
-                const normSyn = normalizeText(syn);
-                expandedTerms.add(normSyn);
+                normalizeText(syn).split(" ").forEach(sw => expandedTerms.add(sw));
             });
         }
     });
@@ -117,11 +110,11 @@ export function expandQuery(query: string): string[] {
 }
 
 /**
- * Returns a match score for a product against a query.
- * Scores are higher for exact matches, prefix matches, and matching more query terms.
+ * Returns a match score for a product against expanded queries.
+ * Scores are higher for exact matches and matches in name vs category.
  */
 export function getSemanticScore(
-    product: { name: string; brand?: string; category?: string; displayName?: string; searchTags?: string },
+    product: { name: string; brand?: string; category?: string; displayName?: string },
     rawQuery: string
 ): number {
     const normalizedQuery = normalizeText(rawQuery);
@@ -130,23 +123,9 @@ export function getSemanticScore(
     const searchName = normalizeText(product.displayName || product.name);
     const searchBrand = normalizeText(product.brand || "");
     const searchCategory = normalizeText(product.category || "");
-    const searchTags = normalizeText(product.searchTags || "");
-    const fullText = `${searchName} ${searchBrand} ${searchCategory} ${searchTags}`;
+    const fullText = `${searchName} ${searchBrand} ${searchCategory}`;
 
     let score = 0;
-
-    // 0. Custom Search Tags Match (Highest Priority)
-    // If query matches any tag exactly or is contained in tags
-    if (searchTags) {
-        const tags = searchTags.split(" ").filter(t => t.length > 0);
-        // Exact tag match boost
-        if (tags.some(tag => tag === normalizedQuery)) {
-            score += 1000;
-        } else if (searchTags.includes(normalizedQuery)) {
-            // Partial tag match (phrase match in tags)
-            score += 800;
-        }
-    }
 
     // 1. Exact Name/Brand Match (Absolute top)
     if (searchName === normalizedQuery) score += 500;
@@ -157,20 +136,17 @@ export function getSemanticScore(
     else if (searchBrand.includes(normalizedQuery)) score += 150;
     else if (fullText.includes(normalizedQuery)) score += 100;
 
-    // 3. Exact prefix match boost (only if query is reasonably specific)
+    // 3. Exact prefix match boost
     if (normalizedQuery.length > 2) {
         if (searchName.startsWith(normalizedQuery)) score += 50;
         if (searchBrand.startsWith(normalizedQuery)) score += 40;
     }
 
-    // 4. Individual word matches
-    let matchedTermsCount = 0;
+    // 4. Individual word matches (expanded with synonyms)
     const expandedQueries = expandQuery(rawQuery);
 
     expandedQueries.forEach(term => {
         const isOriginalWord = queryTerms.includes(term);
-
-        // Stricter matching for short terms to avoid noise
         const regex = term.length < 3 ? new RegExp(`\\b${term}\\b`) : null;
 
         const matchesName = regex ? regex.test(searchName) : searchName.includes(term);
@@ -180,26 +156,15 @@ export function getSemanticScore(
         if (matchesName || matchesBrand || matchesCategory) {
             if (isOriginalWord) {
                 score += 30;
-                matchedTermsCount++;
             } else {
-                // Multi-word synonyms (like "deep freezer") should get a better score than single-word partials
                 const weight = term.includes(" ") ? 15 : 8;
                 score += weight;
             }
 
-            // Field weighting
             if (matchesName) score += 10;
             if (matchesBrand) score += 5;
         }
     });
-
-    // 5. Density/Precision boost: reward shorter names that match the query
-    if (matchedTermsCount > 0) {
-        const nameWordCount = searchName.split(" ").length;
-        const densityBonus = Math.max(0, 10 - nameWordCount);
-        score += densityBonus;
-    }
-
     return score;
 }
 

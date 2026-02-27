@@ -127,7 +127,6 @@ const Admin = () => {
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editOldPrice, setEditOldPrice] = useState("");
-  const [editTags, setEditTags] = useState("");
   const [editCategory, setEditCategory] = useState("");
 
   // Stats state
@@ -554,8 +553,7 @@ const Admin = () => {
             oldPrice: sheetOldPrice || Math.round(sheetPrice * 1.2),
             prices: { price: sheetPrice, oldPrice: sheetOldPrice || Math.round(sheetPrice * 1.2) },
             lastSyncedPrice: sheetPrice,
-            lastSyncedOldPrice: sheetOldPrice,
-            searchTags: ""
+            lastSyncedOldPrice: sheetOldPrice
           };
           await setDoc(doc(db, "products", nextId.toString()), productData);
           nextId++;
@@ -576,7 +574,7 @@ const Admin = () => {
     }
   };
 
-  const handleUpdateProduct = async (id: number, name: string, price: number, oldPrice: number, searchTags?: string, category?: string) => {
+  const handleUpdateProduct = async (id: number, name: string, price: number, oldPrice: number, category?: string) => {
     try {
       const productRef = doc(db, "products", id.toString());
       await updateDoc(productRef, {
@@ -585,7 +583,6 @@ const Admin = () => {
         price,
         oldPrice,
         prices: { price, oldPrice },
-        searchTags: searchTags || "",
         category: category || ""
       });
       toast.success("Product updated");
@@ -1628,23 +1625,11 @@ const Admin = () => {
                 <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg bg-white shadow-sm gap-3">
                   <div className="flex items-center gap-4 min-w-0 flex-1">
                     <img src={product.image} alt={product.name} className="w-16 h-16 object-contain flex-shrink-0" />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-sm line-clamp-2">{product.displayName || product.name}</h3>
                       <div className="flex gap-2 text-[10px] text-muted-foreground uppercase tracking-tight">
                         <span>ID: {product.id}</span>
                         {product.sku && <span>• SKU: {product.sku}</span>}
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-2 items-center">
-                        <span className="text-[9px] text-muted-foreground font-bold uppercase mr-1">Tags:</span>
-                        {product.searchTags ? (
-                          product.searchTags.split(',').map((tag, i) => (
-                            <span key={i} className="text-[9px] bg-jumia-purple/10 text-jumia-purple px-1.5 py-0.5 rounded font-bold uppercase">
-                              {tag.trim()}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-[9px] text-gray-300 italic">No tags added (Click edit to add)</span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -1679,15 +1664,6 @@ const Admin = () => {
                           />
                         </div>
                         <div className="flex-1">
-                          <label className="text-[10px] text-muted-foreground">Search Tags (comma-separated)</label>
-                          <Input
-                            value={editTags}
-                            onChange={(e) => setEditTags(e.target.value)}
-                            placeholder="e.g. tv, television, electronics"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="flex-1">
                           <label className="text-[10px] text-muted-foreground">Category</label>
                           <select
                             className="w-full h-8 border rounded-md text-xs px-2 bg-white"
@@ -1704,7 +1680,7 @@ const Admin = () => {
                           size="icon"
                           variant="ghost"
                           className="mt-3 self-end"
-                          onClick={() => handleUpdateProduct(product.id, editName, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0, editTags, editCategory)}
+                          onClick={() => handleUpdateProduct(product.id, editName, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0, editCategory)}
                         >
                           <Save size={16} />
                         </Button>
@@ -1724,7 +1700,6 @@ const Admin = () => {
                           setEditName(product.displayName || product.name);
                           setEditPrice(product.price.toString());
                           setEditOldPrice(product.oldPrice.toString());
-                          setEditTags(product.searchTags || "");
                           setEditCategory(product.category || "");
                         }}
                       >
