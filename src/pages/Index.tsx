@@ -7,7 +7,18 @@ import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
 import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
-import { Loader2, Share2, Download, Search, X, History, Flame, Trash2, ExternalLink, MessageSquarePlus } from "lucide-react";
+import {
+  Loader2,
+  Share2,
+  Download,
+  Search,
+  X,
+  History,
+  Flame,
+  Trash2,
+  ExternalLink as LucideExternalLink,
+  MessageSquarePlus as LucideMessageSquarePlus
+} from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
@@ -800,10 +811,13 @@ const Index = () => {
                       </span>
                     </p>
                     <button
-                      onClick={() => window.open(`https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(searchQuery)}`, '_blank')}
+                      onClick={() => {
+                        const url = `https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(searchQuery)}`;
+                        window.open(url, '_blank');
+                      }}
                       className="flex items-center gap-2 px-6 py-2.5 bg-jumia-purple text-white text-xs font-bold rounded-xl hover:bg-jumia-purple/90 active:scale-95 transition-all shadow-lg hover:shadow-jumia-purple/20"
                     >
-                      <ExternalLink size={14} />
+                      <LucideExternalLink size={14} />
                       Shop on Jumia Mall
                     </button>
                   </div>
@@ -1172,7 +1186,7 @@ const Index = () => {
               {!suggestionSuccess ? (
                 <div className="w-full max-w-sm bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/50 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="bg-jumia-purple/10 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <MessageSquarePlus className="text-jumia-purple" size={24} />
+                    <LucideMessageSquarePlus className="text-jumia-purple" size={24} />
                   </div>
                   <h2 className="text-lg font-black text-gray-900 mb-1">Missing something?</h2>
                   <p className="text-[11px] text-gray-500 mb-6 font-medium">Suggest a product you'd like to see on Jumia!</p>
@@ -1455,18 +1469,23 @@ const Index = () => {
             ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
           }}
         >
-          <h2 className="text-2xl font-black mb-4">{catalogSettings?.backPage?.title || "Don't Miss Out!"}</h2>
-          <p className="text-sm text-gray-600 mb-8">{catalogSettings?.backPage?.description}</p>
-          <div className="w-32 h-32 bg-white p-4 shadow-xl rounded-2xl mb-6">
+          <div className="bg-jumia-purple/10 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <LucideMessageSquarePlus className="text-jumia-purple" size={24} />
+          </div>
+          <h2 className="text-xl font-black text-gray-900 mb-2">Have a Suggestion?</h2>
+          <p className="text-[10px] text-gray-500 mb-6 font-medium max-w-[200px] mx-auto">Suggest a product you'd like to see on Jumia!</p>
+
+          <div className="w-20 h-20 bg-white p-2 shadow-lg rounded-xl mb-4 mx-auto">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
               alt="QR"
               className="w-full h-full"
             />
-
-
           </div>
-          <p className="text-xs font-black opacity-50">JUMIA © {new Date().getFullYear()}</p>
+          <div className="flex items-center gap-2 opacity-30 text-[10px] font-black uppercase tracking-[0.2em] mt-4">
+            <span>{catalogSettings?.backPage?.footerText?.split('©')[0]?.trim() || "JUMIA"}</span>
+            <span>&copy; {new Date().getFullYear()}</span>
+          </div>
         </div>
       </div>
 
