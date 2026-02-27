@@ -15,8 +15,10 @@ import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, 
 import { db, isConfigured } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
 import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
+
 import { AlertCircle, Loader2, Share2, Download, Search, X, History, Flame, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface PageProps {
   children: React.ReactNode;
@@ -54,7 +56,6 @@ const Index = () => {
   const { products, loading } = useProducts();
   const bookRef = useRef<any>(null);
 
-  // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = React.useState<any>(null);
   const [settingsLoading, setSettingsLoading] = React.useState(true);
   const [currentPage, setCurrentPage] = React.useState(0);
@@ -1194,6 +1195,8 @@ const Index = () => {
                         placeholder="e.g. Baby Diapers"
                         value={suggestionForm.name}
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, name: e.target.value }))}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div>
@@ -1205,6 +1208,8 @@ const Index = () => {
                         placeholder="e.g. Pampers"
                         value={suggestionForm.brand}
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, brand: e.target.value }))}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div>
@@ -1217,6 +1222,8 @@ const Index = () => {
                         rows={2}
                         value={suggestionForm.description}
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, description: e.target.value }))}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -1230,6 +1237,8 @@ const Index = () => {
                           placeholder="e.g. john@example.com"
                           value={suggestionForm.email}
                           onChange={(e) => setSuggestionForm(prev => ({ ...prev, email: e.target.value }))}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
                         />
                       </div>
                       <div>
@@ -1242,14 +1251,20 @@ const Index = () => {
                           placeholder="e.g. 08012345678"
                           value={suggestionForm.phone}
                           onChange={(e) => setSuggestionForm(prev => ({ ...prev, phone: e.target.value }))}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
                         />
                       </div>
                     </div>
                   </div>
 
                   <button
-                    disabled={suggestionSubmitting || !suggestionForm.name}
+                    disabled={suggestionSubmitting}
                     onClick={async () => {
+                      if (!suggestionForm.name.trim()) {
+                        toast.error("Please enter a product name");
+                        return;
+                      }
                       setSuggestionSubmitting(true);
                       try {
                         await setDoc(doc(collection(db, "product_suggestions")), {
