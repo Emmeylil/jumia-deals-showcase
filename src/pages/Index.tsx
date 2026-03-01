@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { supabase } from "@/integrations/supabase/client";
 
 import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
@@ -325,34 +326,52 @@ const Index = () => {
     try {
       setCaptureProgress({ current: 0, total: totalPagesToCapture });
 
-      // Pre-load all images in the capture container
+      // Step 1: Collect all unique external image URLs from the capture container
       const captureContainer = document.getElementById('pdf-capture-container');
+      const imageDataCache: Record<string, string> = {};
+
       if (captureContainer) {
         const imgs = Array.from(captureContainer.querySelectorAll('img')) as HTMLImageElement[];
-        await Promise.all(imgs.map(img => {
-          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-          return new Promise<void>((resolve) => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve(); // continue even if image fails
-            // Trigger reload by re-assigning src
-            const src = img.src;
-            img.src = '';
-            img.src = src;
-          });
+        const uniqueUrls = [...new Set(imgs.map(img => img.src).filter(src =>
+          src && src.startsWith('http') && !src.startsWith(window.location.origin)
+        ))];
+
+        // Step 2: Proxy-fetch all external images in parallel → data URLs
+        toast.info("Preparing images...", { duration: 2000 });
+        await Promise.all(uniqueUrls.map(async (url) => {
+          try {
+            const { data } = await supabase.functions.invoke('image-proxy', {
+              body: { imageUrl: url },
+            });
+            if (data?.dataUrl) imageDataCache[url] = data.dataUrl;
+          } catch {
+            // silently skip failed images
+          }
         }));
+
+        // Step 3: Replace img src with cached data URLs in the capture container
+        imgs.forEach(img => {
+          if (imageDataCache[img.src]) {
+            img.src = imageDataCache[img.src];
+          }
+        });
+
+        // Allow DOM to repaint with new src
+        await new Promise(r => setTimeout(r, 300));
       }
 
       const pdfWidth = 380;
       const pdfHeight = 480;
       const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [pdfWidth, pdfHeight] });
 
-      const options = {
+      const captureOptions = {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
-        imageTimeout: 20000,
+        width: pdfWidth,
+        height: pdfHeight,
         onclone: (doc: Document) => {
           const captureEl = doc.getElementById('pdf-capture-container');
           if (captureEl) {
@@ -362,11 +381,12 @@ const Index = () => {
             captureEl.style.zIndex = '9999';
             captureEl.style.opacity = '1';
             captureEl.style.visibility = 'visible';
-            captureEl.style.pointerEvents = 'none';
           }
-          doc.querySelectorAll('img').forEach((img: Element) => {
-            const el = img as HTMLImageElement;
-            el.loading = 'eager';
+          // Apply cached data URLs inside the cloned doc too
+          doc.querySelectorAll('img').forEach((el: Element) => {
+            const img = el as HTMLImageElement;
+            if (imageDataCache[img.src]) img.src = imageDataCache[img.src];
+            (img as HTMLImageElement).loading = 'eager';
           });
         }
       };
@@ -377,32 +397,28 @@ const Index = () => {
         const element = document.getElementById(`pdf-page-${i}`);
         if (!element) { console.warn(`pdf-page-${i} not found`); continue; }
 
-        // Make element temporarily visible for capture
-        const prevPos = element.style.position;
-        const prevTop = element.style.top;
-        const prevLeft = element.style.left;
+        // Temporarily bring element into view
         element.style.position = 'fixed';
         element.style.top = '0';
         element.style.left = '0';
         element.style.zIndex = '9998';
 
-        // Small delay to allow reflow/images
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 100));
 
-        const canvas = await html2canvas(element, { ...options, width: pdfWidth, height: pdfHeight });
+        const canvas = await html2canvas(element, captureOptions);
 
-        // Restore
-        element.style.position = prevPos;
-        element.style.top = prevTop;
-        element.style.left = prevLeft;
+        element.style.position = '';
+        element.style.top = '';
+        element.style.left = '';
         element.style.zIndex = '';
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         if (i > 0) pdf.addPage([pdfWidth, pdfHeight], 'p');
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
 
       pdf.save(`jumia-deals-catalog-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("Catalog downloaded!");
 
     } catch (error) {
       console.error("Download failed:", error);
