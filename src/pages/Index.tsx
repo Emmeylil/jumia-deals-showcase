@@ -321,70 +321,92 @@ const Index = () => {
     incrementDownload();
     setIsCapturing(true);
 
-    const book = bookRef.current?.pageFlip();
-    if (!book) {
-      setIsCapturing(false);
-      return;
-    }
-
     const totalPagesToCapture = totalPages;
     try {
       setCaptureProgress({ current: 0, total: totalPagesToCapture });
 
-      // Create PDF: p = portrait, pt = points, a4 = format
-      // Custom format based on page dimensions (isDesktop ? 380x480 : 320x420)
-      const pdfWidth = isDesktop ? 380 : 320;
-      const pdfHeight = isDesktop ? 480 : 420;
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: [pdfWidth, pdfHeight]
-      });
+      // Pre-load all images in the capture container
+      const captureContainer = document.getElementById('pdf-capture-container');
+      if (captureContainer) {
+        const imgs = Array.from(captureContainer.querySelectorAll('img')) as HTMLImageElement[];
+        await Promise.all(imgs.map(img => {
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve(); // continue even if image fails
+            // Trigger reload by re-assigning src
+            const src = img.src;
+            img.src = '';
+            img.src = src;
+          });
+        }));
+      }
+
+      const pdfWidth = 380;
+      const pdfHeight = 480;
+      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [pdfWidth, pdfHeight] });
 
       const options = {
-        scale: 3, // High quality
+        scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: pdfWidth,
-        windowHeight: pdfHeight,
-        onclone: (doc) => {
-          // Force rendering of certain elements if needed
+        imageTimeout: 20000,
+        onclone: (doc: Document) => {
           const captureEl = doc.getElementById('pdf-capture-container');
           if (captureEl) {
+            captureEl.style.position = 'fixed';
+            captureEl.style.top = '0';
+            captureEl.style.left = '0';
+            captureEl.style.zIndex = '9999';
             captureEl.style.opacity = '1';
             captureEl.style.visibility = 'visible';
-            captureEl.style.left = '0';
+            captureEl.style.pointerEvents = 'none';
           }
+          doc.querySelectorAll('img').forEach((img: Element) => {
+            const el = img as HTMLImageElement;
+            el.loading = 'eager';
+          });
         }
       };
 
       for (let i = 0; i < totalPagesToCapture; i++) {
         setCaptureProgress({ current: i + 1, total: totalPagesToCapture });
 
-        // Target the hidden capture elements instead of the flipbook ones
         const element = document.getElementById(`pdf-page-${i}`);
-        if (!element) {
-          console.warn(`Hidden page element pdf-page-${i} not found`);
-          continue;
-        }
+        if (!element) { console.warn(`pdf-page-${i} not found`); continue; }
 
-        const canvas = await html2canvas(element, options);
-        // Using PNG for better quality on text/lines
-        const imgData = canvas.toDataURL('image/png');
+        // Make element temporarily visible for capture
+        const prevPos = element.style.position;
+        const prevTop = element.style.top;
+        const prevLeft = element.style.left;
+        element.style.position = 'fixed';
+        element.style.top = '0';
+        element.style.left = '0';
+        element.style.zIndex = '9998';
 
-        if (i > 0) {
-          pdf.addPage([pdfWidth, pdfHeight], 'p');
-        }
+        // Small delay to allow reflow/images
+        await new Promise(r => setTimeout(r, 150));
 
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        const canvas = await html2canvas(element, { ...options, width: pdfWidth, height: pdfHeight });
+
+        // Restore
+        element.style.position = prevPos;
+        element.style.top = prevTop;
+        element.style.left = prevLeft;
+        element.style.zIndex = '';
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        if (i > 0) pdf.addPage([pdfWidth, pdfHeight], 'p');
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
 
       pdf.save(`jumia-deals-catalog-${new Date().toISOString().split('T')[0]}.pdf`);
 
     } catch (error) {
       console.error("Download failed:", error);
-      alert("Download failed. Please try again.");
+      toast.error("Download failed. Please try again.");
     } finally {
       setIsCapturing(false);
       setCaptureProgress({ current: 0, total: totalPagesToCapture });
@@ -421,25 +443,22 @@ const Index = () => {
 
 
 
-  const performSearch = () => {
-    if (searchQuery.trim().length <= 1) return;
+  const performSearch = (queryOverride?: string) => {
+    const q = (queryOverride ?? searchQuery).trim();
+    if (q.length <= 1) return;
 
     // Save to recent searches
-    const cleanQuery = searchQuery.trim();
     setRecentSearches(prev => {
-      const filtered = prev.filter(s => s !== cleanQuery);
-      const updated = [cleanQuery, ...filtered].slice(0, 5);
+      const filtered = prev.filter(s => s !== q);
+      const updated = [q, ...filtered].slice(0, 5);
       localStorage.setItem("recent_searches", JSON.stringify(updated));
       return updated;
     });
 
-    logSearchKeyword(cleanQuery);
+    logSearchKeyword(q);
 
     const filtered = displayProducts
-      .map(p => ({
-        product: p,
-        score: getSemanticScore(p, searchQuery)
-      }))
+      .map(p => ({ product: p, score: getSemanticScore(p, q) }))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
 
@@ -453,10 +472,7 @@ const Index = () => {
         const isVisible = isDesktop
           ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
           : currentPageIndex === targetPage;
-
-        if (!isVisible) {
-          book.flip(targetPage);
-        }
+        if (!isVisible) book.flip(targetPage);
       }
 
       setHighlightedProductId(product.id);
@@ -465,6 +481,28 @@ const Index = () => {
       setTimeout(() => setHighlightedProductId(null), 5000);
     }
   };
+
+  // Live search results (as-you-type)
+  const liveSearchResults = React.useMemo(() => {
+    if (searchQuery.trim().length < 2) return [];
+    const scored = displayProducts
+      .map(p => ({ product: p, score: getSemanticScore(p, searchQuery) }))
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.product);
+    return scored;
+  }, [searchQuery, displayProducts]);
+
+  // Group live results by category
+  const groupedSearchResults = React.useMemo(() => {
+    const groups: Record<string, typeof liveSearchResults> = {};
+    liveSearchResults.forEach(p => {
+      const cat = p.category || "Other";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(p);
+    });
+    return groups;
+  }, [liveSearchResults]);
 
   if (!isConfigured) {
     return (
@@ -573,7 +611,7 @@ const Index = () => {
       <div className="w-full max-w-md mb-2 md:mb-3 relative z-50 px-4 md:px-0 shrink-0 flex flex-col gap-2">
         <div className="relative group">
           <button
-            onClick={performSearch}
+          onClick={() => performSearch()}
             className="absolute inset-y-0 left-3 flex items-center z-10 text-gray-400 group-focus-within:text-jumia-purple transition-all hover:scale-110 active:scale-95"
             title="Search"
           >
@@ -638,7 +676,7 @@ const Index = () => {
                         key={i}
                         onClick={() => {
                           setSearchQuery(s);
-                          setTimeout(performSearch, 10);
+                          setTimeout(() => performSearch(s), 10);
                         }}
                         className="flex items-center gap-2 px-3 py-1.5 bg-gray-100/50 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-transparent hover:border-jumia-purple/20"
                       >
@@ -725,7 +763,7 @@ const Index = () => {
                       key={`kw-${i}`}
                       onClick={() => {
                         setSearchQuery(kw);
-                        setTimeout(performSearch, 10);
+                        setTimeout(() => performSearch(kw), 10);
                       }}
                       className="flex items-center gap-2 px-3 py-2 bg-gray-50/80 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-gray-100 shadow-sm"
                     >
@@ -745,146 +783,83 @@ const Index = () => {
           </div>
         )}
 
-        {/* Search Results Dropdown */}
+        {/* Search Results Dropdown — live as-you-type */}
         {isSearchFocused && searchQuery.length > 1 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-            {/* SEARCH-EXCLUSIVE CATEGORY BAR */}
-            {categoryNav.length > 0 && (
-              <div className="p-3 border-b border-gray-100 bg-gray-50/30 sticky top-0 z-10 backdrop-blur-sm">
-                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
-                  {categoryNav.map((cat) => {
-                    const emojis: Record<string, string> = {
-                      "Appliances": "🍳",
-                      "Phones & Tablets": "📱",
-                      "Health & Beauty": "💄",
-                      "Home & Office": "🏡",
-                      "Electronics": "📺",
-                      "Fashion": "👔",
-                      "Supermarket": "🛒",
-                      "Computing": "💻",
-                      "Gaming": "🎮"
-                    };
-                    const targetPage = getCategoryPage(cat);
-                    const isActive = activeCategoryOnPage === cat;
-
-                    return (
-                      <button
-                        key={cat}
-                        onClick={() => handleCategorySelect(cat)}
-                        className={`snap-start flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all active:scale-95 whitespace-nowrap border ${isActive
-                          ? "bg-jumia-purple text-white border-jumia-purple shadow-md"
-                          : "bg-white text-gray-700 border-gray-200 hover:border-jumia-purple/30 hover:text-jumia-purple shadow-sm"
-                          }`}
-                      >
-                        <span>{emojis[cat as keyof typeof emojis] ?? "📂"}</span>
-                        <span>{cat}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 max-h-[420px] overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+            {liveSearchResults.length === 0 ? (
+              <div className="p-8 text-center flex flex-col items-center gap-4">
+                <div className="text-gray-400 italic font-medium text-sm">No results for "{searchQuery}"</div>
+                <button
+                  onClick={() => window.open(`https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(searchQuery)}`, '_blank')}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-jumia-purple text-white text-xs font-bold rounded-xl hover:bg-jumia-purple/90 active:scale-95 transition-all shadow-lg"
+                >
+                  Shop on Jumia Mall
+                </button>
+              </div>
+            ) : (
+              <div>
+                {Object.entries(groupedSearchResults).map(([category, products]) => {
+                  const emojis: Record<string, string> = {
+                    "Appliances": "🍳", "Phones & Tablets": "📱", "Health & Beauty": "💄",
+                    "Home & Office": "🏡", "Electronics": "📺", "Fashion": "👔",
+                    "Supermarket": "🛒", "Computing": "💻", "Gaming": "🎮"
+                  };
+                  return (
+                    <div key={category}>
+                      {/* Category header */}
+                      <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-4 py-2 flex items-center gap-2 border-b border-gray-100 z-10">
+                        <span className="text-sm">{emojis[category] ?? "📂"}</span>
+                        <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">{category}</span>
+                        <span className="ml-auto text-[10px] font-bold text-gray-300">{products.length} item{products.length > 1 ? 's' : ''}</span>
+                      </div>
+                      {products.map((product) => {
+                        const targetPage = getTargetPage(product.id);
+                        return (
+                          <button
+                            key={product.id}
+                            className="w-full p-3 flex items-center gap-3 hover:bg-jumia-purple/5 border-b border-gray-50 last:border-none transition-colors group"
+                            onClick={() => {
+                              const book = bookRef.current?.pageFlip();
+                              if (book) {
+                                const cur = book.getCurrentPageIndex();
+                                const visible = isDesktop
+                                  ? (cur === targetPage || (cur % 2 !== 0 && cur + 1 === targetPage))
+                                  : cur === targetPage;
+                                if (!visible) book.flip(targetPage);
+                              }
+                              setHighlightedProductId(product.id);
+                              setSearchQuery("");
+                              setIsSearchFocused(false);
+                              logSearchToProduct(searchQuery, product.id, product.category);
+                              if (product.category) logCategorySearch(product.category);
+                              setTimeout(() => setHighlightedProductId(null), 5000);
+                            }}
+                          >
+                            <div className="w-11 h-11 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 p-1">
+                              <img src={product.image} alt="" className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
+                            </div>
+                            <div className="flex-1 text-left overflow-hidden">
+                              <h4 className="font-bold text-gray-900 truncate text-xs leading-tight">{product.displayName || product.name}</h4>
+                              <p className="text-[10px] text-gray-400 font-semibold mt-0.5">p.{targetPage}</p>
+                            </div>
+                            <div className="text-jumia-purple font-black text-xs whitespace-nowrap">
+                              ₦{product.price.toLocaleString()}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             )}
-
-            {(() => {
-              const filtered = displayProducts
-                .map(p => ({
-                  product: p,
-                  score: getSemanticScore(p, searchQuery)
-                }))
-                .filter(item => item.score > 0)
-                .sort((a, b) => b.score - a.score)
-                .map(item => item.product);
-
-              if (filtered.length === 0) {
-                return (
-                  <div className="p-8 text-center flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300">
-                    <div className="text-gray-400 italic font-medium">No results found in this catalogue for "{searchQuery}"</div>
-                    <div className="h-px w-full bg-gray-100" />
-                    <p className="text-[11px] text-gray-500 leading-relaxed max-w-[280px]">
-                      Check <span className="font-bold text-jumia-purple">Jumia Mall</span> and explore more options!
-                      <br />
-                      <span className="text-[9px] opacity-60 font-medium">
-                        (Note: The exclusive offers in this catalogue may not cover the products found on the main site)
-                      </span>
-                    </p>
-                    <button
-                      onClick={() => {
-                        const url = `https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(searchQuery)}`;
-                        window.open(url, '_blank');
-                      }}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-jumia-purple text-white text-xs font-bold rounded-xl hover:bg-jumia-purple/90 active:scale-95 transition-all shadow-lg hover:shadow-jumia-purple/20"
-                    >
-                      Shop on Jumia Mall
-                    </button>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="divide-y divide-gray-100">
-                  {filtered.map((product) => {
-                    const targetPage = getTargetPage(product.id);
-
-                    return (
-                      <button
-                        key={product.id}
-                        className="w-full p-3 flex items-center gap-4 hover:bg-jumia-purple/5 border-b border-gray-100 last:border-none transition-colors group"
-                        onClick={() => {
-                          const book = bookRef.current?.pageFlip();
-                          if (book) {
-                            const currentPageIndex = book.getCurrentPageIndex();
-                            const isVisible = isDesktop
-                              ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
-                              : currentPageIndex === targetPage;
-
-                            if (!isVisible) {
-                              book.flip(targetPage);
-                            }
-                          }
-                          setHighlightedProductId(product.id);
-                          setSearchQuery("");
-                          setIsSearchFocused(false);
-
-                          // Log the search-to-product mapping
-                          logSearchToProduct(searchQuery, product.id, product.category);
-                          if (product.category) logCategorySearch(product.category);
-
-                          setTimeout(() => setHighlightedProductId(null), 5000);
-                        }}
-                      >
-                        <div className="w-12 h-12 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 p-1">
-                          <img src={product.image} alt="" className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
-                        </div>
-                        <div className="flex-1 text-left overflow-hidden">
-                          <h4 className="font-bold text-gray-900 truncate text-sm leading-tight">{product.name}</h4>
-                          <p className="text-xs text-gray-500 font-semibold">{product.brand} {product.category ? `• ${product.category}` : ''} • Page {targetPage}</p>
-                        </div>
-                        <div className="text-jumia-purple font-black text-sm whitespace-nowrap">
-                          ₦{product.price.toLocaleString()}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })()}
           </div>
         )}
 
-        {/* Auto-complete Suggestions (when typing but not specifically searching yet) */}
-        {isSearchFocused && searchQuery.length > 0 && searchQuery.length <= 1 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 z-50 overflow-hidden divide-y divide-gray-50/50">
-            <div className="p-2 bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4">Popular Categories</div>
-            {PRODUCT_CATEGORIES.slice(0, 5).map(cat => (
-              <button
-                key={cat}
-                className="w-full text-left p-3 px-4 hover:bg-jumia-purple/5 transition-colors flex items-center gap-3 text-sm font-bold text-gray-700"
-                onClick={() => handleCategorySelect(cat)}
-              >
-                <Search size={14} className="text-gray-400" />
-                {cat}
-              </button>
-            ))}
+        {/* Single-char hint */}
+        {isSearchFocused && searchQuery.length === 1 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 z-50 p-4 text-center text-xs font-medium text-gray-400">
+            Keep typing to search…
           </div>
         )}
       </div>
