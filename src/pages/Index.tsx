@@ -1188,6 +1188,8 @@ const Index = () => {
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, name: e.target.value }))}
                         onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyUp={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div>
@@ -1201,6 +1203,8 @@ const Index = () => {
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, brand: e.target.value }))}
                         onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyUp={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div>
@@ -1215,6 +1219,8 @@ const Index = () => {
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, description: e.target.value }))}
                         onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyUp={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -1230,6 +1236,8 @@ const Index = () => {
                           onChange={(e) => setSuggestionForm(prev => ({ ...prev, email: e.target.value }))}
                           onPointerDown={(e) => e.stopPropagation()}
                           onMouseDown={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          onKeyUp={(e) => e.stopPropagation()}
                         />
                       </div>
                       <div>
@@ -1244,6 +1252,8 @@ const Index = () => {
                           onChange={(e) => setSuggestionForm(prev => ({ ...prev, phone: e.target.value }))}
                           onPointerDown={(e) => e.stopPropagation()}
                           onMouseDown={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          onKeyUp={(e) => e.stopPropagation()}
                         />
                       </div>
                     </div>
