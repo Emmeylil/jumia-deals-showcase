@@ -20,6 +20,7 @@ import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/
 import { AlertCircle, Loader2, Share2, Download, Search, X, History, Flame, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { addUTMParameters } from "@/lib/utils";
 
 interface PageProps {
   children: React.ReactNode;
@@ -627,7 +628,7 @@ const Index = () => {
       <div className="w-full max-w-md mb-2 md:mb-3 relative z-50 px-4 md:px-0 shrink-0 flex flex-col gap-2">
         <div className="relative group">
           <button
-          onClick={() => performSearch()}
+            onClick={() => performSearch()}
             className="absolute inset-y-0 left-3 flex items-center z-10 text-gray-400 group-focus-within:text-jumia-purple transition-all hover:scale-110 active:scale-95"
             title="Search"
           >
@@ -806,7 +807,7 @@ const Index = () => {
               <div className="p-8 text-center flex flex-col items-center gap-4">
                 <div className="text-gray-400 italic font-medium text-sm">No results for "{searchQuery}"</div>
                 <button
-                  onClick={() => window.open(`https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(searchQuery)}`, '_blank')}
+                  onClick={() => window.open(addUTMParameters(`https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(searchQuery)}`), '_blank')}
                   className="flex items-center gap-2 px-6 py-2.5 bg-jumia-purple text-white text-xs font-bold rounded-xl hover:bg-jumia-purple/90 active:scale-95 transition-all shadow-lg"
                 >
                   Shop on Jumia Mall
@@ -1033,7 +1034,7 @@ const Index = () => {
                           b.linkUrl ? (
                             <a
                               key={i}
-                              href={b.linkUrl}
+                              href={addUTMParameters(b.linkUrl)}
                               target="_blank"
                               rel="noopener noreferrer"
                               title={b.name}
@@ -1291,7 +1292,7 @@ const Index = () => {
               <div className="mt-8 flex flex-col items-center">
                 <div className="w-20 h-20 bg-white p-2 shadow-lg rounded-xl mb-4">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(addUTMParameters(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng"))}`}
                     alt="QR Code"
                     className="w-full h-full opacity-90"
                   />
