@@ -1189,6 +1189,8 @@ const Index = () => {
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, name: e.target.value }))}
                         onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyUp={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div>
@@ -1202,6 +1204,8 @@ const Index = () => {
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, brand: e.target.value }))}
                         onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyUp={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div>
@@ -1216,6 +1220,8 @@ const Index = () => {
                         onChange={(e) => setSuggestionForm(prev => ({ ...prev, description: e.target.value }))}
                         onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyUp={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -1231,6 +1237,8 @@ const Index = () => {
                           onChange={(e) => setSuggestionForm(prev => ({ ...prev, email: e.target.value }))}
                           onPointerDown={(e) => e.stopPropagation()}
                           onMouseDown={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          onKeyUp={(e) => e.stopPropagation()}
                         />
                       </div>
                       <div>
@@ -1245,6 +1253,8 @@ const Index = () => {
                           onChange={(e) => setSuggestionForm(prev => ({ ...prev, phone: e.target.value }))}
                           onPointerDown={(e) => e.stopPropagation()}
                           onMouseDown={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          onKeyUp={(e) => e.stopPropagation()}
                         />
                       </div>
                     </div>
@@ -1259,10 +1269,16 @@ const Index = () => {
                       }
                       setSuggestionSubmitting(true);
                       try {
-                        await setDoc(doc(collection(db, "product_suggestions")), {
-                          ...suggestionForm,
-                          timestamp: serverTimestamp()
-                        });
+                        const { error } = await supabase
+                          .from("product_suggestions")
+                          .insert({
+                            name: suggestionForm.name.trim(),
+                            brand: suggestionForm.brand.trim() || null,
+                            description: suggestionForm.description.trim() || null,
+                            email: suggestionForm.email.trim() || null,
+                            phone: suggestionForm.phone.trim() || null,
+                          });
+                        if (error) throw error;
                         setSuggestionSuccess(true);
                         setTimeout(() => {
                           setSuggestionSuccess(false);
@@ -1270,6 +1286,7 @@ const Index = () => {
                         }, 3000);
                       } catch (e) {
                         console.error(e);
+                        toast.error("Failed to submit. Please try again.");
                       } finally {
                         setSuggestionSubmitting(false);
                       }
@@ -1278,6 +1295,7 @@ const Index = () => {
                   >
                     {suggestionSubmitting ? <Loader2 size={16} className="animate-spin" /> : "Submit Suggestion"}
                   </button>
+
                 </div>
               ) : (
                 <div className="animate-in fade-in zoom-in duration-300">
