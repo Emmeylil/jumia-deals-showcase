@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { doc, updateDoc, increment, getDoc, setDoc, collection, onSnapshot, query, where, serverTimestamp, Timestamp } from "firebase/firestore";
+import { doc, updateDoc, increment, getDoc, setDoc, collection, onSnapshot, query, where, serverTimestamp, Timestamp, orderBy, limit, getDocs } from "firebase/firestore";
 
 
 const STATS_DOC_ID = "general";
@@ -162,3 +162,49 @@ export const logSearchToProduct = async (keyword: string, productId: string | nu
     }, { merge: true });
 };
 
+export const logDailyActivity = async () => {
+    try {
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const storageKey = `jumia_daily_active_${today}`;
+
+        // Prevent duplicate logging in the same session on the same day
+        if (sessionStorage.getItem(storageKey)) return;
+
+        const dailyRef = doc(db, "daily_stats", today);
+        const snapshot = await getDoc(dailyRef);
+
+        if (!snapshot.exists()) {
+            await setDoc(dailyRef, {
+                date: today,
+                activeUsers: 1,
+                timestamp: serverTimestamp()
+            });
+        } else {
+            await updateDoc(dailyRef, {
+                activeUsers: increment(1)
+            });
+        }
+
+        sessionStorage.setItem(storageKey, "true");
+    } catch (error) {
+        console.error("Error logging daily activity:", error);
+    }
+};
+
+export const getDailyStats = async (days: number = 30) => {
+    try {
+        const dailyCollection = collection(db, "daily_stats");
+        const q = query(
+            dailyCollection,
+            orderBy("date", "desc"),
+            limit(days)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs
+            .map(doc => doc.data())
+            .sort((a, b) => a.date.localeCompare(b.date));
+    } catch (error) {
+        console.error("Error fetching daily stats:", error);
+        return [];
+    }
+};

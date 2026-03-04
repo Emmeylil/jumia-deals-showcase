@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
 import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw, LogOut } from "lucide-react";
-import { getStats, type StatsData, listenToActiveReaders } from "@/lib/stats";
+import { getStats, type StatsData, listenToActiveReaders, getDailyStats } from "@/lib/stats";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/constants";
 import { autoCategorizeProduct } from "@/lib/search-utils";
 
@@ -100,6 +101,60 @@ const DEFAULT_SETTINGS: CatalogSettings = {
   autoSyncInterval: 6, // default 6 hours
 };
 
+const ActiveUserGraph = ({ data }: { data: any[] }) => {
+  if (!data || data.length === 0) return (
+    <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
+      <p className="text-sm text-gray-400 font-medium italic">Collect more data to see trends...</p>
+    </div>
+  );
+
+  return (
+    <div className="h-[300px] w-full mt-4">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#FF9900" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#FF9900" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+          <XAxis
+            dataKey="date"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }}
+            tickFormatter={(str) => {
+              const d = new Date(str);
+              return d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
+            }}
+            minTickGap={30}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }}
+          />
+          <Tooltip
+            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
+            itemStyle={{ color: '#FF9900' }}
+            labelFormatter={(label) => new Date(label).toLocaleDateString('en-NG', { weekday: 'long', day: 'numeric', month: 'long' })}
+          />
+          <Area
+            type="monotone"
+            dataKey="activeUsers"
+            stroke="#FF9900"
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#colorUsers)"
+            name="Active Users"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
 const Admin = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,6 +186,7 @@ const Admin = () => {
 
   // Stats state
   const [stats, setStats] = useState<StatsData | null>(null);
+  const [dailyStats, setDailyStats] = useState<any[]>([]);
   const [activeReaders, setActiveReaders] = useState(0);
   const [productClicks, setProductClicks] = useState<Array<{ id: string, clicks: number, product?: Product }>>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -242,6 +298,10 @@ const Admin = () => {
         clicks: doc.data().clicks
       }));
       setProductClicks(clicksData);
+
+      // Fetch daily active user stats
+      const dailyData = await getDailyStats(14); // Last 14 days
+      setDailyStats(dailyData);
     };
 
     fetchStatsData();
@@ -1430,6 +1490,21 @@ const Admin = () => {
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <BarChart3 className="text-primary" /> Statistics
               </h2>
+
+              {/* Daily Active User Graph */}
+              <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <Users className="text-primary" size={20} /> Daily Active Users
+                  </h3>
+                  <div className="text-[10px] font-black bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Last 14 Days
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground font-medium mb-4">Unique visitors who opened the catalog each day.</p>
+                <ActiveUserGraph data={dailyStats} />
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
                   <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-600 rounded-full border border-green-100 animate-pulse">

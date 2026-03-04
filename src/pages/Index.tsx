@@ -10,7 +10,7 @@ import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
-import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct } from "@/lib/stats";
+import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct, logDailyActivity } from "@/lib/stats";
 
 import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { db, isConfigured } from "@/lib/firebase";
@@ -278,6 +278,7 @@ const Index = () => {
     // Initial updates
     incrementView();
     incrementReader();
+    logDailyActivity();
     updatePresence(sessionId);
 
     // Track time on book
