@@ -101,55 +101,57 @@ const DEFAULT_SETTINGS: CatalogSettings = {
   autoSyncInterval: 6, // default 6 hours
 };
 
-const ActiveUserGraph = ({ data }: { data: any[] }) => {
-  if (!data || data.length === 0) return (
-    <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
-      <p className="text-sm text-gray-400 font-medium italic">Collect more data to see trends...</p>
+const InteractionRateGraph = ({ data }: { data: any[] }) => {
+  const chartData = useMemo(() => {
+    return data.map(day => ({
+      ...day,
+      interactionRate: day.activeUsers > 0 ? (day.totalClicks / day.activeUsers) * 100 : 0
+    }));
+  }, [data]);
+
+  if (!chartData || chartData.length === 0) return (
+    <div className="h-[200px] flex items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
+      <p className="text-sm text-gray-400 font-medium italic">Collect more data to see interaction trends...</p>
     </div>
   );
 
   return (
-    <div className="h-[300px] w-full mt-4">
+    <div className="h-[200px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#FF9900" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#FF9900" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+        <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="1 1" stroke="#f0f0f0" />
           <XAxis
             dataKey="date"
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }}
+            tick={{ fontSize: 9, fontWeight: 600, fill: '#64748b' }}
             tickFormatter={(str) => {
               const d = new Date(str);
               return d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
             }}
-            minTickGap={30}
+            minTickGap={20}
           />
           <YAxis
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }}
+            tick={{ fontSize: 9, fontWeight: 600, fill: '#64748b' }}
+            tickFormatter={(val) => `${Math.round(val)}%`}
           />
           <Tooltip
-            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
-            itemStyle={{ color: '#FF9900' }}
-            labelFormatter={(label) => new Date(label).toLocaleDateString('en-NG', { weekday: 'long', day: 'numeric', month: 'long' })}
+            contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '11px' }}
+            formatter={(value: number) => [`${value.toFixed(1)}%`, "Interaction Rate"]}
+            labelFormatter={(label) => new Date(label).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}
           />
-          <Area
+          <Line
             type="monotone"
-            dataKey="activeUsers"
-            stroke="#FF9900"
-            strokeWidth={3}
-            fillOpacity={1}
-            fill="url(#colorUsers)"
-            name="Active Users"
+            dataKey="interactionRate"
+            stroke="#f97316"
+            strokeWidth={2}
+            dot={{ r: 3, fill: '#f97316', strokeWidth: 0 }}
+            activeDot={{ r: 5, strokeWidth: 0 }}
+            name="Interaction Rate"
           />
-        </AreaChart>
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );
@@ -1483,84 +1485,81 @@ const Admin = () => {
             </Button>
           </div>
         ) : (
-          <>
-
+          <div className="space-y-8 animate-in fade-in duration-300">
             {/* Statistics Section */}
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <BarChart3 className="text-primary" /> Statistics
               </h2>
 
-              {/* Daily Active User Graph */}
-              <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-bold flex items-center gap-2">
-                    <Users className="text-primary" size={20} /> Daily Active Users
-                  </h3>
-                  <div className="text-[10px] font-black bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    Last 14 Days
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
+                    <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-600 rounded-full border border-green-100 animate-pulse">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Live Now</span>
+                    </div>
+                    <Users className="text-green-600" size={24} />
+                    <span className="text-3xl font-black text-gray-900">{activeReaders}</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Active Readers</span>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                    <Users className="text-green-500" size={24} />
+                    <span className="text-3xl font-bold text-gray-900">{stats?.readers || 0}</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Unique Readers</span>
+                  </div>
+                  <div className="col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                        <BarChart3 size={14} className="text-orange-500" /> Interaction Rate
+                      </h3>
+                      <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 uppercase">Trend Analysis</span>
+                    </div>
+                    <InteractionRateGraph data={dailyStats} />
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground font-medium mb-4">Unique visitors who opened the catalog each day.</p>
-                <ActiveUserGraph data={dailyStats} />
-              </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
-                  <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-600 rounded-full border border-green-100 animate-pulse">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    <span className="text-[10px] font-black uppercase tracking-wider">Live Now</span>
+                <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                    <BarChart3 className="text-blue-500" size={24} />
+                    <span className="text-3xl font-bold text-gray-900">{stats?.views || 0}</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Views</span>
                   </div>
-                  <Users className="text-green-600" size={24} />
-                  <span className="text-3xl font-black text-gray-900">{activeReaders}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Active Readers</span>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
-                  <BarChart3 className="text-blue-500" size={24} />
-                  <span className="text-3xl font-bold text-gray-900">{stats?.views || 0}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Views</span>
-                </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
-                  <MousePointer2 className="text-orange-500" size={24} />
-                  <span className="text-3xl font-bold text-gray-900">{stats?.clicks || 0}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Product Clicks</span>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
-                  <Users className="text-green-500" size={24} />
-                  <span className="text-3xl font-bold text-gray-900">{stats?.readers || 0}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Unique Readers</span>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
-                  <Clock className="text-purple-500" size={24} />
-                  <span className="text-xl font-bold text-gray-900">
-                    {(() => {
-                      const total = stats?.timeOnBook || 0;
-                      const readers = stats?.readers || 1;
-                      const avgSec = Math.round(total / readers);
-                      const m = Math.floor(avgSec / 60);
-                      const s = avgSec % 60;
-                      return m > 0 ? `${m}m ${s}s` : `${s}s`;
-                    })()}
-                  </span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Avg. Time on Book</span>
-                  <span className="text-[10px] text-gray-400">per reader</span>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
-                  <Share2 className="text-pink-500" size={24} />
-                  <span className="text-3xl font-bold text-gray-900">{stats?.shares || 0}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Shares</span>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
-                  <Download className="text-teal-500" size={24} />
-                  <span className="text-3xl font-bold text-gray-900">{stats?.downloads || 0}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Downloads</span>
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                    <MousePointer2 className="text-orange-500" size={24} />
+                    <span className="text-3xl font-bold text-gray-900">{stats?.clicks || 0}</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Product Clicks</span>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                    <Clock className="text-purple-500" size={24} />
+                    <span className="text-xl font-bold text-gray-900">
+                      {(() => {
+                        const total = stats?.timeOnBook || 0;
+                        const readers = stats?.readers || 1;
+                        const avgSec = Math.round(total / readers);
+                        const m = Math.floor(avgSec / 60);
+                        const s = avgSec % 60;
+                        return m > 0 ? `${m}m ${s}s` : `${s}s`;
+                      })()}
+                    </span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Avg. Time on Book</span>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                    <Share2 className="text-pink-500" size={24} />
+                    <span className="text-3xl font-bold text-gray-900">{stats?.shares || 0}</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Shares</span>
+                  </div>
                 </div>
               </div>
+            </section>
 
+            {/* Product Management Section */}
+            <section className="mt-12 pt-12 border-t">
               {/* Product Leaderboard */}
               {productClicks.length > 0 && (
-                <div className="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                     <Trophy className="text-yellow-500" size={20} /> Most Popular Products
                   </h3>
@@ -1594,7 +1593,7 @@ const Admin = () => {
               )}
 
               {/* Most Popular Product Picker */}
-              <div className="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
                   <Trophy className="text-yellow-500" size={20} /> Pick Most Popular Product
                 </h3>
@@ -1657,266 +1656,268 @@ const Admin = () => {
                   ) : null;
                 })()}
               </div>
-            </section>
 
-            {/* Automation Settings */}
-            <section className="mb-8 p-6 border rounded-xl bg-white shadow-sm">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">⚙️ Automation Settings</h2>
-              <div className="grid gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Google Sheet Auto-Sync Interval</label>
-                  <select
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={catalogSettings.autoSyncInterval ?? 6}
-                    onChange={async (e) => {
-                      const updated = { ...catalogSettings, autoSyncInterval: parseInt(e.target.value) };
-                      setCatalogSettings(updated);
-                      try {
-                        await setDoc(doc(db, "settings", "catalog"), updated, { merge: true });
-                        toast.success("Sync interval saved!");
-                      } catch { toast.error("Failed to save interval"); }
-                    }}
-                  >
-                    <option value={1}>Every Hour</option>
-                    <option value={4}>Every 4 Hours</option>
-                    <option value={6}>Every 6 Hours (default)</option>
-                    <option value={12}>Every 12 Hours</option>
-                    <option value={24}>Every 24 Hours</option>
-                    <option value={0}>Disabled</option>
-                  </select>
-                  <p className="text-[10px] text-muted-foreground mt-2 font-semibold uppercase tracking-wider">
-                    The catalog auto-syncs prices from Google Sheet each time an admin or visitor opens it, if the interval has passed.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* Bulk SKU Search */}
-            <section className="mb-12 p-6 border rounded-xl bg-white shadow-sm">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Plus className="text-primary" /> Add Products by SKU
-              </h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    Jumia SKU(s) — one per line or comma-separated
-                  </label>
-                  <Textarea
-                    placeholder={`e.g.\nMA699HA82GXITNAFAMZ\nMA711HA1L7XGZNAFAMZ\nSK123ABC, SK456DEF`}
-                    value={skuInput}
-                    onChange={(e) => setSkuInput(e.target.value)}
-                    rows={4}
-                  />
-                </div>
-                <Button onClick={handleBulkFetch} disabled={fetchingSku} className="w-full">
-                  {fetchingSku ? (
-                    <><Loader2 className="animate-spin mr-2" size={18} /> Fetching...</>
-                  ) : (
-                    <><Search size={18} className="mr-2" /> Fetch Products</>
-                  )}
-                </Button>
-              </div>
-
-              {/* Fetched Results */}
-              {fetchedProducts.length > 0 && (
-                <div className="mt-6 space-y-3">
-                  <h3 className="font-semibold text-lg">Results ({fetchedProducts.length})</h3>
-                  {fetchedProducts.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex items-start gap-3 p-3 border rounded-lg ${item.selected && item.displayName ? "bg-green-50 border-green-200" : "bg-gray-50"
-                        }`}
+              {/* Automation Settings */}
+              <div className="mb-8 p-6 border rounded-xl bg-white shadow-sm">
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">⚙️ Automation Settings</h2>
+                <div className="grid gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Google Sheet Auto-Sync Interval</label>
+                    <select
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      value={catalogSettings.autoSyncInterval ?? 6}
+                      onChange={async (e) => {
+                        const updated = { ...catalogSettings, autoSyncInterval: parseInt(e.target.value) };
+                        setCatalogSettings(updated);
+                        try {
+                          await setDoc(doc(db, "settings", "catalog"), updated, { merge: true });
+                          toast.success("Sync interval saved!");
+                        } catch { toast.error("Failed to save interval"); }
+                      }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={item.selected}
-                        disabled={!item.displayName}
-                        onChange={() => toggleFetchedProduct(idx)}
-                        className="mt-2"
-                      />
-                      {item.image && (
-                        <img src={item.image} alt="" className="w-16 h-16 object-contain flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0 space-y-2">
-                        {item.brand && (
-                          <div className="text-xs text-muted-foreground">
-                            <span className="font-semibold">Brand:</span> {item.brand}
-                          </div>
-                        )}
-                        <Input
-                          value={item.displayName || item.name}
-                          onChange={(e) => updateFetchedProduct(idx, "displayName", e.target.value)}
-                          className="text-sm font-medium"
-                          placeholder="Product name"
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-xs text-muted-foreground">Price (₦)</label>
-                            <Input
-                              type="number"
-                              value={item.price || ""}
-                              onChange={(e) => updateFetchedProduct(idx, "price", parseInt(e.target.value) || 0)}
-                              className="text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground">Old Price (₦)</label>
-                            <Input
-                              type="number"
-                              value={item.oldPrice || ""}
-                              onChange={(e) => updateFetchedProduct(idx, "oldPrice", parseInt(e.target.value) || 0)}
-                              className="text-sm"
-                            />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground truncate">SKU: {item.sku}</p>
-                      </div>
-                    </div>
-                  ))}
-                  <Button onClick={handleAddSelected} className="w-full mt-4">
-                    Add {fetchedProducts.filter((p) => p.selected && p.displayName).length} Selected to Catalog
+                      <option value={1}>Every Hour</option>
+                      <option value={4}>Every 4 Hours</option>
+                      <option value={6}>Every 6 Hours (default)</option>
+                      <option value={12}>Every 12 Hours</option>
+                      <option value={24}>Every 24 Hours</option>
+                      <option value={0}>Disabled</option>
+                    </select>
+                    <p className="text-[10px] text-muted-foreground mt-2 font-semibold uppercase tracking-wider">
+                      The catalog auto-syncs prices from Google Sheet each time an admin or visitor opens it, if the interval has passed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bulk SKU Search */}
+              <div className="mb-12 p-6 border rounded-xl bg-white shadow-sm">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <Plus className="text-primary" /> Add Products by SKU
+                </h2>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Jumia SKU(s) — one per line or comma-separated
+                    </label>
+                    <Textarea
+                      placeholder={`e.g.\nMA699HA82GXITNAFAMZ\nMA711HA1L7XGZNAFAMZ\nSK123ABC, SK456DEF`}
+                      value={skuInput}
+                      onChange={(e) => setSkuInput(e.target.value)}
+                      rows={4}
+                    />
+                  </div>
+                  <Button onClick={handleBulkFetch} disabled={fetchingSku} className="w-full">
+                    {fetchingSku ? (
+                      <><Loader2 className="animate-spin mr-2" size={18} /> Fetching...</>
+                    ) : (
+                      <><Search size={18} className="mr-2" /> Fetch Products</>
+                    )}
                   </Button>
                 </div>
-              )}
-            </section>
 
-            {/* Manage Products */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <h2 className="text-2xl font-bold">Manage Products</h2>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSyncFromSheet()}
-                  disabled={isSyncing}
-                  className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                >
-                  {isSyncing ? (
-                    <><Loader2 size={16} className="mr-2 animate-spin" /> Syncing ({syncProgress.current}/{syncProgress.total})...</>
-                  ) : (
-                    <><RefreshCw size={16} className="mr-2" /> Sync from Google Sheet</>
-                  )}
-                </Button>
-                {products.length > 0 && (
-                  <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={isSyncing}>
-                    <Trash2 size={16} className="mr-2" /> Delete All
-                  </Button>
+                {/* Fetched Results */}
+                {fetchedProducts.length > 0 && (
+                  <div className="mt-6 space-y-3">
+                    <h3 className="font-semibold text-lg">Results ({fetchedProducts.length})</h3>
+                    {fetchedProducts.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex items-start gap-3 p-3 border rounded-lg ${item.selected && item.displayName ? "bg-green-50 border-green-200" : "bg-gray-50"
+                          }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={item.selected}
+                          disabled={!item.displayName}
+                          onChange={() => toggleFetchedProduct(idx)}
+                          className="mt-2"
+                        />
+                        {item.image && (
+                          <img src={item.image} alt="" className="w-16 h-16 object-contain flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0 space-y-2">
+                          {item.brand && (
+                            <div className="text-xs text-muted-foreground">
+                              <span className="font-semibold">Brand:</span> {item.brand}
+                            </div>
+                          )}
+                          <Input
+                            value={item.displayName || item.name}
+                            onChange={(e) => updateFetchedProduct(idx, "displayName", e.target.value)}
+                            className="text-sm font-medium"
+                            placeholder="Product name"
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs text-muted-foreground">Price (₦)</label>
+                              <Input
+                                type="number"
+                                value={item.price || ""}
+                                onChange={(e) => updateFetchedProduct(idx, "price", parseInt(e.target.value) || 0)}
+                                className="text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground">Old Price (₦)</label>
+                              <Input
+                                type="number"
+                                value={item.oldPrice || ""}
+                                onChange={(e) => updateFetchedProduct(idx, "oldPrice", parseInt(e.target.value) || 0)}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground truncate">SKU: {item.sku}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <Button onClick={handleAddSelected} className="w-full mt-4">
+                      Add {fetchedProducts.filter((p) => p.selected && p.displayName).length} Selected to Catalog
+                    </Button>
+                  </div>
                 )}
               </div>
-            </div>
-            <div className="space-y-4">
-              {products.map((product) => (
-                <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg bg-white shadow-sm gap-3">
-                  <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <img src={product.image} alt={product.name} className="w-16 h-16 object-contain flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-sm line-clamp-2">{product.displayName || product.name}</h3>
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-tight mt-1">
-                        <span>ID: {product.id}</span>
-                        {product.sku && <span>• SKU: {product.sku}</span>}
-                        <select
-                          value={product.category || ""}
-                          onChange={async (e) => {
-                            const newCat = e.target.value;
-                            try {
-                              await updateDoc(doc(db, "products", product.id.toString()), { category: newCat });
-                              toast.success(`Updated to ${newCat || 'Uncategorized'}`);
-                            } catch (err) {
-                              toast.error("Failed to update category");
-                            }
-                          }}
-                          className="ml-2 h-6 border border-gray-200 bg-gray-50 rounded text-[10px] px-1 py-0 focus:ring-1 focus:border-jumia-purple focus:ring-jumia-purple outline-none cursor-pointer hover:bg-white transition-colors"
-                        >
-                          <option value="">Uncategorized</option>
-                          {availableCategories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
 
-                  {editingId === product.id ? (
-                    <div className="flex flex-col gap-2 flex-shrink-0 w-full max-w-sm">
-                      <div>
-                        <label className="text-[10px] text-muted-foreground">Name</label>
-                        <Input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <label className="text-[10px] text-muted-foreground">Price</label>
-                          <Input
-                            type="number"
-                            value={editPrice}
-                            onChange={(e) => setEditPrice(e.target.value)}
-                            className="w-24 h-8 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-muted-foreground">Old Price</label>
-                          <Input
-                            type="number"
-                            value={editOldPrice}
-                            onChange={(e) => setEditOldPrice(e.target.value)}
-                            className="w-24 h-8 text-sm"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="text-[10px] text-muted-foreground">Category</label>
-                          <select
-                            className="w-full h-8 border rounded-md text-xs px-2 bg-white"
-                            value={editCategory}
-                            onChange={(e) => setEditCategory(e.target.value)}
-                          >
-                            <option value="">Select Category</option>
-                            {availableCategories.map(cat => (
-                              <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="mt-3 self-end"
-                          onClick={() => handleUpdateProduct(product.id, editName, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0, editCategory)}
-                        >
-                          <Save size={16} />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground line-through">{formatPrice(product.oldPrice)}</p>
-                        <p className="font-bold text-primary text-sm">{formatPrice(product.price)}</p>
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditingId(product.id);
-                          setEditName(product.displayName || product.name);
-                          setEditPrice(product.price.toString());
-                          setEditOldPrice(product.oldPrice.toString());
-                          setEditCategory(product.category || "");
-                        }}
-                      >
-                        <Edit2 size={16} />
+              {/* Manage Products Area */}
+              <div>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <h2 className="text-2xl font-bold">Manage Products</h2>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSyncFromSheet()}
+                      disabled={isSyncing}
+                      className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                    >
+                      {isSyncing ? (
+                        <><Loader2 size={16} className="mr-2 animate-spin" /> Syncing ({syncProgress.current}/{syncProgress.total})...</>
+                      ) : (
+                        <><RefreshCw size={16} className="mr-2" /> Sync from Google Sheet</>
+                      )}
+                    </Button>
+                    {products.length > 0 && (
+                      <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={isSyncing}>
+                        <Trash2 size={16} className="mr-2" /> Delete All
                       </Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(product.id)}>
-                        <Trash2 size={16} />
-                      </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </>
+                <div className="space-y-4">
+                  {products.map((product) => (
+                    <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg bg-white shadow-sm gap-3">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
+                        <img src={product.image} alt={product.name} className="w-16 h-16 object-contain flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-sm line-clamp-2">{product.displayName || product.name}</h3>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-tight mt-1">
+                            <span>ID: {product.id}</span>
+                            {product.sku && <span>• SKU: {product.sku}</span>}
+                            <select
+                              value={product.category || ""}
+                              onChange={async (e) => {
+                                const newCat = e.target.value;
+                                try {
+                                  await updateDoc(doc(db, "products", product.id.toString()), { category: newCat });
+                                  toast.success(`Updated to ${newCat || 'Uncategorized'}`);
+                                } catch (err) {
+                                  toast.error("Failed to update category");
+                                }
+                              }}
+                              className="ml-2 h-6 border border-gray-200 bg-gray-50 rounded text-[10px] px-1 py-0 focus:ring-1 focus:border-jumia-purple focus:ring-jumia-purple outline-none cursor-pointer hover:bg-white transition-colors"
+                            >
+                              <option value="">Uncategorized</option>
+                              {PRODUCT_CATEGORIES.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {editingId === product.id ? (
+                        <div className="flex flex-col gap-2 flex-shrink-0 w-full max-w-sm">
+                          <div>
+                            <label className="text-[10px] text-muted-foreground">Name</label>
+                            <Input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <div>
+                              <label className="text-[10px] text-muted-foreground">Price</label>
+                              <Input
+                                type="number"
+                                value={editPrice}
+                                onChange={(e) => setEditPrice(e.target.value)}
+                                className="w-24 h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-muted-foreground">Old Price</label>
+                              <Input
+                                type="number"
+                                value={editOldPrice}
+                                onChange={(e) => setEditOldPrice(e.target.value)}
+                                className="w-24 h-8 text-sm"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-[10px] text-muted-foreground">Category</label>
+                              <select
+                                className="w-full h-8 border rounded-md text-xs px-2 bg-white"
+                                value={editCategory}
+                                onChange={(e) => setEditCategory(e.target.value)}
+                              >
+                                <option value="">Select Category</option>
+                                {PRODUCT_CATEGORIES.map(cat => (
+                                  <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="mt-3 self-end"
+                              onClick={() => handleUpdateProduct(product.id, editName, parseInt(editPrice) || 0, parseInt(editOldPrice) || 0, editCategory)}
+                            >
+                              <Save size={16} />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground line-through">{formatPrice(product.oldPrice)}</p>
+                            <p className="font-bold text-primary text-sm">{formatPrice(product.price)}</p>
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingId(product.id);
+                              setEditName(product.displayName || product.name);
+                              setEditPrice(product.price.toString());
+                              setEditOldPrice(product.oldPrice.toString());
+                              setEditCategory(product.category || "");
+                            }}
+                          >
+                            <Edit2 size={16} />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(product.id)}>
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </div>
         )}
       </div>
     </div>

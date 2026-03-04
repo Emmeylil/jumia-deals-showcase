@@ -39,6 +39,7 @@ export const incrementView = async () => {
 export const incrementClick = async () => {
     const statsRef = await ensureStatsDoc();
     await updateDoc(statsRef, { clicks: increment(1) });
+    await logDailyActivity('click');
 };
 
 export const incrementReader = async () => {
@@ -85,6 +86,7 @@ export const incrementProductClick = async (productId: string | number) => {
     } else {
         await updateDoc(productRef, { clicks: increment(1) });
     }
+    await logDailyActivity('click');
 };
 
 export const updatePresence = async (sessionId: string) => {
@@ -162,30 +164,45 @@ export const logSearchToProduct = async (keyword: string, productId: string | nu
     }, { merge: true });
 };
 
-export const logDailyActivity = async () => {
+export const logDailyActivity = async (type: 'visit' | 'click' = 'visit') => {
     try {
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const storageKey = `jumia_daily_active_${today}`;
-
-        // Prevent duplicate logging in the same session on the same day
-        if (sessionStorage.getItem(storageKey)) return;
-
         const dailyRef = doc(db, "daily_stats", today);
-        const snapshot = await getDoc(dailyRef);
 
-        if (!snapshot.exists()) {
-            await setDoc(dailyRef, {
-                date: today,
-                activeUsers: 1,
-                timestamp: serverTimestamp()
-            });
-        } else {
-            await updateDoc(dailyRef, {
-                activeUsers: increment(1)
-            });
+        if (type === 'visit') {
+            const storageKey = `jumia_daily_active_${today}`;
+            // Prevent duplicate visit logging in the same session on the same day
+            if (sessionStorage.getItem(storageKey)) return;
+
+            const snapshot = await getDoc(dailyRef);
+            if (!snapshot.exists()) {
+                await setDoc(dailyRef, {
+                    date: today,
+                    activeUsers: 1,
+                    totalClicks: 0,
+                    timestamp: serverTimestamp()
+                });
+            } else {
+                await updateDoc(dailyRef, {
+                    activeUsers: increment(1)
+                });
+            }
+            sessionStorage.setItem(storageKey, "true");
+        } else if (type === 'click') {
+            const snapshot = await getDoc(dailyRef);
+            if (!snapshot.exists()) {
+                await setDoc(dailyRef, {
+                    date: today,
+                    activeUsers: 0, // Will be updated by visit log or handled as 0
+                    totalClicks: 1,
+                    timestamp: serverTimestamp()
+                });
+            } else {
+                await updateDoc(dailyRef, {
+                    totalClicks: increment(1)
+                });
+            }
         }
-
-        sessionStorage.setItem(storageKey, "true");
     } catch (error) {
         console.error("Error logging daily activity:", error);
     }
