@@ -497,6 +497,19 @@ const Index = () => {
       setSearchQuery("");
       setIsSearchFocused(false);
       setTimeout(() => setHighlightedProductId(null), 5000);
+    } else {
+      // If no results found in local catalog, suggest Jumia Mall
+      toast.info(`No results for "${q}" in catalog`, {
+        description: "Would you like to search on Jumia Mall?",
+        action: {
+          label: "Shop on Jumia Mall",
+          onClick: () => {
+            incrementClick();
+            window.open(addUTMParameters(`https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(q)}`), '_blank');
+          }
+        },
+        duration: 5000,
+      });
     }
   };
 
@@ -808,7 +821,10 @@ const Index = () => {
               <div className="p-8 text-center flex flex-col items-center gap-4">
                 <div className="text-gray-400 italic font-medium text-sm">No results for "{searchQuery}"</div>
                 <button
-                  onClick={() => window.open(addUTMParameters(`https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(searchQuery)}`), '_blank')}
+                  onClick={() => {
+                    incrementClick();
+                    window.open(addUTMParameters(`https://www.jumia.com.ng/catalog/?q=${encodeURIComponent(searchQuery)}`), '_blank');
+                  }}
                   className="flex items-center gap-2 px-6 py-2.5 bg-jumia-purple text-white text-xs font-bold rounded-xl hover:bg-jumia-purple/90 active:scale-95 transition-all shadow-lg"
                 >
                   Shop on Jumia Mall
@@ -1528,7 +1544,7 @@ const Index = () => {
 
           <div className="w-20 h-20 bg-white p-2 shadow-lg rounded-xl mb-4 mx-auto">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng")}`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(addUTMParameters(catalogSettings?.backPage?.qrCodeUrl || "https://jumia.com.ng"))}`}
               alt="QR"
               className="w-full h-full"
             />

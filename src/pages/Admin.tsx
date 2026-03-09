@@ -14,6 +14,8 @@ import { getStats, type StatsData, listenToActiveReaders, getDailyStats } from "
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/constants";
 import { autoCategorizeProduct } from "@/lib/search-utils";
+import { FeatureRequest, Announcement, RequestStatus, RequestTopic } from "@/types/feedback";
+import { addUTMParameters } from "@/lib/utils";
 
 import BannerCard from "@/components/BannerCard";
 import { signOut } from "firebase/auth";
@@ -198,8 +200,14 @@ const Admin = () => {
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
   const settingsRef = useRef(catalogSettings);
-  const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners" | "brandlogos" | "analytics" | "suggestions">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "settings" | "banners" | "brandlogos" | "analytics" | "ideas" | "roadmap" | "announcements">("products");
   const [uploading, setUploading] = useState(false);
+
+  // Ideas & Roadmap State
+  const [featureRequests, setFeatureRequests] = useState<FeatureRequest[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [ideasLoading, setIdeasLoading] = useState(true);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
 
   // Dynamic Categories
   const availableCategories = useMemo(() => {
@@ -362,19 +370,28 @@ const Admin = () => {
       setActiveReaders(count);
     });
 
-    // Listen to suggestions
-    setSuggestionsLoading(true);
-    const suggestionsQuery = query(collection(db, "product_suggestions"), orderBy("timestamp", "desc"));
-    const suggestionsUnsub = onSnapshot(suggestionsQuery, (snapshot) => {
-      setSuggestions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setSuggestionsLoading(false);
+    // Listen to feature requests (Ideas)
+    setIdeasLoading(true);
+    const requestsQuery = query(collection(db, "feature_requests"), orderBy("createdAt", "desc"));
+    const requestsUnsub = onSnapshot(requestsQuery, (snapshot) => {
+      setFeatureRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeatureRequest)));
+      setIdeasLoading(false);
+    });
+
+    // Listen to announcements
+    setAnnouncementsLoading(true);
+    const announcementsQuery = query(collection(db, "announcements"), orderBy("date", "desc"));
+    const announcementsUnsub = onSnapshot(announcementsQuery, (snapshot) => {
+      setAnnouncements(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement)));
+      setAnnouncementsLoading(false);
     });
 
     return () => {
       unsubscribe();
       settingsUnsub();
       presenceUnsub();
-      suggestionsUnsub();
+      requestsUnsub();
+      announcementsUnsub();
     };
   }, []);
 
@@ -698,15 +715,6 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteSuggestion = async (id: string) => {
-    if (!confirm("Delete this suggestion?")) return;
-    try {
-      await deleteDoc(doc(db, "product_suggestions", id));
-      toast.success("Suggestion deleted");
-    } catch (error) {
-      toast.error("Delete failed");
-    }
-  };
 
   const handleDeleteAll = async () => {
     if (!confirm("ARE YOU SURE? This will delete ALL products from the catalog. This action cannot be undone.")) return;
@@ -779,18 +787,33 @@ const Admin = () => {
             📊 Analytics
           </button>
           <button
-            className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'suggestions' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('suggestions')}
-          >
-            💡 Suggestions
-            <span className="text-[9px] bg-amber-100 text-amber-700 font-black uppercase rounded px-1.5 py-0.5 tracking-wider">{suggestions.length}</span>
-          </button>
-          <button
             className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'settings' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             onClick={() => setActiveTab('settings')}
           >
             Catalog Settings
           </button>
+          <div className="flex-1" />
+          <div className="flex gap-1 overflow-x-auto">
+            <button
+              className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'ideas' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('ideas')}
+            >
+              💡 Ideas
+              <span className="text-[9px] bg-amber-100 text-amber-700 font-black uppercase rounded px-1.5 py-0.5 tracking-wider">{featureRequests.length}</span>
+            </button>
+            <button
+              className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'roadmap' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('roadmap')}
+            >
+              🗺️ Roadmap
+            </button>
+            <button
+              className={`pb-2 px-4 font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'announcements' ? 'border-rose-500 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('announcements')}
+            >
+              📢 Announcements
+            </button>
+          </div>
           <div className="flex-1" />
           {catalogSettings.lastSyncTimestamp > 0 && (
             <div className="hidden md:flex flex-col items-end justify-center px-4 mb-2">
@@ -1290,60 +1313,254 @@ const Admin = () => {
               />
             </div>
           </div>
-        ) : activeTab === 'suggestions' ? (
+        ) : activeTab === 'ideas' ? (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-2xl p-5 flex items-start gap-4 shadow-lg">
               <span className="text-3xl shrink-0">💡</span>
               <div>
-                <h2 className="text-lg font-black uppercase tracking-wide">Customer Suggestions</h2>
-                <p className="text-sm text-amber-100 mt-1">Manage product requests submitted by customers through the digital catalog.</p>
+                <div className="flex items-center justify-between w-full">
+                  <h2 className="text-lg font-black uppercase tracking-wide">Feature Requests</h2>
+                  <Button 
+                    onClick={() => {
+                      const title = prompt("Enter feature title:");
+                      const description = prompt("Enter description:");
+                      if (title) {
+                        const newReq: any = {
+                          title,
+                          description: description || "",
+                          status: 'under-consideration',
+                          topic: 'new-feature',
+                          upvotes: 0,
+                          author: "Admin",
+                          createdAt: new Date(),
+                          commentCount: 0,
+                          labels: []
+                        };
+                        setDoc(doc(collection(db, "feature_requests")), newReq);
+                        toast.success("Feature request added!");
+                      }
+                    }}
+                    className="bg-white text-amber-600 hover:bg-amber-50 rounded-xl font-bold border-none h-9"
+                  >
+                    + Submit Idea
+                  </Button>
+                </div>
+                <p className="text-sm text-amber-100 mt-1">Manage product requests and feature ideas from the community.</p>
               </div>
             </div>
 
-            {suggestionsLoading ? (
+            {ideasLoading ? (
               <div className="p-8 text-center text-gray-400">
                 <Loader2 className="animate-spin inline-block mb-2" />
-                <p>Loading suggestions...</p>
+                <p>Loading ideas...</p>
               </div>
-            ) : suggestions.length === 0 ? (
+            ) : featureRequests.length === 0 ? (
               <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center flex flex-col items-center gap-3">
                 <span className="text-4xl opacity-20">📂</span>
-                <p className="font-bold text-gray-400">No suggestions yet!</p>
+                <p className="font-bold text-gray-400">No ideas yet!</p>
               </div>
             ) : (
               <div className="grid gap-4">
-                {suggestions.map((s) => (
-                  <div key={s.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between group hover:border-amber-200 transition-colors">
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-black text-gray-900 uppercase tracking-tight">{s.name}</h3>
-                        {s.brand && <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full font-bold text-gray-500 uppercase">{s.brand}</span>}
+                {featureRequests.map((req) => (
+                  <div key={req.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 group hover:border-amber-200 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex gap-4">
+                        <div className="bg-gray-50 rounded-xl p-3 flex flex-col items-center justify-center min-w-[50px] border border-gray-100">
+                          <span className="text-lg font-black text-gray-900">{req.upvotes || 0}</span>
+                          <span className="text-[8px] font-bold text-gray-400 uppercase">Upvotes</span>
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="font-black text-gray-900 uppercase tracking-tight leading-none mb-1">{req.title}</h3>
+                          <p className="text-sm text-gray-600 line-clamp-2 italic">"{req.description || "No description provided"}"</p>
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                              req.status === 'shipped' ? 'bg-green-100 text-green-700' :
+                              req.status === 'in-development' ? 'bg-blue-100 text-blue-700' :
+                              req.status === 'planned' ? 'bg-purple-100 text-purple-700' :
+                              'bg-gray-100 text-gray-500'
+                            }`}>
+                              {req.status.replace('-', ' ')}
+                            </span>
+                            <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold uppercase">
+                              #{req.topic}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 line-clamp-2 italic">"{s.description || "No description provided"}"</p>
-                      <div className="flex flex-wrap items-center gap-3 pt-1">
-                        {s.email && (
-                          <a href={`mailto:${s.email}`} className="text-[10px] font-bold text-jumia-purple bg-jumia-purple/5 px-2 py-0.5 rounded-md hover:bg-jumia-purple/10 transition-colors flex items-center gap-1">
-                            📧 {s.email}
-                          </a>
-                        )}
-                        {s.phone && (
-                          <a href={`tel:${s.phone}`} className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-md hover:bg-teal-100 transition-colors flex items-center gap-1">
-                            📞 {s.phone}
-                          </a>
-                        )}
-                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1">
-                          🕒 {s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString('en-NG', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <select 
+                          value={req.status}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value as RequestStatus;
+                            await updateDoc(doc(db, "feature_requests", req.id), { status: newStatus });
+                            if (newStatus === 'shipped') {
+                              if (confirm("Create an announcement for this shipped feature?")) {
+                                const newAnn: any = {
+                                  title: `Shipped: ${req.title}`,
+                                  content: `We've successfully implemented: ${req.description}`,
+                                  date: new Date(),
+                                  type: 'shipped',
+                                  requestId: req.id
+                                };
+                                await setDoc(doc(collection(db, "announcements")), newAnn);
+                                toast.success("Feature marked as shipped and announcement created!");
+                                setActiveTab('announcements');
+                              }
+                            }
+                          }}
+                          className="text-[10px] font-bold border rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        >
+                          <option value="under-consideration">Under Consideration</option>
+                          <option value="planned">Planned</option>
+                          <option value="in-development">In Development</option>
+                          <option value="shipped">Shipped</option>
+                        </select>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl h-8 w-8"
+                          onClick={async () => {
+                            if (confirm("Delete this request?")) {
+                              await deleteDoc(doc(db, "feature_requests", req.id));
+                              toast.success("Request deleted");
+                            }
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
-                      onClick={() => handleDeleteSuggestion(s.id)}
-                    >
-                      <Trash2 size={18} />
-                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'roadmap' ? (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-2xl p-5 flex items-start gap-4 shadow-lg mb-8">
+              <span className="text-3xl shrink-0">🗺️</span>
+              <div>
+                <h2 className="text-lg font-black uppercase tracking-wide">Product Roadmap</h2>
+                <p className="text-sm text-green-100 mt-1">Visualize what's coming next and track the progress of ongoing developments.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start overflow-x-auto pb-4">
+              {[
+                { id: 'under-consideration', label: 'Under Consideration', color: 'gray' },
+                { id: 'planned', label: 'Planned', color: 'purple' },
+                { id: 'in-development', label: 'In Development', color: 'blue' },
+                { id: 'shipped', label: 'Shipped', color: 'green' }
+              ].map((column) => (
+                <div key={column.id} className="flex flex-col gap-3 min-w-[250px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-1.5 h-1.5 rounded-full bg-${column.color}-500`} />
+                    <h3 className="font-black text-[10px] uppercase tracking-widest text-gray-500">
+                      {column.label} ({featureRequests.filter(r => r.status === column.id).length})
+                    </h3>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    {featureRequests.filter(r => r.status === column.id).map(req => (
+                      <div key={req.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
+                        <div className="flex items-start justify-between mb-2">
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded tracking-tighter bg-gray-100 text-gray-500`}>
+                            {req.upvotes || 0}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-bold">#{req.topic}</span>
+                        </div>
+                        <h4 className="font-bold text-xs text-gray-900 group-hover:text-primary transition-colors leading-tight mb-1">{req.title}</h4>
+                        <p className="text-[10px] text-gray-500 line-clamp-2 italic leading-relaxed">"{req.description}"</p>
+                      </div>
+                    ))}
+                    {featureRequests.filter(r => r.status === column.id).length === 0 && (
+                      <div className="py-8 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-gray-300 uppercase italic">Slot Empty</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : activeTab === 'announcements' ? (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-2xl p-5 flex items-start gap-4 shadow-lg mb-8">
+              <span className="text-3xl shrink-0">📢</span>
+              <div>
+                <div className="flex items-center justify-between w-full">
+                  <h2 className="text-lg font-black uppercase tracking-wide">Announcements</h2>
+                  <Button 
+                    onClick={() => {
+                      const title = prompt("Announcement Title:");
+                      const content = prompt("Content:");
+                      if (title) {
+                        const newAnn: any = {
+                          title,
+                          content: content || "",
+                          date: new Date(),
+                          type: 'announcement',
+                        };
+                        setDoc(doc(collection(db, "announcements")), newAnn);
+                        toast.success("Announcement posted!");
+                      }
+                    }}
+                    className="bg-white text-rose-600 hover:bg-rose-50 rounded-xl font-bold border-none h-9"
+                  >
+                    + New Post
+                  </Button>
+                </div>
+                <p className="text-sm text-rose-100 mt-1">Keep your audience informed about new features, updates, and major milestones.</p>
+              </div>
+            </div>
+
+            {announcementsLoading ? (
+              <div className="p-8 text-center text-gray-400">
+                <Loader2 className="animate-spin inline-block mb-2" />
+                <p>Loading announcements...</p>
+              </div>
+            ) : announcements.length === 0 ? (
+              <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center flex flex-col items-center gap-3">
+                <span className="text-4xl opacity-20">📭</span>
+                <p className="font-bold text-gray-400">No announcements yet!</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-12 max-w-2xl mx-auto pt-4">
+                {announcements.map((ann) => (
+                  <div key={ann.id} className="relative pl-12 border-l-2 border-gray-100 pb-12 last:pb-0">
+                    <div className="absolute left-[-11px] top-0 w-5 h-5 rounded-full bg-white border-4 border-rose-500 shadow-sm" />
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        <span>{ann.date?.toDate ? ann.date.toDate().toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Today'}</span>
+                        <span className={`px-2 py-0.5 rounded-full ${ann.type === 'shipped' ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'}`}>
+                          {ann.type}
+                        </span>
+                      </div>
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">{ann.title}</h3>
+                      <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 overflow-hidden group hover:border-rose-200 transition-all">
+                        <p className="text-gray-600 leading-relaxed font-medium whitespace-pre-wrap">{ann.content}</p>
+                        {ann.image && (
+                          <div className="mt-6 rounded-2xl overflow-hidden shadow-2xl border border-gray-50">
+                            <img src={ann.image} alt="" className="w-full h-auto object-cover" />
+                          </div>
+                        )}
+                        <div className="mt-8 flex items-center justify-between border-t pt-4 border-gray-50">
+                          <span className="text-[10px] font-bold text-gray-300 uppercase">Shared from Jumia Catalog Admin</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                            onClick={async () => {
+                              if (confirm("Delete this announcement?")) {
+                                await deleteDoc(doc(db, "announcements", ann.id));
+                                toast.success("Announcement deleted");
+                              }
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
