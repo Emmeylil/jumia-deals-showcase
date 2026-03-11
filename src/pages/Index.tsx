@@ -963,26 +963,34 @@ const Index = () => {
               </div>
 
               <div className="relative z-10">
-                <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase italic drop-shadow-sm leading-tight text-gray-900">
-                  {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
-                  <span
-                    className="drop-shadow-sm"
-                    style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}
+                {(catalogSettings?.frontPage?.title ?? "HOTTEST") && (
+                  <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase italic drop-shadow-sm leading-tight text-gray-900">
+                    {catalogSettings?.frontPage?.title ?? "HOTTEST"} <br />
+                    {catalogSettings?.frontPage?.subtitle && (
+                      <span
+                        className="drop-shadow-sm"
+                        style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}
+                      >
+                        {catalogSettings?.frontPage?.subtitle}
+                      </span>
+                    )}
+                  </h1>
+                )}
+                {(catalogSettings?.frontPage?.title || catalogSettings?.frontPage?.subtitle) && (
+                  <div
+                    className="absolute -bottom-4 right-0 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rotate-[-5deg] shadow-md rounded-sm"
+                    style={{ backgroundColor: catalogSettings?.frontPage?.secondaryColor || '#009FE3' }}
                   >
-                    {catalogSettings?.frontPage?.subtitle || "DEALS!"}
-                  </span>
-                </h1>
-                <div
-                  className="absolute -bottom-4 right-0 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rotate-[-5deg] shadow-md rounded-sm"
-                  style={{ backgroundColor: catalogSettings?.frontPage?.secondaryColor || '#009FE3' }}
-                >
-                  LIMITED TIME
-                </div>
+                    LIMITED TIME
+                  </div>
+                )}
               </div>
 
-              <p className="text-sm md:text-xl font-bold tracking-widest uppercase mt-3 md:mt-8 opacity-70 text-gray-600 z-10">
-                {catalogSettings?.frontPage?.tagline || "Digital Catalog 2026"}
-              </p>
+              {(catalogSettings?.frontPage?.tagline ?? "Digital Catalog 2026") && (
+                <p className="text-sm md:text-xl font-bold tracking-widest uppercase mt-3 md:mt-8 opacity-70 text-gray-600 z-10">
+                  {catalogSettings?.frontPage?.tagline ?? "Digital Catalog 2026"}
+                </p>
+              )}
 
               <div className="mt-4 md:mt-12 px-6 md:px-8 py-2 md:py-3 border-2 border-gray-200 rounded-full text-xs md:text-sm font-bold text-gray-900 bg-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-bounce z-10">
                 {catalogSettings?.frontPage?.footerText || "CLICK TO OPEN"}
@@ -1394,17 +1402,23 @@ const Index = () => {
 
 
             <div className="relative z-10">
-              <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-tight text-gray-900">
-                {catalogSettings?.frontPage?.title || "HOTTEST"} <br />
-                <span style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}>
-                  {catalogSettings?.frontPage?.subtitle || "DEALS!"}
-                </span>
-              </h1>
+              {(catalogSettings?.frontPage?.title ?? "HOTTEST") && (
+                <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-tight text-gray-900">
+                  {catalogSettings?.frontPage?.title ?? "HOTTEST"} <br />
+                  {catalogSettings?.frontPage?.subtitle && (
+                    <span style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}>
+                      {catalogSettings?.frontPage?.subtitle}
+                    </span>
+                  )}
+                </h1>
+              )}
             </div>
 
-            <p className="text-sm md:text-lg font-bold tracking-widest uppercase mt-8 opacity-70 text-gray-600 z-10">
-              {catalogSettings?.frontPage?.tagline || "Digital Catalog 2026"}
-            </p>
+            {(catalogSettings?.frontPage?.tagline ?? "Digital Catalog 2026") && (
+              <p className="text-sm md:text-lg font-bold tracking-widest uppercase mt-8 opacity-70 text-gray-600 z-10">
+                {catalogSettings?.frontPage?.tagline ?? "Digital Catalog 2026"}
+              </p>
+            )}
           </div>
         </div>
 
