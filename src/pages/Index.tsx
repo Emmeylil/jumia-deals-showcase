@@ -954,13 +954,7 @@ const Index = () => {
                 style={{ backgroundColor: `${catalogSettings?.frontPage?.secondaryColor || '#009FE3'}1A` }}
               />
 
-              <div className="mb-2 md:mb-8 z-10">
-                <img
-                  src="https://ng.jumia.is/cms/jumia_logo_small.png"
-                  alt="Jumia Logo"
-                  className="h-10 md:h-16 w-auto object-contain"
-                />
-              </div>
+              {/* Decorative Circle */}
 
               <div className="relative z-10">
                 {(catalogSettings?.frontPage?.title ?? "HOTTEST") && (
@@ -992,7 +986,7 @@ const Index = () => {
                 </p>
               )}
 
-              <div className="mt-4 md:mt-12 px-6 md:px-8 py-2 md:py-3 border-2 border-gray-200 rounded-full text-xs md:text-sm font-bold text-gray-900 bg-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-bounce z-10">
+              <div className="mt-8 md:mt-24 px-6 md:px-8 py-2 md:py-3 border-2 border-gray-200 rounded-full text-xs md:text-sm font-bold text-gray-900 bg-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-bounce z-10">
                 {catalogSettings?.frontPage?.footerText || "CLICK TO OPEN"}
               </div>
             </div>
@@ -1395,12 +1389,6 @@ const Index = () => {
           }}
         >
           <div className="w-full h-full flex flex-col items-center justify-center p-8 md:p-12 text-center bg-white relative overflow-hidden">
-            <div className="mb-8 z-10">
-              <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="h-10 md:h-16 w-auto object-contain" />
-            </div>
-
-
-
             <div className="relative z-10">
               {(catalogSettings?.frontPage?.title ?? "HOTTEST") && (
                 <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-tight text-gray-900">
