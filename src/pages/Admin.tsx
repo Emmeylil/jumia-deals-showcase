@@ -736,6 +736,62 @@ const Admin = () => {
     }
   };
 
+  const handleDownloadClicksList = async () => {
+    try {
+      toast.info("Preparing download...");
+      const clicksRef = collection(db, "product_clicks");
+      // Fetch all clicks, not just the top 5
+      const snapshot = await getDocs(clicksRef);
+      const allClicksData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        clicks: doc.data().clicks
+      }));
+
+      if (allClicksData.length === 0) {
+        toast.error("No click data available to download");
+        return;
+      }
+
+      // Sort by clicks descending
+      allClicksData.sort((a, b) => b.clicks - a.clicks);
+
+      // Prepare CSV content
+      const headers = ["Product Name", "Product Link", "Clicks", "Total engagement %"];
+      const totalClicks = stats?.clicks || 1;
+
+      const csvRows = allClicksData.map(item => {
+        const product = products.find(p => p.id.toString() === item.id);
+        const name = product?.displayName || product?.name || `Product #${item.id}`;
+        const url = product?.url || "N/A";
+        const engagement = ((item.clicks / totalClicks) * 100).toFixed(1) + "%";
+        
+        // Escape quotes and wrap in quotes for CSV safety
+        const cleanName = `"${name.replace(/"/g, '""')}"`;
+        const cleanUrl = `"${url.replace(/"/g, '""')}"`;
+        
+        return [cleanName, cleanUrl, item.clicks, engagement].join(",");
+      });
+
+      const csvContent = [headers.join(","), ...csvRows].join("\n");
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `popular_products_clicks_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Download started!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to generate download");
+    }
+  };
+
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Loading...</div>;
 
   const formatTime = (seconds: number) => {
@@ -1777,9 +1833,19 @@ const Admin = () => {
               {/* Product Leaderboard */}
               {productClicks.length > 0 && (
                 <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Trophy className="text-yellow-500" size={20} /> Most Popular Products
-                  </h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <Trophy className="text-yellow-500" size={20} /> Most Popular Products
+                    </h3>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleDownloadClicksList}
+                      className="rounded-xl border-dashed border-gray-300 hover:border-primary hover:text-primary transition-all bg-white"
+                    >
+                      <Download size={14} className="mr-2" /> Download List
+                    </Button>
+                  </div>
                   <div className="space-y-3">
                     {productClicks.map((item, index) => {
                       const product = products.find(p => p.id.toString() === item.id);
