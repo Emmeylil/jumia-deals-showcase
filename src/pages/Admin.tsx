@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
-import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw, LogOut } from "lucide-react";
+import { Activity, Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw, LogOut } from "lucide-react";
 import { getStats, type StatsData, listenToActiveReaders, getDailyStats, fetchBackendAnalytics, type AnalyticsResponse } from "@/lib/stats";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/constants";
@@ -103,13 +103,24 @@ const DEFAULT_SETTINGS: CatalogSettings = {
   autoSyncInterval: 6, // default 6 hours
 };
 
-const InteractionRateGraph = ({ data }: { data: any[] }) => {
+const InteractionRateGraph = ({ data, activeMetric = 'interactionRate' }: { data: any[], activeMetric?: 'interactionRate' | 'activeUsers' | 'totalClicks' }) => {
   const chartData = useMemo(() => {
     return data.map(day => ({
       ...day,
       interactionRate: day.activeUsers > 0 ? (day.totalClicks / day.activeUsers) * 100 : 0
     }));
   }, [data]);
+
+  const config = useMemo(() => {
+    switch (activeMetric) {
+      case 'activeUsers':
+        return { color: '#9333ea', name: 'Active Users', suffix: '' };
+      case 'totalClicks':
+        return { color: '#3b82f6', name: 'Product Clicks', suffix: '' };
+      default:
+        return { color: '#f97316', name: 'Interaction Rate', suffix: '%' };
+    }
+  }, [activeMetric]);
 
   if (!chartData || chartData.length === 0) return (
     <div className="h-[200px] flex items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
@@ -120,8 +131,14 @@ const InteractionRateGraph = ({ data }: { data: any[] }) => {
   return (
     <div className="h-[200px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="1 1" stroke="#f0f0f0" />
+        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={config.color} stopOpacity={0.1}/>
+              <stop offset="95%" stopColor={config.color} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
           <XAxis
             dataKey="date"
             axisLine={false}
@@ -137,23 +154,27 @@ const InteractionRateGraph = ({ data }: { data: any[] }) => {
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 9, fontWeight: 600, fill: '#64748b' }}
-            tickFormatter={(val) => `${Math.round(val)}%`}
+            tickFormatter={(val) => `${Math.round(val)}${config.suffix}`}
           />
           <Tooltip
-            contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '11px' }}
-            formatter={(value: number) => [`${value.toFixed(1)}%`, "Interaction Rate"]}
+            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px' }}
+            formatter={(value: number, name: string) => [
+              name === "Interaction Rate" ? `${value.toFixed(1)}%` : value, 
+              name
+            ]}
             labelFormatter={(label) => new Date(label).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}
           />
-          <Line
+          <Area
             type="monotone"
-            dataKey="interactionRate"
-            stroke="#f97316"
-            strokeWidth={2}
-            dot={{ r: 3, fill: '#f97316', strokeWidth: 0 }}
-            activeDot={{ r: 5, strokeWidth: 0 }}
-            name="Interaction Rate"
+            dataKey={activeMetric}
+            stroke={config.color}
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#colorMetric)"
+            name={config.name}
+            animationDuration={1500}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
@@ -179,6 +200,8 @@ const Admin = () => {
   const [skuInput, setSkuInput] = useState("");
   const [fetchedProducts, setFetchedProducts] = useState<FetchedProduct[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTrendMetric, setActiveTrendMetric] = useState<'interactionRate' | 'activeUsers' | 'totalClicks'>('interactionRate');
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
 
   // Editing state for existing products
@@ -403,7 +426,7 @@ const Admin = () => {
 
   // Fetch Backend Analytics Effect
   useEffect(() => {
-    if (activeTab !== 'analytics') return;
+    if (activeTab !== 'analytics' && activeTab !== 'products') return;
 
     const loadAnalytics = async () => {
       setIsLoadingAnalytics(true);
@@ -423,11 +446,20 @@ const Admin = () => {
       }
       // "All Time" leaves start/end undefined
 
-      const data = await fetchBackendAnalytics(start, end);
-      if (data) {
-        setBackendAnalytics(data);
+      try {
+        const data = await fetchBackendAnalytics(start, end);
+        if (data) {
+          setBackendAnalytics(data);
+        }
+      } catch (error: any) {
+        console.error("Error loading analytics:", error);
+        setBackendAnalytics(null);
+        toast.error(`Analytics Error: ${error.message || "Failed to fetch range data"}`, {
+          duration: 10000,
+        });
+      } finally {
+        setIsLoadingAnalytics(false);
       }
-      setIsLoadingAnalytics(false);
     };
 
     loadAnalytics();
@@ -1396,22 +1428,23 @@ const Admin = () => {
                 </div>
               </div>
               
-              {/* Date Filters UI from Image */}
-              <div className="bg-white/10 p-1.5 rounded-2xl backdrop-blur-sm flex items-center gap-1 self-start md:self-center border border-white/10">
-                {(["7D", "30D", "All Time", "CUSTOM"] as const).map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => setAnalyticsRange(range)}
-                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                      analyticsRange === range 
-                        ? "bg-white text-purple-700 shadow-lg scale-105" 
-                        : "text-white/80 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
+            </div>
+
+            {/* Date Filters UI */}
+            <div className="bg-white/10 p-1.5 rounded-2xl backdrop-blur-sm flex items-center gap-1 self-start md:self-center border border-white/10">
+              {(["7D", "30D", "All Time", "CUSTOM"] as const).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setAnalyticsRange(range)}
+                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                    analyticsRange === range 
+                      ? "bg-white text-purple-700 shadow-lg scale-105" 
+                      : "text-white/80 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  {range}
+                </button>
+              ))}
             </div>
 
             {analyticsRange === "CUSTOM" && (
@@ -1985,9 +2018,51 @@ const Admin = () => {
           <div className="space-y-8 animate-in fade-in duration-300">
             {/* Statistics Section */}
             <section className="mb-12">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <BarChart3 className="text-primary" /> Statistics
-              </h2>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <BarChart3 className="text-primary" /> Statistics
+                </h2>
+                
+                {/* Date Filters for Statistics */}
+                <div className="bg-gray-100 p-1 rounded-xl flex items-center gap-1">
+                  {(["7D", "30D", "All Time", "CUSTOM"] as const).map((range) => (
+                    <button
+                      key={range}
+                      onClick={() => setAnalyticsRange(range)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                        analyticsRange === range 
+                          ? "bg-white text-primary shadow-sm" 
+                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+                      }`}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {analyticsRange === "CUSTOM" && (
+                <div className="mb-6 bg-white p-4 rounded-2xl border border-gray-100 flex flex-wrap gap-4 items-end animate-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Start Date</label>
+                    <Input 
+                      type="date" 
+                      value={customRange.start} 
+                      onChange={(e) => setCustomRange(prev => ({ ...prev, start: e.target.value }))}
+                      className="h-9 rounded-xl text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">End Date</label>
+                    <Input 
+                      type="date" 
+                      value={customRange.end} 
+                      onChange={(e) => setCustomRange(prev => ({ ...prev, end: e.target.value }))}
+                      className="h-9 rounded-xl text-xs"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 grid grid-cols-2 gap-4">
@@ -2002,31 +2077,79 @@ const Admin = () => {
                   </div>
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <Users className="text-green-500" size={24} />
-                    <span className="text-3xl font-bold text-gray-900">{stats?.readers || 0}</span>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Unique Readers</span>
+                    <span className="text-3xl font-bold text-gray-900">
+                      {backendAnalytics ? backendAnalytics.summary.rangeActiveUsers : (stats?.readers || 0)}
+                    </span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                      {analyticsRange === 'All Time' ? 'Unique Readers' : 'Range Active Users'}
+                    </span>
                   </div>
                   <div className="col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                        <BarChart3 size={14} className="text-orange-500" /> Interaction Rate
-                      </h3>
-                      <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 uppercase">Trend Analysis</span>
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                          <BarChart3 size={14} className="text-orange-500" /> 
+                          {activeTrendMetric === 'interactionRate' ? 'Interaction Trend' : activeTrendMetric === 'activeUsers' ? 'Traffic Trend' : 'Click Trend'}
+                        </h3>
+                        <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 uppercase">
+                          {analyticsRange} Analysis
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100">
+                        <button 
+                          onClick={() => setActiveTrendMetric('interactionRate')}
+                          className={`p-1.5 rounded-md transition-all ${activeTrendMetric === 'interactionRate' ? 'bg-white shadow-sm text-orange-500' : 'text-gray-400 hover:text-gray-600'}`}
+                          title="Interaction Rate"
+                        >
+                          <Activity size={14} />
+                        </button>
+                        <button 
+                          onClick={() => setActiveTrendMetric('activeUsers')}
+                          className={`p-1.5 rounded-md transition-all ${activeTrendMetric === 'activeUsers' ? 'bg-white shadow-sm text-purple-500' : 'text-gray-400 hover:text-gray-600'}`}
+                          title="Active Users"
+                        >
+                          <Users size={14} />
+                        </button>
+                        <button 
+                          onClick={() => setActiveTrendMetric('totalClicks')}
+                          className={`p-1.5 rounded-md transition-all ${activeTrendMetric === 'totalClicks' ? 'bg-white shadow-sm text-blue-500' : 'text-gray-400 hover:text-gray-600'}`}
+                          title="Product Clicks"
+                        >
+                          <MousePointer2 size={14} />
+                        </button>
+                      </div>
                     </div>
-                    <InteractionRateGraph data={dailyStats} />
+                    <InteractionRateGraph 
+                      data={backendAnalytics?.dailyData || dailyStats} 
+                      activeMetric={activeTrendMetric}
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <BarChart3 className="text-blue-500" size={24} />
-                    <span className="text-3xl font-bold text-gray-900">{stats?.views || 0}</span>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Views</span>
+                    <span className="text-3xl font-bold text-gray-900">
+                      {backendAnalytics && analyticsRange !== 'All Time' 
+                        ? (backendAnalytics.summary.rangeTotalClicks + backendAnalytics.summary.rangeActiveUsers).toLocaleString() 
+                        : (stats?.views || 0).toLocaleString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                      {analyticsRange === 'All Time' ? 'Total Views' : `${analyticsRange} Views`}
+                    </span>
                   </div>
 
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <MousePointer2 className="text-orange-500" size={24} />
-                    <span className="text-3xl font-bold text-gray-900">{stats?.clicks || 0}</span>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Product Clicks</span>
+                    <span className="text-3xl font-bold text-gray-900">
+                      {backendAnalytics && analyticsRange !== 'All Time' 
+                        ? backendAnalytics.summary.rangeTotalClicks.toLocaleString() 
+                        : (stats?.clicks || 0).toLocaleString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                      {analyticsRange === 'All Time' ? 'Product Clicks' : `${analyticsRange} Clicks`}
+                    </span>
                   </div>
 
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">

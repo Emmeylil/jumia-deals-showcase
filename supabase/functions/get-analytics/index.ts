@@ -54,45 +54,54 @@ serve(async (req) => {
     // We use a structured query to filter by date
     const queryUrl = `${FIRESTORE_BASE}:runQuery?key=${FIREBASE_API_KEY}`;
     
-    const structuredQuery = {
-      structuredQuery: {
-        from: [{ collectionId: "daily_stats" }],
-        where: {
-          compositeFilter: {
-            op: "AND",
-            filters: [
-              ...(startDate ? [{
-                fieldFilter: {
-                  field: { fieldPath: "date" },
-                  op: "GREATER_THAN_OR_EQUAL",
-                  value: { stringValue: startDate }
-                }
-              }] : []),
-              ...(endDate ? [{
-                fieldFilter: {
-                  field: { fieldPath: "date" },
-                  op: "LESS_THAN_OR_EQUAL",
-                  value: { stringValue: endDate }
-                }
-              }] : [])
-            ]
-          }
-        },
-        orderBy: [{
+    const filters = [];
+    if (startDate) {
+      filters.push({
+        fieldFilter: {
           field: { fieldPath: "date" },
-          direction: "ASCENDING"
-        }]
-      }
+          op: "GREATER_THAN_OR_EQUAL",
+          value: { stringValue: startDate }
+        }
+      });
+    }
+    if (endDate) {
+      filters.push({
+        fieldFilter: {
+          field: { fieldPath: "date" },
+          op: "LESS_THAN_OR_EQUAL",
+          value: { stringValue: endDate }
+        }
+      });
+    }
+
+    const structuredQuery: any = {
+      from: [{ collectionId: "daily_stats" }],
+      orderBy: [{
+        field: { fieldPath: "date" },
+        direction: "ASCENDING"
+      }]
     };
+
+    if (filters.length > 0) {
+      structuredQuery.where = {
+        compositeFilter: {
+          op: "AND",
+          filters: filters
+        }
+      };
+    }
+
+    const queryBody = { structuredQuery };
 
     const res = await fetch(queryUrl, {
       method: "POST",
-      body: JSON.stringify(structuredQuery)
+      body: JSON.stringify(queryBody)
     });
 
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`Firestore query failed: ${err}`);
+      const err = await res.json();
+      const message = err.error?.message || JSON.stringify(err);
+      throw new Error(`Firestore query failed: ${message}`);
     }
 
     const results = await res.json();
