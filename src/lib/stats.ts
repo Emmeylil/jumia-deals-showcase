@@ -226,7 +226,9 @@ export const getDailyStats = async (days: number = 30) => {
     }
 };
 
-import { supabase } from "@/integrations/supabase/client";
+
+// Firebase Analytics Function URL - Update this after deployment if necessary
+const ANALYTICS_FUNC_URL = 'https://getanalytics-776751698383.europe-west2.run.app';
 
 export interface AnalyticsResponse {
     success: boolean;
@@ -245,15 +247,16 @@ export interface AnalyticsResponse {
 
 export const fetchBackendAnalytics = async (startDate?: string, endDate?: string): Promise<AnalyticsResponse | null> => {
     try {
-        const { data, error } = await supabase.functions.invoke('get-analytics', {
-            method: 'GET',
-            queryParams: {
-                ...(startDate && { startDate }),
-                ...(endDate && { endDate }),
-            }
-        });
+        const url = new URL(ANALYTICS_FUNC_URL);
+        if (startDate) url.searchParams.append('startDate', startDate);
+        if (endDate) url.searchParams.append('endDate', endDate);
 
-        if (error) throw error;
+        const response = await fetch(url.toString());
+        if (!response.ok) {
+            throw new Error(`Analytics fetch failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
         return data as AnalyticsResponse;
     } catch (error) {
         console.error("Error fetching backend analytics:", error);

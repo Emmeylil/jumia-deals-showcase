@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { supabase } from "@/integrations/supabase/client";
+
 
 import ProductCard from "@/components/ProductCard";
 import FeaturedProductCard from "@/components/FeaturedProductCard";
@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
 import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct, logDailyActivity, incrementClick } from "@/lib/stats";
 
-import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, serverTimestamp, getDoc, addDoc } from "firebase/firestore";
 import { db, isConfigured } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
 import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
@@ -338,13 +338,18 @@ const Index = () => {
           src && src.startsWith('http') && !src.startsWith(window.location.origin)
         ))];
 
-        // Step 2: Proxy-fetch all external images in parallel → data URLs
+        // Proxy-fetch all external images in parallel → data URLs
         toast.info("Preparing images...", { duration: 2000 });
+        const IMAGE_PROXY_URL = 'https://imageproxy-776751698383.europe-west2.run.app';
+        
         await Promise.all(uniqueUrls.map(async (url) => {
           try {
-            const { data } = await supabase.functions.invoke('image-proxy', {
-              body: { imageUrl: url },
+            const response = await fetch(IMAGE_PROXY_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageUrl: url }),
             });
+            const data = await response.json();
             if (data?.dataUrl) imageDataCache[url] = data.dataUrl;
           } catch {
             // silently skip failed images
@@ -1288,16 +1293,15 @@ const Index = () => {
                       }
                       setSuggestionSubmitting(true);
                       try {
-                        const { error } = await supabase
-                          .from("product_suggestions")
-                          .insert({
-                            name: suggestionForm.name.trim(),
-                            brand: suggestionForm.brand.trim() || null,
-                            description: suggestionForm.description.trim() || null,
-                            email: suggestionForm.email.trim() || null,
-                            phone: suggestionForm.phone.trim() || null,
-                          });
-                        if (error) throw error;
+                        const suggestionsRef = collection(db, "product_suggestions");
+                        await addDoc(suggestionsRef, {
+                          name: suggestionForm.name.trim(),
+                          brand: suggestionForm.brand.trim() || null,
+                          description: suggestionForm.description.trim() || null,
+                          email: suggestionForm.email.trim() || null,
+                          phone: suggestionForm.phone.trim() || null,
+                          timestamp: serverTimestamp()
+                        });
                         setSuggestionSuccess(true);
                         setTimeout(() => {
                           setSuggestionSuccess(false);
