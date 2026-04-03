@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
 import { Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw, LogOut } from "lucide-react";
-import { getStats, type StatsData, listenToActiveReaders, getDailyStats } from "@/lib/stats";
+import { getStats, type StatsData, listenToActiveReaders, getDailyStats, fetchBackendAnalytics, type AnalyticsResponse } from "@/lib/stats";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/constants";
 import { autoCategorizeProduct } from "@/lib/search-utils";
@@ -196,6 +196,15 @@ const Admin = () => {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
+  // New Analytics State
+  const [analyticsRange, setAnalyticsRange] = useState<"7D" | "30D" | "All Time" | "CUSTOM">("7D");
+  const [backendAnalytics, setBackendAnalytics] = useState<AnalyticsResponse | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const [customRange, setCustomRange] = useState<{ start: string; end: string }>({
+    start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+
 
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
@@ -321,25 +330,21 @@ const Admin = () => {
       try {
         const docRef = doc(db, "settings", "catalog");
         const docSnap = await getDocs(query(collection(db, "settings"))); // Temporary check
-        // Actually direct getDoc is better for single document
-        // But let's stick to the pattern used or just getDoc
       } catch (e) {
         console.error("Error fetching settings:", e);
       }
     };
 
-    // Using onSnapshot for real-time updates on settings too?
+    // Using onSnapshot for real-time updates on settings
     const settingsUnsub = onSnapshot(doc(db, "settings", "catalog"), (snapshot: any) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        // Deep-merge: keep all Firestore values for nested objects, fall back to defaults only for missing keys
         setCatalogSettings({
           ...DEFAULT_SETTINGS,
           ...data,
           frontPage: { ...DEFAULT_SETTINGS.frontPage, ...(data.frontPage || {}) },
           backPage: { ...DEFAULT_SETTINGS.backPage, ...(data.backPage || {}) },
           innerPages: { ...DEFAULT_SETTINGS.innerPages, ...(data.innerPages || {}) },
-          // Preserve banners & brandLogos exactly as stored — never let defaults clobber them
           banners: data.banners !== undefined ? data.banners : DEFAULT_SETTINGS.banners,
           brandLogos: data.brandLogos !== undefined ? data.brandLogos : DEFAULT_SETTINGS.brandLogos,
         } as CatalogSettings);
@@ -349,8 +354,8 @@ const Admin = () => {
     });
 
     // Fetch products
-    const q = query(collection(db, "products"), orderBy("id"), limit(100));
-    const unsubscribe = onSnapshot(q,
+    const productQuery = query(collection(db, "products"), orderBy("id"), limit(100));
+    const productsUnsub = onSnapshot(productQuery,
       (snapshot) => {
         const docs = snapshot.docs.map((doc) => ({
           ...doc.data(),
@@ -365,6 +370,7 @@ const Admin = () => {
         setLoading(false);
       }
     );
+
     // Listen to active readers in real-time
     const presenceUnsub = listenToActiveReaders((count) => {
       setActiveReaders(count);
@@ -387,15 +393,47 @@ const Admin = () => {
     });
 
     return () => {
-      unsubscribe();
       settingsUnsub();
+      productsUnsub();
       presenceUnsub();
       requestsUnsub();
       announcementsUnsub();
     };
   }, []);
 
-  // Auto-sync trigger ONLY in Admin
+  // Fetch Backend Analytics Effect
+  useEffect(() => {
+    if (activeTab !== 'analytics') return;
+
+    const loadAnalytics = async () => {
+      setIsLoadingAnalytics(true);
+      let start: string | undefined;
+      let end: string | undefined;
+
+      const now = new Date();
+      if (analyticsRange === "7D") {
+        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        end = now.toISOString().split('T')[0];
+      } else if (analyticsRange === "30D") {
+        start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        end = now.toISOString().split('T')[0];
+      } else if (analyticsRange === "CUSTOM") {
+        start = customRange.start;
+        end = customRange.end;
+      }
+      // "All Time" leaves start/end undefined
+
+      const data = await fetchBackendAnalytics(start, end);
+      if (data) {
+        setBackendAnalytics(data);
+      }
+      setIsLoadingAnalytics(false);
+    };
+
+    loadAnalytics();
+  }, [activeTab, analyticsRange, customRange]);
+
+  // Auto-sync trigger
   useEffect(() => {
     if (loading || !catalogSettings?.autoSyncInterval) return;
 
@@ -1349,25 +1387,211 @@ const Admin = () => {
           </div>
         ) : activeTab === 'analytics' ? (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl p-5 flex items-start gap-4 shadow-lg mb-6">
-              <span className="text-3xl shrink-0">📊</span>
-              <div>
-                <h2 className="text-lg font-black uppercase tracking-wide">Live Analytics Report</h2>
-                <p className="text-sm text-purple-100 mt-1">Detailed tracking of engagement, product clicks, and visitor behavior via Looker Studio.</p>
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg mb-6">
+              <div className="flex items-start gap-4">
+                <span className="text-3xl shrink-0">📊</span>
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-wide">Live Analytics Dashboard</h2>
+                  <p className="text-sm text-purple-100 mt-1">Detailed tracking of engagement, clicks, and visitor behavior.</p>
+                </div>
+              </div>
+              
+              {/* Date Filters UI from Image */}
+              <div className="bg-white/10 p-1.5 rounded-2xl backdrop-blur-sm flex items-center gap-1 self-start md:self-center border border-white/10">
+                {(["7D", "30D", "All Time", "CUSTOM"] as const).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setAnalyticsRange(range)}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                      analyticsRange === range 
+                        ? "bg-white text-purple-700 shadow-lg scale-105" 
+                        : "text-white/80 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {range}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px] flex items-center justify-center">
-              <iframe
-                width="100%"
-                height="800"
-                src="https://lookerstudio.google.com/embed/reporting/bfcb676b-6eb7-490a-9eca-822323f0440d/page/p_8tj1qygatd"
-                frameBorder="0"
-                style={{ border: 0 }}
-                allowFullScreen
-                sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-              />
-            </div>
+            {analyticsRange === "CUSTOM" && (
+              <div className="bg-white p-4 rounded-2xl border border-purple-100 flex flex-wrap gap-4 items-end animate-in slide-in-from-top-2 duration-300">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Start Date</label>
+                  <Input 
+                    type="date" 
+                    value={customRange.start} 
+                    onChange={(e) => setCustomRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="h-10 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-1">End Date</label>
+                  <Input 
+                    type="date" 
+                    value={customRange.end} 
+                    onChange={(e) => setCustomRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="h-10 rounded-xl"
+                  />
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => setAnalyticsRange("7D")}
+                  className="rounded-xl h-10 w-10 text-gray-400 hover:text-red-500"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            )}
+
+            {isLoadingAnalytics ? (
+              <div className="bg-white p-20 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-4">
+                <Loader2 className="animate-spin text-purple-600" size={40} />
+                <p className="font-black text-gray-400 uppercase tracking-widest text-xs">Crunching data...</p>
+              </div>
+            ) : backendAnalytics ? (
+              <div className="space-y-6">
+                {/* Metric Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none">Active Users</span>
+                    <span className="text-3xl font-black text-gray-900 line-clamp-1">{backendAnalytics.summary.rangeActiveUsers.toLocaleString()}</span>
+                    <div className="flex items-center gap-1 text-[10px] text-green-600 font-bold uppercase mt-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                      In Selected Range
+                    </div>
+                  </div>
+                  <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none">Total Clicks</span>
+                    <span className="text-3xl font-black text-gray-900">{backendAnalytics.summary.rangeTotalClicks.toLocaleString()}</span>
+                    <div className="text-[10px] text-purple-600 font-bold uppercase mt-1">Interactions</div>
+                  </div>
+                  <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none">Engagement</span>
+                    <span className="text-3xl font-black text-gray-900">{backendAnalytics.summary.avgInteractionRate.toFixed(1)}%</span>
+                    <div className="text-[10px] text-orange-600 font-bold uppercase mt-1">Interaction Rate</div>
+                  </div>
+                  <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none">Total Views</span>
+                    <span className="text-3xl font-black text-gray-900">{backendAnalytics.summary.totalViews.toLocaleString()}</span>
+                    <div className="text-[10px] text-blue-600 font-bold uppercase mt-1">Lifetime Value</div>
+                  </div>
+                </div>
+
+                {/* Trend Charts */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center justify-between">
+                      Traffic Overview
+                      <Users size={14} className="text-purple-500" />
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={backendAnalytics.dailyData}>
+                          <defs>
+                            <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#9333ea" stopOpacity={0.1}/>
+                              <stop offset="95%" stopColor="#9333ea" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                          <XAxis 
+                            dataKey="date" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                            tickFormatter={(str) => {
+                              const d = new Date(str);
+                              return d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
+                            }}
+                          />
+                          <YAxis hide />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                            labelStyle={{ fontWeight: 'black', textTransform: 'uppercase', fontSize: '10px', marginBottom: '4px' }}
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="activeUsers" 
+                            stroke="#9333ea" 
+                            strokeWidth={3}
+                            fillOpacity={1} 
+                            fill="url(#colorUsers)" 
+                            name="Active Users"
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center justify-between">
+                      Click Activity
+                      <MousePointer2 size={14} className="text-orange-500" />
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={backendAnalytics.dailyData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                          <XAxis 
+                            dataKey="date" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                            tickFormatter={(str) => {
+                              const d = new Date(str);
+                              return d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
+                            }}
+                          />
+                          <YAxis hide />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                            labelStyle={{ fontWeight: 'black', textTransform: 'uppercase', fontSize: '10px', marginBottom: '4px' }}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="totalClicks" 
+                            stroke="#f97316" 
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: '#f97316', strokeWidth: 0 }}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
+                            name="Total Clicks"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Engagement Section */}
+                <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm overflow-hidden relative group">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <BarChart3 size={120} />
+                  </div>
+                  <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                    <div className="flex-1 text-center md:text-left">
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-2 uppercase">Engagement Highlights</h3>
+                      <p className="text-gray-500 font-medium italic">Showing the most active products and user behaviors for the selected period.</p>
+                    </div>
+                    <div className="flex gap-4">
+                       <div className="bg-purple-50 p-6 rounded-3xl border border-purple-100 text-center min-w-[140px]">
+                          <span className="block text-3xl font-black text-purple-700">{backendAnalytics.summary.totalReaders.toLocaleString()}</span>
+                          <span className="text-[10px] font-black uppercase text-purple-400">Total Readers</span>
+                       </div>
+                       <div className="bg-orange-50 p-6 rounded-3xl border border-orange-100 text-center min-w-[140px]">
+                          <span className="block text-3xl font-black text-orange-700">{backendAnalytics.summary.totalShares.toLocaleString()}</span>
+                          <span className="text-[10px] font-black uppercase text-orange-400">Total Shares</span>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white p-20 rounded-3xl border border-gray-100 text-center">
+                 <p className="font-bold text-gray-400">No data found for this range.</p>
+              </div>
+            )}
           </div>
         ) : activeTab === 'ideas' ? (
           <div className="space-y-6 animate-in fade-in duration-300">

@@ -225,3 +225,38 @@ export const getDailyStats = async (days: number = 30) => {
         return [];
     }
 };
+
+import { supabase } from "@/integrations/supabase/client";
+
+export interface AnalyticsResponse {
+    success: boolean;
+    summary: {
+        totalViews: number;
+        totalClicks: number;
+        totalReaders: number;
+        totalShares: number;
+        totalDownloads: number;
+        rangeActiveUsers: number;
+        rangeTotalClicks: number;
+        avgInteractionRate: number;
+    };
+    dailyData: any[];
+}
+
+export const fetchBackendAnalytics = async (startDate?: string, endDate?: string): Promise<AnalyticsResponse | null> => {
+    try {
+        const { data, error } = await supabase.functions.invoke('get-analytics', {
+            method: 'GET',
+            queryParams: {
+                ...(startDate && { startDate }),
+                ...(endDate && { endDate }),
+            }
+        });
+
+        if (error) throw error;
+        return data as AnalyticsResponse;
+    } catch (error) {
+        console.error("Error fetching backend analytics:", error);
+        return null;
+    }
+};
