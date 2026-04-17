@@ -2078,10 +2078,10 @@ const Admin = () => {
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <Users className="text-green-500" size={24} />
                     <span className="text-3xl font-bold text-gray-900">
-                      {backendAnalytics ? backendAnalytics.summary.rangeActiveUsers : (stats?.readers || 0)}
+                      {backendAnalytics ? backendAnalytics.summary.totalReaders.toLocaleString() : (stats?.readers || 0).toLocaleString()}
                     </span>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                      {analyticsRange === 'All Time' ? 'Unique Readers' : 'Range Active Users'}
+                      {analyticsRange === 'All Time' ? 'Unique Readers' : 'Range Readers'}
                     </span>
                   </div>
                   <div className="col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -2131,8 +2131,8 @@ const Admin = () => {
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <BarChart3 className="text-blue-500" size={24} />
                     <span className="text-3xl font-bold text-gray-900">
-                      {backendAnalytics && analyticsRange !== 'All Time' 
-                        ? (backendAnalytics.summary.rangeTotalClicks + backendAnalytics.summary.rangeActiveUsers).toLocaleString() 
+                      {backendAnalytics 
+                        ? backendAnalytics.summary.totalViews.toLocaleString() 
                         : (stats?.views || 0).toLocaleString()}
                     </span>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
@@ -2143,8 +2143,8 @@ const Admin = () => {
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <MousePointer2 className="text-orange-500" size={24} />
                     <span className="text-3xl font-bold text-gray-900">
-                      {backendAnalytics && analyticsRange !== 'All Time' 
-                        ? backendAnalytics.summary.rangeTotalClicks.toLocaleString() 
+                      {backendAnalytics 
+                        ? backendAnalytics.summary.totalClicks.toLocaleString() 
                         : (stats?.clicks || 0).toLocaleString()}
                     </span>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
@@ -2168,8 +2168,12 @@ const Admin = () => {
                   </div>
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <Share2 className="text-pink-500" size={24} />
-                    <span className="text-3xl font-bold text-gray-900">{stats?.shares || 0}</span>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Shares</span>
+                    <span className="text-3xl font-bold text-gray-900">
+                      {backendAnalytics ? backendAnalytics.summary.totalShares.toLocaleString() : (stats?.shares || 0).toLocaleString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                      {analyticsRange === 'All Time' ? 'Shares' : `${analyticsRange} Shares`}
+                    </span>
                   </div>
                 </div>
               </div>
