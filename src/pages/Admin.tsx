@@ -227,7 +227,7 @@ const Admin = () => {
     start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
-
+  const [customDateTrigger, setCustomDateTrigger] = useState(0);
 
   // Catalog Settings state
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings>(DEFAULT_SETTINGS);
@@ -463,7 +463,7 @@ const Admin = () => {
     };
 
     loadAnalytics();
-  }, [activeTab, analyticsRange, customRange]);
+  }, [activeTab, analyticsRange, customDateTrigger]);
 
   // Auto-sync trigger
   useEffect(() => {
@@ -1468,12 +1468,24 @@ const Admin = () => {
                   />
                 </div>
                 <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => setAnalyticsRange("7D")}
-                  className="rounded-xl h-10 w-10 text-gray-400 hover:text-red-500"
+                  onClick={() => setCustomDateTrigger(prev => prev + 1)}
+                  className="rounded-xl h-10 bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  <Trash2 size={16} />
+                  <Search size={16} className="mr-2" /> Filter
+                </Button>
+                <Button 
+                  variant="outline" 
+                   
+                  onClick={() => {
+                    setCustomRange({
+                      start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                      end: new Date().toISOString().split('T')[0]
+                    });
+                    setAnalyticsRange("7D");
+                  }}
+                  className="rounded-xl h-10 text-gray-500 hover:text-red-500"
+                >
+                  Reset Filter
                 </Button>
               </div>
             )}
@@ -1482,6 +1494,12 @@ const Admin = () => {
               <div className="bg-white p-20 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-4">
                 <Loader2 className="animate-spin text-purple-600" size={40} />
                 <p className="font-black text-gray-400 uppercase tracking-widest text-xs">Crunching data...</p>
+              </div>
+            ) : backendAnalytics && backendAnalytics.dailyData.length === 0 ? (
+              <div className="bg-white p-20 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-4">
+                <span className="text-4xl">📭</span>
+                <p className="font-bold text-gray-500 text-lg">No data available for selected range</p>
+                <p className="text-sm text-gray-400">Try selecting a different date range or fetching all time stats.</p>
               </div>
             ) : backendAnalytics ? (
               <div className="space-y-6">

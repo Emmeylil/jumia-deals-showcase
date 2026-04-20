@@ -117,18 +117,23 @@ serve(async (req) => {
     // Calculate totals for the range
     const rangeTotals = dailyData.reduce((acc, current) => ({
       activeUsers: acc.activeUsers + (current.activeUsers || 0),
-      totalClicks: acc.totalClicks + (current.totalClicks || 0),
-    }), { activeUsers: 0, totalClicks: 0 });
+      totalClicks: acc.totalClicks + (current.totalClicks || current.clicks || 0),
+      totalViews: acc.totalViews + (current.totalViews || current.views || 0),
+      totalShares: acc.totalShares + (current.totalShares || current.shares || 0),
+      totalDownloads: acc.totalDownloads + (current.totalDownloads || current.downloads || 0),
+    }), { activeUsers: 0, totalClicks: 0, totalViews: 0, totalShares: 0, totalDownloads: 0 });
+
+    const isFiltered = !!startDate || !!endDate;
 
     return new Response(
       JSON.stringify({
         success: true,
         summary: {
-          totalViews: generalStats.views || 0,
-          totalClicks: generalStats.clicks || 0,
-          totalReaders: generalStats.readers || 0,
-          totalShares: generalStats.shares || 0,
-          totalDownloads: generalStats.downloads || 0,
+          totalViews: isFiltered ? rangeTotals.totalViews : (generalStats.views || rangeTotals.totalViews || 0),
+          totalClicks: isFiltered ? rangeTotals.totalClicks : (generalStats.clicks || rangeTotals.totalClicks || 0),
+          totalReaders: isFiltered ? rangeTotals.activeUsers : (generalStats.readers || rangeTotals.activeUsers || 0),
+          totalShares: isFiltered ? rangeTotals.totalShares : (generalStats.shares || rangeTotals.totalShares || 0),
+          totalDownloads: isFiltered ? rangeTotals.totalDownloads : (generalStats.downloads || rangeTotals.totalDownloads || 0),
           rangeActiveUsers: rangeTotals.activeUsers,
           rangeTotalClicks: rangeTotals.totalClicks,
           avgInteractionRate: rangeTotals.activeUsers > 0 
