@@ -58,15 +58,19 @@ exports.getAnalytics = (0, https_1.onRequest)({ cors: true }, async (req, res) =
         const rangeTotals = dailyData.reduce((acc, current) => ({
             activeUsers: acc.activeUsers + (current.activeUsers || 0),
             totalClicks: acc.totalClicks + (current.totalClicks || 0),
-        }), { activeUsers: 0, totalClicks: 0 });
+            totalViews: acc.totalViews + (current.totalViews || 0),
+            totalShares: acc.totalShares + (current.totalShares || 0),
+            totalDownloads: acc.totalDownloads + (current.totalDownloads || 0),
+        }), { activeUsers: 0, totalClicks: 0, totalViews: 0, totalShares: 0, totalDownloads: 0 });
+        const isFiltered = !!(startDate || endDate);
         res.status(200).json({
             success: true,
             summary: {
-                totalViews: generalStats.views || 0,
-                totalClicks: generalStats.clicks || 0,
-                totalReaders: generalStats.readers || 0,
-                totalShares: generalStats.shares || 0,
-                totalDownloads: generalStats.downloads || 0,
+                totalViews: isFiltered ? rangeTotals.totalViews : (generalStats.views || 0),
+                totalClicks: isFiltered ? rangeTotals.totalClicks : (generalStats.clicks || 0),
+                totalReaders: isFiltered ? rangeTotals.activeUsers : (generalStats.readers || 0),
+                totalShares: isFiltered ? rangeTotals.totalShares : (generalStats.shares || 0),
+                totalDownloads: isFiltered ? rangeTotals.totalDownloads : (generalStats.downloads || 0),
                 rangeActiveUsers: rangeTotals.activeUsers,
                 rangeTotalClicks: rangeTotals.totalClicks,
                 avgInteractionRate: rangeTotals.activeUsers > 0
