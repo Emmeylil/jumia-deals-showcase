@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc, query, orderBy, limit, getDocs, where } from "firebase/firestore";
 import { Product, formatPrice } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -216,6 +216,7 @@ const Admin = () => {
   const [dailyStats, setDailyStats] = useState<any[]>([]);
   const [activeReaders, setActiveReaders] = useState(0);
   const [productClicks, setProductClicks] = useState<Array<{ id: string, clicks: number, product?: Product }>>([]);
+  const [clicksDateRange, setClicksDateRange] = useState<string>("all");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
@@ -331,15 +332,8 @@ const Admin = () => {
       const data = await getStats();
       setStats(data);
 
-      // Fetch product leaderboard
-      const clicksRef = collection(db, "product_clicks");
-      const q = query(clicksRef, orderBy("clicks", "desc"), limit(5));
-      const snapshot = await getDocs(q);
-      const clicksData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        clicks: doc.data().clicks
-      }));
-      setProductClicks(clicksData);
+      // Fetch product leaderboard is now handled by fetchProductLeaderboard
+
 
       // Fetch daily active user stats
       const dailyData = await getDailyStats(14); // Last 14 days
@@ -465,7 +459,50 @@ const Admin = () => {
     loadAnalytics();
   }, [activeTab, analyticsRange, customDateTrigger]);
 
-  // Auto-sync trigger
+  const fetchProductLeaderboard = async (range: string) => {
+    try {
+      if (range === "all") {
+        const clicksRef = collection(db, "product_clicks");
+        const q = query(clicksRef, orderBy("clicks", "desc"), limit(5));
+        const snapshot = await getDocs(q);
+        const clicksData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          clicks: doc.data().clicks
+        }));
+        setProductClicks(clicksData);
+      } else {
+        const days = parseInt(range);
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        const startDateStr = startDate.toISOString().split('T')[0];
+
+        const dailyClicksRef = collection(db, "product_daily_clicks");
+        const q = query(dailyClicksRef, where("date", ">=", startDateStr));
+        const snapshot = await getDocs(q);
+
+        const aggregated: Record<string, number> = {};
+        snapshot.docs.forEach(doc => {
+          const data = doc.data();
+          aggregated[data.productId] = (aggregated[data.productId] || 0) + data.clicks;
+        });
+
+        const sorted = Object.entries(aggregated)
+          .map(([id, clicks]) => ({ id, clicks }))
+          .sort((a, b) => b.clicks - a.clicks)
+          .slice(0, 5);
+
+        setProductClicks(sorted);
+      }
+    } catch (e) {
+      console.error("Error fetching product leaderboard:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchProductLeaderboard(clicksDateRange);
+  }, [clicksDateRange]);
+
+  // Auto-sync trigger ONLY in Admin
   useEffect(() => {
     if (loading || !catalogSettings?.autoSyncInterval) return;
 
@@ -809,13 +846,33 @@ const Admin = () => {
   const handleDownloadClicksList = async () => {
     try {
       toast.info("Preparing download...");
-      const clicksRef = collection(db, "product_clicks");
-      // Fetch all clicks, not just the top 5
-      const snapshot = await getDocs(clicksRef);
-      const allClicksData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        clicks: doc.data().clicks
-      }));
+      let allClicksData: Array<{ id: string, clicks: number }> = [];
+
+      if (clicksDateRange === "all") {
+        const clicksRef = collection(db, "product_clicks");
+        const snapshot = await getDocs(clicksRef);
+        allClicksData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          clicks: doc.data().clicks
+        }));
+      } else {
+        const days = parseInt(clicksDateRange);
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        const startDateStr = startDate.toISOString().split('T')[0];
+
+        const dailyClicksRef = collection(db, "product_daily_clicks");
+        const q = query(dailyClicksRef, where("date", ">=", startDateStr));
+        const snapshot = await getDocs(q);
+
+        const aggregated: Record<string, number> = {};
+        snapshot.docs.forEach(doc => {
+          const data = doc.data();
+          aggregated[data.productId] = (aggregated[data.productId] || 0) + data.clicks;
+        });
+
+        allClicksData = Object.entries(aggregated).map(([id, clicks]) => ({ id, clicks }));
+      }
 
       if (allClicksData.length === 0) {
         toast.error("No click data available to download");
@@ -2202,10 +2259,21 @@ const Admin = () => {
               {/* Product Leaderboard */}
               {productClicks.length > 0 && (
                 <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
                     <h3 className="text-lg font-bold flex items-center gap-2">
                       <Trophy className="text-yellow-500" size={20} /> Most Popular Products
                     </h3>
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                      <select
+                        className="h-9 border border-gray-200 rounded-lg text-xs px-2 bg-white min-w-[120px] focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        value={clicksDateRange}
+                        onChange={(e) => setClicksDateRange(e.target.value)}
+                      >
+                        <option value="all">All Time</option>
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                      </select>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -2214,6 +2282,7 @@ const Admin = () => {
                     >
                       <Download size={14} className="mr-2" /> Download List
                     </Button>
+                    </div>
                   </div>
                   <div className="space-y-3">
                     {productClicks.map((item, index) => {

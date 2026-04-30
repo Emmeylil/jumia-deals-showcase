@@ -81,6 +81,8 @@ export const getStats = async (): Promise<StatsData | null> => {
 };
 export const incrementProductClick = async (productId: string | number) => {
     const id = productId.toString();
+    
+    // 1. Maintain existing cumulative data
     const productRef = doc(db, "product_clicks", id);
     const snapshot = await getDoc(productRef);
 
@@ -89,6 +91,21 @@ export const incrementProductClick = async (productId: string | number) => {
     } else {
         await updateDoc(productRef, { clicks: increment(1) });
     }
+
+    // 2. Append new daily data
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const dailyRef = doc(db, "product_daily_clicks", `${id}_${today}`);
+        const dailySnap = await getDoc(dailyRef);
+        if (!dailySnap.exists()) {
+            await setDoc(dailyRef, { productId: id, date: today, clicks: 1 });
+        } else {
+            await updateDoc(dailyRef, { clicks: increment(1) });
+        }
+    } catch (error) {
+        console.error("Error logging daily product click:", error);
+    }
+
     await logDailyActivity('click');
 };
 
