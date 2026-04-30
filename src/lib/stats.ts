@@ -1,5 +1,6 @@
 import { db } from "./firebase";
 import { doc, updateDoc, increment, getDoc, setDoc, collection, onSnapshot, query, where, serverTimestamp, Timestamp, orderBy, limit, getDocs } from "firebase/firestore";
+import posthog from "posthog-js";
 
 
 const STATS_DOC_ID = "general";
@@ -41,6 +42,7 @@ export const incrementClick = async () => {
     const statsRef = await ensureStatsDoc();
     await updateDoc(statsRef, { clicks: increment(1) });
     await logDailyActivity('click');
+    posthog.capture('catalog_click');
 };
 
 export const incrementReader = async () => {
@@ -63,12 +65,14 @@ export const incrementShare = async () => {
     const statsRef = await ensureStatsDoc();
     await updateDoc(statsRef, { shares: increment(1) });
     await logDailyActivity('share');
+    posthog.capture('catalog_shared');
 };
 
 export const incrementDownload = async () => {
     const statsRef = await ensureStatsDoc();
     await updateDoc(statsRef, { downloads: increment(1) });
     await logDailyActivity('download');
+    posthog.capture('catalog_downloaded');
 };
 
 export const getStats = async (): Promise<StatsData | null> => {
@@ -107,6 +111,7 @@ export const incrementProductClick = async (productId: string | number) => {
     }
 
     await logDailyActivity('click');
+    posthog.capture('product_click', { productId: id });
 };
 
 export const updatePresence = async (sessionId: string) => {
@@ -147,6 +152,8 @@ export const logSearchKeyword = async (keyword: string) => {
             lastSearched: serverTimestamp()
         });
     }
+    
+    posthog.capture('search', { keyword: cleanKeyword });
 };
 
 export const logCategorySearch = async (category: string) => {
@@ -166,6 +173,8 @@ export const logCategorySearch = async (category: string) => {
             lastSearched: serverTimestamp()
         });
     }
+
+    posthog.capture('category_search', { category });
 };
 
 export const logSearchToProduct = async (keyword: string, productId: string | number, category?: string) => {
@@ -182,6 +191,8 @@ export const logSearchToProduct = async (keyword: string, productId: string | nu
         timestamp: serverTimestamp(),
         count: increment(1)
     }, { merge: true });
+
+    posthog.capture('search_to_product_click', { keyword: cleanKeyword, productId: pid, category: category || "unknown" });
 };
 
 export const logDailyActivity = async (type: 'visit' | 'click' | 'view' | 'share' | 'download' = 'visit') => {
