@@ -459,6 +459,42 @@ const Admin = () => {
     loadAnalytics();
   }, [activeTab, analyticsRange, customDateTrigger]);
 
+  // Derived filtered data and range stats for accurate display
+  const filteredDailyData = useMemo(() => {
+    const rawData = backendAnalytics?.dailyData || dailyStats || [];
+    if (analyticsRange === 'All Time') return rawData;
+    
+    let start: string;
+    let end: string | undefined;
+    
+    if (analyticsRange === 'CUSTOM') {
+      start = customRange.start;
+      end = customRange.end;
+    } else {
+      const days = analyticsRange === '7D' ? 7 : 30;
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      start = d.toISOString().split('T')[0];
+    }
+    
+    return rawData.filter(d => {
+      if (end) return d.date >= start && d.date <= end;
+      return d.date >= start;
+    });
+  }, [backendAnalytics, dailyStats, analyticsRange, customRange]);
+
+  const rangeStats = useMemo(() => {
+    if (!filteredDailyData.length) return null;
+    
+    return filteredDailyData.reduce((acc, curr) => ({
+      views: acc.views + (curr.totalViews || 0),
+      clicks: acc.clicks + (curr.totalClicks || 0),
+      shares: acc.shares + (curr.totalShares || 0),
+      readers: acc.readers + (curr.activeUsers || 0),
+      timeOnBook: acc.timeOnBook + (curr.timeOnBook || 0),
+    }), { views: 0, clicks: 0, shares: 0, readers: 0, timeOnBook: 0 });
+  }, [filteredDailyData]);
+
   const fetchProductLeaderboard = async (range: string) => {
     try {
       if (range === "all") {
@@ -2153,7 +2189,7 @@ const Admin = () => {
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <Users className="text-green-500" size={24} />
                     <span className="text-3xl font-bold text-gray-900">
-                      {backendAnalytics ? backendAnalytics.summary.totalReaders.toLocaleString() : (stats?.readers || 0).toLocaleString()}
+                      {rangeStats ? rangeStats.readers.toLocaleString() : (stats?.readers || 0).toLocaleString()}
                     </span>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                       {analyticsRange === 'All Time' ? 'Unique Readers' : 'Range Readers'}
@@ -2196,7 +2232,7 @@ const Admin = () => {
                       </div>
                     </div>
                     <InteractionRateGraph 
-                      data={backendAnalytics?.dailyData || dailyStats} 
+                      data={filteredDailyData} 
                       activeMetric={activeTrendMetric}
                     />
                   </div>
@@ -2206,8 +2242,8 @@ const Admin = () => {
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <BarChart3 className="text-blue-500" size={24} />
                     <span className="text-3xl font-bold text-gray-900">
-                      {backendAnalytics 
-                        ? backendAnalytics.summary.totalViews.toLocaleString() 
+                      {rangeStats 
+                        ? rangeStats.views.toLocaleString() 
                         : (stats?.views || 0).toLocaleString()}
                     </span>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
@@ -2218,8 +2254,8 @@ const Admin = () => {
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <MousePointer2 className="text-orange-500" size={24} />
                     <span className="text-3xl font-bold text-gray-900">
-                      {backendAnalytics 
-                        ? backendAnalytics.summary.totalClicks.toLocaleString() 
+                      {rangeStats 
+                        ? rangeStats.clicks.toLocaleString() 
                         : (stats?.clicks || 0).toLocaleString()}
                     </span>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
@@ -2231,9 +2267,9 @@ const Admin = () => {
                     <Clock className="text-purple-500" size={24} />
                     <span className="text-xl font-bold text-gray-900">
                       {(() => {
-                        const total = stats?.timeOnBook || 0;
-                        const readers = stats?.readers || 1;
-                        const avgSec = Math.round(total / readers);
+                        const total = rangeStats ? rangeStats.timeOnBook : (stats?.timeOnBook || 0);
+                        const readers = rangeStats ? rangeStats.readers : (stats?.readers || 1);
+                        const avgSec = Math.round(total / (readers || 1));
                         const m = Math.floor(avgSec / 60);
                         const s = avgSec % 60;
                         return m > 0 ? `${m}m ${s}s` : `${s}s`;
@@ -2244,7 +2280,7 @@ const Admin = () => {
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
                     <Share2 className="text-pink-500" size={24} />
                     <span className="text-3xl font-bold text-gray-900">
-                      {backendAnalytics ? backendAnalytics.summary.totalShares.toLocaleString() : (stats?.shares || 0).toLocaleString()}
+                      {rangeStats ? rangeStats.shares.toLocaleString() : (stats?.shares || 0).toLocaleString()}
                     </span>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                       {analyticsRange === 'All Time' ? 'Shares' : `${analyticsRange} Shares`}
@@ -2300,7 +2336,7 @@ const Admin = () => {
                               {product?.displayName || product?.name || `Product #${item.id}`}
                             </p>
                             <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">
-                              {item.clicks} Total Clicks
+                              {item.clicks} {clicksDateRange === 'all' ? 'Total Clicks' : 'Clicks in Range'}
                             </p>
                           </div>
                           <div className="text-xs font-bold text-jumia-purple bg-jumia-purple/5 px-2 py-1 rounded">
