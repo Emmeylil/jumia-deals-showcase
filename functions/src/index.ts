@@ -80,16 +80,38 @@ export const fetchJumiaSku = onRequest({ cors: true }, async (req, res) => {
     }
 
     const html = await response.text();
-    const patterns = [ /"products"\s*:\s*(\[[\s\S]*?\])\s*,\s*"head"/, /"products"\s*:\s*(\[[\s\S]*?\])\s*,\s*"filters"/ ];
+    
+    // Robust extraction: find the products array using bracket balancing
+    const startMarker = '"products":[';
+    const startIdx = html.indexOf(startMarker);
+    
+    if (startIdx !== -1) {
+      try {
+        const arrayStart = html.indexOf('[', startIdx); // Find the first [ after "products"
+        if (arrayStart === -1) throw new Error('Array start not found');
+        
+        let depth = 0;
+        let endIdx = -1;
+        
+        for (let i = arrayStart; i < html.length; i++) {
+          if (html[i] === '[') depth++;
+          else if (html[i] === ']') {
+            depth--;
+            if (depth === 0) {
+              endIdx = i + 1;
+              break;
+            }
+          }
+        }
 
-    for (const pattern of patterns) {
-      const match = html.match(pattern);
-      if (match) {
-        try {
-          const products = JSON.parse(match[1]);
+        if (endIdx !== -1) {
+          const jsonStr = html.substring(arrayStart, endIdx);
+          const products = JSON.parse(jsonStr);
+          
           if (products && products.length > 0) {
             const product = products.find((p: any) => p.sku === sku) || products[0];
             const price = typeof product.prices?.price === 'number' ? product.prices.price : 0;
+            
             res.json({
               success: true,
               data: {
@@ -98,15 +120,21 @@ export const fetchJumiaSku = onRequest({ cors: true }, async (req, res) => {
                 brand: product.brand || '',
                 image: product.image || '',
                 url: product.url || '',
-                prices: { price, oldPrice: product.prices?.oldPrice || Math.round(price * 1.2) }
+                prices: { 
+                  price, 
+                  oldPrice: product.prices?.oldPrice || Math.round(price * 1.2) 
+                }
               }
             });
             return;
           }
-        } catch (e) { continue; }
+        }
+      } catch (e: any) {
+        console.error('Extraction error:', e.message);
       }
     }
-    res.status(404).json({ success: false, error: 'Product not found' });
+    
+    res.status(404).json({ success: false, error: 'Product not found in Jumia data' });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

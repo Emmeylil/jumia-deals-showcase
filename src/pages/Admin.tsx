@@ -607,7 +607,18 @@ const Admin = () => {
 
     setFetchedProducts(results);
     setFetchingSku(false);
-    toast.success(`Fetched ${results.filter((r) => r.displayName).length} of ${skus.length} products`);
+    
+    const successCount = results.filter((r) => r.displayName).length;
+    const missingImagesCount = results.filter((r) => r.displayName && !r.image).length;
+    
+    if (missingImagesCount > 0) {
+      toast.warning(`Fetched ${successCount} products, but ${missingImagesCount} are missing images.`, {
+        description: "You may need to manually add images for these items.",
+        duration: 5000
+      });
+    } else {
+      toast.success(`Fetched ${successCount} of ${skus.length} products`);
+    }
   };
 
   const toggleFetchedProduct = (idx: number) => {
