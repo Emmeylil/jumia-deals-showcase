@@ -13,26 +13,30 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    --primary: 199 89% 48%;
-    /* New Jumia Blue from image */
+    /* Jumia Color Palette from image */
+    --jumia-pink: 352 100% 83%;       /* #ffa7b3 */
+    --jumia-orange: 44 100% 50%;      /* #ffba00 */
+    --jumia-orange-deep: 36 100% 50%;  /* #ff9900 */
+    --jumia-blue: 191 59% 63%;        /* #6ac1d5 */
+
+    --primary: 191 59% 63%;           /* Blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 190 50% 85%;
-    --secondary-foreground: 199 89% 48%;
+    --secondary: 352 100% 83%;        /* Pink */
+    --secondary-foreground: 191 59% 63%;
 
-    --muted: 210 20% 92%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 191 20% 96%;
+    --muted-foreground: 191 40% 45%;
 
-    --accent: 45 100% 50%;
-    /* Jumia Yellow/Gold */
-    --accent-foreground: 0 0% 15%;
+    --accent: 44 100% 50%;           /* Orange */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 199 89% 48%;
+    --border: 191 30% 90%;
+    --input: 191 30% 90%;
+    --ring: 191 59% 63%;
 
     --radius: 0.75rem;
 
@@ -46,14 +50,11 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Custom Jumia tokens */
-    --jumia-blue: 199 89% 48%;
-    --jumia-blue-light: 199 80% 65%;
-    --jumia-cyan: 185 70% 90%;
-    --jumia-yellow: 45 100% 50%;
-    --jumia-bg: 190 40% 92%;
-    --jumia-card-shadow: 0 2px 8px 0 hsla(0, 0%, 0%, 0.05);
-    --jumia-purple: 270 95% 75%;
-    --jumia-teal: 190 90% 50%;
+    --jumia-blue-light: 191 80% 85%;
+    --jumia-pink-light: 352 100% 92%;
+    --jumia-bg: 191 40% 98%;
+    --jumia-card-shadow: 0 4px 12px 0 hsla(191, 59%, 30%, 0.08);
+    --jumia-card-shadow-hover: 0 12px 24px -4px hsla(191, 59%, 30%, 0.15);
   }
 
   .dark {
@@ -92,7 +93,11 @@
 
 @layer utilities {
   .gradient-header {
-    background: linear-gradient(135deg, hsl(var(--jumia-purple)) 0%, hsl(var(--jumia-purple-light)) 100%);
+    background: linear-gradient(135deg, hsl(var(--jumia-blue)) 0%, hsl(var(--jumia-pink)) 100%);
+  }
+
+  .gradient-main {
+    background: linear-gradient(135deg, hsl(var(--jumia-orange)) 0%, hsl(var(--jumia-orange-deep)) 100%);
   }
 
   .text-jumia-orange {
@@ -116,8 +121,9 @@
   }
 
   .discount-badge {
-    background-color: hsl(var(--jumia-orange));
+    background: linear-gradient(135deg, hsl(var(--jumia-orange-deep)) 0%, hsl(var(--jumia-orange)) 100%);
     color: hsl(0, 0%, 100%);
+    box-shadow: 0 2px 4px rgba(255, 153, 0, 0.3);
   }
 
   .animate-beat {

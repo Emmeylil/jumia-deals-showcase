@@ -55,10 +55,10 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
   };
 
   const content = (
-    <div className={`relative bg-white rounded-[1.5rem] shadow-sm flex flex-col items-center p-2 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group ${highlighted ? 'border-2 border-jumia-purple ring-4 ring-jumia-purple/20 animate-beat' : ''}`}>
+    <div className={`relative bg-white rounded-[1.5rem] shadow-sm flex flex-col items-center p-2 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group ${highlighted ? 'border-2 border-jumia-blue ring-4 ring-jumia-blue/20 animate-beat' : ''}`}>
       {/* Discount Badge */}
       {discount > 0 && (
-        <div className="absolute top-2 right-2 z-10 bg-[#FF9900] text-white text-[9px] font-black w-6 h-6 flex items-center justify-center rounded-full shadow-sm">
+        <div className="absolute top-2 right-2 z-10 bg-jumia-orange-deep text-white text-[9px] font-black w-6 h-6 flex items-center justify-center rounded-full shadow-sm">
           -{discount}%
         </div>
       )}
@@ -66,7 +66,7 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
       {/* Wishlist Button */}
       <button
         onClick={toggleWishlist}
-        className={`wishlist-btn absolute top-2 left-2 z-10 w-6 h-6 flex items-center justify-center rounded-full transition-all shadow-sm ${isWishlisted ? 'bg-jumia-purple text-white' : 'bg-white/80 text-gray-400 hover:text-jumia-purple'}`}
+        className={`wishlist-btn absolute top-2 left-2 z-10 w-6 h-6 flex items-center justify-center rounded-full transition-all shadow-sm ${isWishlisted ? 'bg-jumia-blue text-white' : 'bg-white/80 text-gray-400 hover:text-jumia-blue'}`}
       >
         <Heart size={12} fill={isWishlisted ? "currentColor" : "none"} />
       </button>
@@ -102,7 +102,7 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
 
       {/* Price Pill */}
       <div className="w-full flex flex-col items-center mt-auto gap-0.5 shrink-0 pb-1">
-        <div className="bg-[#FF9900] text-black w-full max-w-[92%] py-1 rounded-xl flex items-center justify-center shadow-sm">
+        <div className="bg-jumia-orange-deep text-black w-full max-w-[92%] py-1 rounded-xl flex items-center justify-center shadow-sm">
           <span className="text-[11px] md:text-[13px] font-black tracking-tight">
             {formatPrice(product.price)}
           </span>

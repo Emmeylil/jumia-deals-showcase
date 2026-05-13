@@ -21,6 +21,7 @@ import { AlertCircle, Loader2, Share2, Download, Search, X, History, Flame, Tras
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { addUTMParameters } from "@/lib/utils";
+import AnniversaryEffects from "@/components/AnniversaryEffects";
 
 interface PageProps {
   children: React.ReactNode;
@@ -556,7 +557,7 @@ const Index = () => {
           </div>
           <Button
             onClick={() => window.location.reload()}
-            className="w-full bg-jumia-purple text-white rounded-xl py-6 font-bold shadow-lg shadow-jumia-purple/20 transition-all active:scale-95"
+            className="w-full bg-jumia-blue text-white rounded-xl py-6 font-bold shadow-lg shadow-jumia-blue/20 transition-all active:scale-95"
           >
             Retry Connection
           </Button>
@@ -570,7 +571,7 @@ const Index = () => {
       <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
         <div className="relative mb-6">
           <div className="w-20 h-20 border-4 border-gray-100 rounded-full" />
-          <div className="w-20 h-20 border-4 border-jumia-purple rounded-full border-t-transparent animate-spin absolute inset-0" />
+          <div className="w-20 h-20 border-4 border-jumia-blue rounded-full border-t-transparent animate-spin absolute inset-0" />
           <img src="https://ng.jumia.is/cms/jumia_logo_small.png" alt="Jumia" className="w-10 h-10 absolute inset-0 m-auto animate-pulse" />
         </div>
         <h2 className="text-lg font-black text-gray-900 uppercase tracking-widest animate-pulse">Loading Catalog</h2>
@@ -581,7 +582,8 @@ const Index = () => {
 
 
   return (
-    <div className="h-[100dvh] font-outfit overflow-hidden flex flex-col items-center justify-between py-2 md:py-4 px-2 md:px-4 relative bg-gradient-to-br from-jumia-purple to-jumia-teal fixed inset-0">
+    <div className="h-[100dvh] font-outfit overflow-hidden flex flex-col items-center justify-between py-2 md:py-4 px-2 md:px-4 relative gradient-main fixed inset-0">
+      <AnniversaryEffects />
 
       {/* Control Bar */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
@@ -602,8 +604,8 @@ const Index = () => {
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
           <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300 max-w-xs w-full">
             <div className="relative">
-              <Loader2 className="w-16 h-16 animate-spin text-jumia-purple" />
-              <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-jumia-purple">
+              <Loader2 className="w-16 h-16 animate-spin text-jumia-blue" />
+              <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-jumia-blue">
                 {Math.round((captureProgress.current / captureProgress.total) * 100)}%
               </div>
             </div>
@@ -617,7 +619,7 @@ const Index = () => {
             </div>
             <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
               <div
-                className="h-full bg-jumia-purple transition-all duration-300 ease-out"
+                className="h-full bg-jumia-blue transition-all duration-300 ease-out"
                 style={{ width: `${(captureProgress.current / captureProgress.total) * 100}%` }}
               />
             </div>
@@ -648,7 +650,7 @@ const Index = () => {
         <div className="relative group">
           <button
             onClick={() => performSearch()}
-            className="absolute inset-y-0 left-3 flex items-center z-10 text-gray-400 group-focus-within:text-jumia-purple transition-all hover:scale-110 active:scale-95"
+            className="absolute inset-y-0 left-3 flex items-center z-10 text-gray-400 group-focus-within:text-jumia-blue transition-all hover:scale-110 active:scale-95"
             title="Search"
           >
             <Search size={18} />
@@ -659,7 +661,7 @@ const Index = () => {
             aria-label="Search catalog"
             type="text"
             placeholder="Search products, brands, or deals..."
-            className="pl-10 pr-10 py-7 bg-white/20 backdrop-blur-md border-2 border-white/40 shadow-2xl rounded-2xl focus:ring-4 focus:ring-jumia-purple/20 focus:border-jumia-purple transition-all text-gray-900 placeholder:text-gray-400 font-medium"
+            className="pl-10 pr-10 py-7 bg-white/20 backdrop-blur-md border-2 border-white/40 shadow-2xl rounded-2xl focus:ring-4 focus:ring-jumia-blue/20 focus:border-jumia-blue transition-all text-gray-900 placeholder:text-gray-400 font-medium"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
@@ -714,7 +716,7 @@ const Index = () => {
                           setSearchQuery(s);
                           setTimeout(() => performSearch(s), 10);
                         }}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100/50 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-transparent hover:border-jumia-purple/20"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100/50 hover:bg-jumia-blue/10 active:scale-95 transition-all rounded-full text-xs font-medium text-gray-700 border border-transparent hover:border-jumia-blue/20"
                       >
                         <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-200">
                           {mathingProduct?.image ? (
@@ -760,7 +762,7 @@ const Index = () => {
                       <button
                         key={`cat-${i}`}
                         onClick={() => handleCategorySelect(cat)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-jumia-purple/10 active:scale-95 transition-all rounded-full text-xs font-bold text-gray-700 border border-gray-100 hover:border-jumia-purple/20 shadow-sm"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-jumia-blue/10 active:scale-95 transition-all rounded-full text-xs font-bold text-gray-700 border border-gray-100 hover:border-jumia-blue/20 shadow-sm"
                       >
                         {sampleProduct ? (
                           <img src={sampleProduct.image} alt="" className="w-5 h-5 rounded-full object-cover" />
@@ -1085,9 +1087,9 @@ const Index = () => {
                       </div>
                     </div>
                     {/* Left Sidebar Header */}
-                    <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
+                    <div className="w-10 md:w-14 bg-jumia-pink border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                       <div className="flex-1 flex items-center justify-center">
-                        <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                        <h2 className="text-xl md:text-3xl font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase opacity-90">
                           Partners
                         </h2>
                       </div>
@@ -1099,7 +1101,7 @@ const Index = () => {
                 ) : (
                   /* NORMAL LEFT PAGE */
                   <div className="w-full h-full flex flex-row">
-                    <div className="w-10 md:w-14 bg-[#009FE3] flex flex-col items-center py-3 md:py-6 relative shadow-lg z-10">
+                    <div className="w-10 md:w-14 bg-jumia-blue flex flex-col items-center py-3 md:py-6 relative shadow-lg z-10">
                       <div className="bg-black/20 p-1 md:p-1.5 rounded-full mb-3 md:mb-6">
                         <svg className="w-4 h-4 md:w-6 md:h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
                       </div>
@@ -1155,14 +1157,14 @@ const Index = () => {
                       </div>
                     )}
                   </div>
-                  <div className="w-10 md:w-14 bg-[#E6E0F8] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
+                  <div className="w-10 md:w-14 bg-jumia-pink border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                     <div className="flex-1 flex items-center justify-center">
-                      <h2 className="text-xl md:text-3xl font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                      <h2 className="text-xl md:text-3xl font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase opacity-90">
                         Top Picks
                       </h2>
                     </div>
-                    <div className="bg-purple-200 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
-                      <svg className="w-4 h-4 md:w-6 md:h-6 text-purple-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    <div className="bg-white/20 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
+                      <svg className="w-4 h-4 md:w-6 md:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </div>
                   </div>
                 </div>
@@ -1482,7 +1484,7 @@ const Index = () => {
 
                 )}
                 {/* Simulated Sidebar */}
-                <div className="w-10 bg-[#009FE3] flex items-center justify-center">
+                <div className="w-10 bg-jumia-blue flex items-center justify-center">
                   <h2 className="text-sm font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase">
                     Best Deals
                   </h2>
@@ -1512,8 +1514,8 @@ const Index = () => {
 
                 </div>
                 {/* Simulated Sidebar */}
-                <div className="w-10 bg-[#E6E0F8] border-l border-white flex items-center justify-center">
-                  <h2 className="text-sm font-black text-[#1F1F1F] tracking-wide rotate-90 whitespace-nowrap uppercase opacity-80">
+                <div className="w-10 bg-jumia-pink border-l border-white flex items-center justify-center">
+                  <h2 className="text-sm font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase">
                     Top Picks
                   </h2>
                 </div>
@@ -1542,7 +1544,7 @@ const Index = () => {
             ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
           }}
         >
-          <div className="bg-jumia-purple/10 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="bg-jumia-blue/10 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
             {/* Icon removed temporarily */}
           </div>
           <h2 className="text-xl font-black text-gray-900 mb-2">Have a Suggestion?</h2>

@@ -52,10 +52,12 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         jumia: {
+          pink: "hsl(var(--jumia-pink))",
+          orange: "hsl(var(--jumia-orange))",
+          "orange-deep": "hsl(var(--jumia-orange-deep))",
           blue: "hsl(var(--jumia-blue))",
           "blue-light": "hsl(var(--jumia-blue-light))",
           cyan: "hsl(var(--jumia-cyan))",
-          yellow: "hsl(var(--jumia-yellow))",
           bg: "hsl(var(--jumia-bg))",
           purple: "hsl(var(--jumia-purple))",
           teal: "hsl(var(--jumia-teal))",
