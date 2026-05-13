@@ -711,6 +711,7 @@ const Admin = () => {
         else if (norm === 'brandname' || norm === 'brand') colMap.brand = idx;
         else if (norm === 'oldprice') colMap.oldPrice = idx;
         else if (norm === 'newprice' || norm === 'price') colMap.price = idx;
+        else if (norm === 'images' || norm === 'image' || norm === 'imageurl') colMap.image = idx;
       });
 
       // Default mapping if headers missing
@@ -720,7 +721,8 @@ const Admin = () => {
         name: colMap.name ?? 2,
         brand: colMap.brand ?? 3,
         oldPrice: colMap.oldPrice ?? 4,
-        price: colMap.price ?? 5
+        price: colMap.price ?? 5,
+        image: colMap.image ?? 6
       };
 
       const rows = lines.slice(1).map(parseCsvLine).filter(row => row.length > 2 && row[mapping.sku]);
@@ -751,6 +753,7 @@ const Admin = () => {
         const brandFromSheet = (row[mapping.brand] || "").trim();
         const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
         const sheetPrice = cleanPrice(row[mapping.price]);
+        const sheetImage = (row[mapping.image] || "").trim();
 
         // Intelligent Categorization: Trust the sheet if provided natively!
         // If Sheet Column A has text, we use it exactly as provided.
@@ -766,15 +769,20 @@ const Admin = () => {
           const oldPriceChangedInSheet = sheetOldPrice !== (existingProduct.lastSyncedOldPrice ?? -1);
           const brandChangedInSheet = brandFromSheet !== (existingProduct.brand ?? "");
           const categoryChangedInSheet = categoryToUse !== (existingProduct.category ?? "");
+          const imageChangedInSheet = sheetImage && sheetImage !== (existingProduct.image ?? "");
 
-          // Update if Price, Brand, OR Category changed in the sheet
-          if (priceChangedInSheet || oldPriceChangedInSheet || brandChangedInSheet || categoryChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
+          // Update if Price, Brand, Category, OR Image changed in the sheet
+          if (priceChangedInSheet || oldPriceChangedInSheet || brandChangedInSheet || categoryChangedInSheet || imageChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
             const updateData: any = {
               brand: brandFromSheet,
               category: categoryToUse, // ALWAYS use the fresh category logic
               lastSyncedPrice: sheetPrice,
               lastSyncedOldPrice: sheetOldPrice
             };
+
+            if (imageChangedInSheet) {
+              updateData.image = sheetImage;
+            }
 
             // Prepend brand to EXISTING name (not sheet name) if it's not already there
             const nameToUse = existingProduct.name || nameFromSheet;
@@ -814,7 +822,7 @@ const Admin = () => {
             brand: brandFromSheet,
             category: categoryToUse, // Use mapped or auto-categorized value
             displayName,
-            image: jumiaData?.image || "https://premium.jumia.com.ng/assets/images/jumia-logo.png",
+            image: sheetImage || jumiaData?.image || "https://premium.jumia.com.ng/assets/images/jumia-logo.png",
             url: jumiaData?.url ? (jumiaData.url.startsWith("http") ? jumiaData.url : `https://www.jumia.com.ng${jumiaData.url.startsWith("/") ? "" : "/"}${jumiaData.url}`) : `https://www.jumia.com.ng/catalog/?q=${sku}`,
             price: sheetPrice,
             oldPrice: sheetOldPrice || Math.round(sheetPrice * 1.2),
