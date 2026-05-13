@@ -97,7 +97,8 @@
   }
 
   .gradient-main {
-    background: linear-gradient(135deg, hsl(var(--jumia-orange)) 0%, hsl(var(--jumia-orange-deep)) 100%);
+    background: radial-gradient(circle at top right, #ffba00 0%, #ff9900 100%);
+    background-attachment: fixed;
   }
 
   .text-jumia-orange {

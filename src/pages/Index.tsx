@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import confetti from 'canvas-confetti';
 
 
 import ProductCard from "@/components/ProductCard";
@@ -940,6 +941,14 @@ const Index = () => {
           onFlip={(e) => {
             const newPage = e.data;
             setCurrentPage(newPage);
+            
+            // Trigger celebration on flip
+            confetti({
+              particleCount: 80,
+              spread: 60,
+              origin: { y: 0.7 },
+              colors: ['#ff9900', '#ffa7b3', '#ffffff', '#6ac1d5']
+            });
           }}
         >
           {/* COVER PAGE */}
