@@ -1,7 +1,5 @@
 import React, { useRef, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import confetti from 'canvas-confetti';
 
 
@@ -11,14 +9,14 @@ import BannerCard from "@/components/BannerCard";
 import { useProducts } from "@/hooks/useProducts";
 import { Input } from "@/components/ui/input";
 import catalogBg from "@/assets/catalog-bg.jpg";
-import { incrementView, incrementReader, updateTimeOnBook, incrementShare, incrementDownload, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct, logDailyActivity, incrementClick } from "@/lib/stats";
+import { incrementView, incrementReader, updateTimeOnBook, incrementShare, updatePresence, logSearchKeyword, logCategorySearch, logSearchToProduct, logDailyActivity, incrementClick } from "@/lib/stats";
 
 import { onSnapshot, doc, updateDoc, collection, query, orderBy, limit, setDoc, serverTimestamp, getDoc, addDoc } from "firebase/firestore";
 import { db, isConfigured } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
 import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
 
-import { AlertCircle, Loader2, Share2, Download, Search, X, History, Flame, Trash2 } from "lucide-react";
+import { AlertCircle, Loader2, Share2, Search, X, History, Flame, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { addUTMParameters } from "@/lib/utils";
@@ -72,8 +70,6 @@ const Index = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [highlightedProductId, setHighlightedProductId] = React.useState<number | null>(null);
-  const [isCapturing, setIsCapturing] = React.useState(false);
-  const [captureProgress, setCaptureProgress] = React.useState({ current: 0, total: 0 });
   const [popularKeywords, setPopularKeywords] = React.useState<{ keyword: string, count: number }[]>([]);
   const [popularCategories, setPopularCategories] = React.useState<{ category: string, count: number }[]>([]);
 
@@ -320,123 +316,7 @@ const Index = () => {
     }
   };
 
-  const handleDownload = async () => {
-    if (isCapturing) return;
 
-    incrementDownload();
-    setIsCapturing(true);
-
-    const totalPagesToCapture = totalPages;
-    try {
-      setCaptureProgress({ current: 0, total: totalPagesToCapture });
-
-      // Step 1: Collect all unique external image URLs from the capture container
-      const captureContainer = document.getElementById('pdf-capture-container');
-      const imageDataCache: Record<string, string> = {};
-
-      if (captureContainer) {
-        const imgs = Array.from(captureContainer.querySelectorAll('img')) as HTMLImageElement[];
-        const uniqueUrls = [...new Set(imgs.map(img => img.src).filter(src =>
-          src && src.startsWith('http') && !src.startsWith(window.location.origin)
-        ))];
-
-        // Proxy-fetch all external images in parallel → data URLs
-        toast.info("Preparing images...", { duration: 2000 });
-        const IMAGE_PROXY_URL = 'https://imageproxy-776751698383.europe-west2.run.app';
-        
-        await Promise.all(uniqueUrls.map(async (url) => {
-          try {
-            const response = await fetch(IMAGE_PROXY_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ imageUrl: url }),
-            });
-            const data = await response.json();
-            if (data?.dataUrl) imageDataCache[url] = data.dataUrl;
-          } catch {
-            // silently skip failed images
-          }
-        }));
-
-        // Step 3: Replace img src with cached data URLs in the capture container
-        imgs.forEach(img => {
-          if (imageDataCache[img.src]) {
-            img.src = imageDataCache[img.src];
-          }
-        });
-
-        // Allow DOM to repaint with new src
-        await new Promise(r => setTimeout(r, 300));
-      }
-
-      const pdfWidth = 380;
-      const pdfHeight = 480;
-      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [pdfWidth, pdfHeight] });
-
-      const captureOptions = {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        width: pdfWidth,
-        height: pdfHeight,
-        onclone: (doc: Document) => {
-          const captureEl = doc.getElementById('pdf-capture-container');
-          if (captureEl) {
-            captureEl.style.position = 'fixed';
-            captureEl.style.top = '0';
-            captureEl.style.left = '0';
-            captureEl.style.zIndex = '9999';
-            captureEl.style.opacity = '1';
-            captureEl.style.visibility = 'visible';
-          }
-          // Apply cached data URLs inside the cloned doc too
-          doc.querySelectorAll('img').forEach((el: Element) => {
-            const img = el as HTMLImageElement;
-            if (imageDataCache[img.src]) img.src = imageDataCache[img.src];
-            (img as HTMLImageElement).loading = 'eager';
-          });
-        }
-      };
-
-      for (let i = 0; i < totalPagesToCapture; i++) {
-        setCaptureProgress({ current: i + 1, total: totalPagesToCapture });
-
-        const element = document.getElementById(`pdf-page-${i}`);
-        if (!element) { console.warn(`pdf-page-${i} not found`); continue; }
-
-        // Temporarily bring element into view
-        element.style.position = 'fixed';
-        element.style.top = '0';
-        element.style.left = '0';
-        element.style.zIndex = '9998';
-
-        await new Promise(r => setTimeout(r, 100));
-
-        const canvas = await html2canvas(element, captureOptions);
-
-        element.style.position = '';
-        element.style.top = '';
-        element.style.left = '';
-        element.style.zIndex = '';
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        if (i > 0) pdf.addPage([pdfWidth, pdfHeight], 'p');
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      }
-
-      pdf.save(`jumia-deals-catalog-${new Date().toISOString().split('T')[0]}.pdf`);
-      toast.success("Catalog downloaded!");
-
-    } catch (error) {
-      console.error("Download failed:", error);
-      toast.error("Download failed. Please try again.");
-    } finally {
-      setIsCapturing(false);
-      setCaptureProgress({ current: 0, total: totalPagesToCapture });
-    }
-  };
 
 
   // Calculate total pages for centering logic
@@ -591,45 +471,10 @@ const Index = () => {
         <button onClick={handleShare} className="bg-white p-2 rounded-full shadow hover:bg-gray-50 text-gray-700" title="Share">
           <Share2 size={20} />
         </button>
-        <button
-          onClick={handleDownload}
-          className="bg-white p-2 rounded-full shadow hover:bg-gray-50 text-gray-700 disabled:opacity-50"
-          title="Download/Print"
-          disabled={isCapturing}
-        >
-          {isCapturing ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
-        </button>
+
       </div>
 
-      {isCapturing && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300 max-w-xs w-full">
-            <div className="relative">
-              <Loader2 className="w-16 h-16 animate-spin text-jumia-blue" />
-              <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-jumia-blue">
-                {Math.round((captureProgress.current / captureProgress.total) * 100)}%
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="font-black text-gray-900 uppercase tracking-widest mb-1">
-                Generating PDF
-              </p>
-              <p className="text-sm font-bold text-gray-500">
-                Processing page {captureProgress.current} of {captureProgress.total}
-              </p>
-            </div>
-            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-jumia-blue transition-all duration-300 ease-out"
-                style={{ width: `${(captureProgress.current / captureProgress.total) * 100}%` }}
-              />
-            </div>
-            <p className="text-[10px] text-gray-400 font-medium italic">
-              Please don't close this tab...
-            </p>
-          </div>
-        </div>
-      )}
+
 
 
       {/* Background with blur effect */}

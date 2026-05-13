@@ -12,7 +12,6 @@ export interface StatsData {
     readers: number;
     timeOnBook: number; // in seconds
     shares: number;
-    downloads: number;
 }
 
 // Helper to ensure the stats document exists
@@ -26,7 +25,6 @@ const ensureStatsDoc = async () => {
             readers: 0,
             timeOnBook: 0,
             shares: 0,
-            downloads: 0,
         });
     }
     return statsRef;
@@ -68,12 +66,7 @@ export const incrementShare = async () => {
     posthog.capture('catalog_shared');
 };
 
-export const incrementDownload = async () => {
-    const statsRef = await ensureStatsDoc();
-    await updateDoc(statsRef, { downloads: increment(1) });
-    await logDailyActivity('download');
-    posthog.capture('catalog_downloaded');
-};
+
 
 export const getStats = async (): Promise<StatsData | null> => {
     const statsRef = doc(db, STATS_COLLECTION, STATS_DOC_ID);
@@ -195,7 +188,7 @@ export const logSearchToProduct = async (keyword: string, productId: string | nu
     posthog.capture('search_to_product_click', { keyword: cleanKeyword, productId: pid, category: category || "unknown" });
 };
 
-export const logDailyActivity = async (type: 'visit' | 'click' | 'view' | 'share' | 'download' = 'visit') => {
+export const logDailyActivity = async (type: 'visit' | 'click' | 'view' | 'share' = 'visit') => {
     try {
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const dailyRef = doc(db, "daily_stats", today);
@@ -208,7 +201,6 @@ export const logDailyActivity = async (type: 'visit' | 'click' | 'view' | 'share
                 totalClicks: 0,
                 totalViews: 0,
                 totalShares: 0,
-                totalDownloads: 0,
                 timestamp: serverTimestamp()
             });
         }
@@ -227,8 +219,6 @@ export const logDailyActivity = async (type: 'visit' | 'click' | 'view' | 'share
             await updateDoc(dailyRef, { totalClicks: increment(1) });
         } else if (type === 'share') {
             await updateDoc(dailyRef, { totalShares: increment(1) });
-        } else if (type === 'download') {
-            await updateDoc(dailyRef, { totalDownloads: increment(1) });
         }
     } catch (error) {
         console.error("Error logging daily activity:", error);
@@ -264,7 +254,6 @@ export interface AnalyticsResponse {
         totalClicks: number;
         totalReaders: number;
         totalShares: number;
-        totalDownloads: number;
         rangeActiveUsers: number;
         rangeTotalClicks: number;
         avgInteractionRate: number;

@@ -126,6 +126,7 @@ serve(async (_req: Request) => {
       else if (norm === 'oldprice') colMap.oldPrice = idx;
       else if (norm === 'newprice' || norm === 'price') colMap.price = idx;
       else if (norm === 'images' || norm === 'image' || norm === 'imageurl') colMap.image = idx;
+      else if (norm === 'url' || norm === 'link') colMap.url = idx;
     });
 
     const mapping = {
@@ -136,6 +137,7 @@ serve(async (_req: Request) => {
       oldPrice: colMap.oldPrice ?? 4,
       price: colMap.price ?? 5,
       image: colMap.image ?? 6,
+      url: colMap.url ?? 7,
     };
 
     // Fetch existing products
@@ -153,6 +155,7 @@ serve(async (_req: Request) => {
       const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
       const sheetPrice = cleanPrice(row[mapping.price]);
       const sheetImage = (row[mapping.image] || "").trim();
+      const sheetUrl = (row[mapping.url] || "").trim();
 
       const existing = currentProducts.find(p => p.sku === sku);
       if (!existing) continue;
@@ -161,8 +164,9 @@ serve(async (_req: Request) => {
       const oldPriceChanged = sheetOldPrice !== (existing.lastSyncedOldPrice ?? -1);
       const brandChanged = brandSafe !== (existing.brand ?? "");
       const imageChanged = sheetImage && sheetImage !== (existing.image ?? "");
+      const urlChanged = sheetUrl && sheetUrl !== (existing.url ?? "");
 
-      if (priceChanged || oldPriceChanged || brandChanged || imageChanged || typeof existing.lastSyncedPrice === 'undefined') {
+      if (priceChanged || oldPriceChanged || brandChanged || imageChanged || urlChanged || typeof existing.lastSyncedPrice === 'undefined') {
         const nameToUse = existing.name || nameSafe;
         const displayName = (brandSafe && !nameToUse.toLowerCase().startsWith(brandSafe.toLowerCase()))
           ? `${brandSafe} ${nameToUse}`
@@ -182,6 +186,7 @@ serve(async (_req: Request) => {
         if (priceChanged) updateData.price = sheetPrice;
         if (oldPriceChanged) updateData.oldPrice = sheetOldPrice;
         if (imageChanged) updateData.image = sheetImage;
+        if (urlChanged) updateData.url = sheetUrl;
 
         const docPath = `products/${existing._id}`;
         const fields = Object.keys(updateData);

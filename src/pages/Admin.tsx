@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import CatalogHeader from "@/components/CatalogHeader";
 import { fetchJumiaProductBySku } from "@/lib/jumia";
-import { Activity, Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Download, Trophy, RefreshCw, LogOut } from "lucide-react";
+import { Activity, Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MousePointer2, Users, Clock, Share2, Trophy, RefreshCw, LogOut } from "lucide-react";
 import { getStats, type StatsData, listenToActiveReaders, getDailyStats, fetchBackendAnalytics, type AnalyticsResponse } from "@/lib/stats";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/constants";
@@ -712,6 +712,7 @@ const Admin = () => {
         else if (norm === 'oldprice') colMap.oldPrice = idx;
         else if (norm === 'newprice' || norm === 'price') colMap.price = idx;
         else if (norm === 'images' || norm === 'image' || norm === 'imageurl') colMap.image = idx;
+        else if (norm === 'url' || norm === 'link') colMap.url = idx;
       });
 
       // Default mapping if headers missing
@@ -722,7 +723,8 @@ const Admin = () => {
         brand: colMap.brand ?? 3,
         oldPrice: colMap.oldPrice ?? 4,
         price: colMap.price ?? 5,
-        image: colMap.image ?? 6
+        image: colMap.image ?? 6,
+        url: colMap.url ?? 7
       };
 
       const rows = lines.slice(1).map(parseCsvLine).filter(row => row.length > 2 && row[mapping.sku]);
@@ -754,6 +756,7 @@ const Admin = () => {
         const sheetOldPrice = cleanPrice(row[mapping.oldPrice]);
         const sheetPrice = cleanPrice(row[mapping.price]);
         const sheetImage = (row[mapping.image] || "").trim();
+        const sheetUrl = (row[mapping.url] || "").trim();
 
         // Intelligent Categorization: Trust the sheet if provided natively!
         // If Sheet Column A has text, we use it exactly as provided.
@@ -770,9 +773,10 @@ const Admin = () => {
           const brandChangedInSheet = brandFromSheet !== (existingProduct.brand ?? "");
           const categoryChangedInSheet = categoryToUse !== (existingProduct.category ?? "");
           const imageChangedInSheet = sheetImage && sheetImage !== (existingProduct.image ?? "");
+          const urlChangedInSheet = sheetUrl && sheetUrl !== (existingProduct.url ?? "");
 
-          // Update if Price, Brand, Category, OR Image changed in the sheet
-          if (priceChangedInSheet || oldPriceChangedInSheet || brandChangedInSheet || categoryChangedInSheet || imageChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
+          // Update if Price, Brand, Category, Image OR Url changed in the sheet
+          if (priceChangedInSheet || oldPriceChangedInSheet || brandChangedInSheet || categoryChangedInSheet || imageChangedInSheet || urlChangedInSheet || typeof existingProduct.lastSyncedPrice === 'undefined') {
             const updateData: any = {
               brand: brandFromSheet,
               category: categoryToUse, // ALWAYS use the fresh category logic
@@ -782,6 +786,9 @@ const Admin = () => {
 
             if (imageChangedInSheet) {
               updateData.image = sheetImage;
+            }
+            if (urlChangedInSheet) {
+              updateData.url = sheetUrl;
             }
 
             // Prepend brand to EXISTING name (not sheet name) if it's not already there
@@ -823,7 +830,7 @@ const Admin = () => {
             category: categoryToUse, // Use mapped or auto-categorized value
             displayName,
             image: sheetImage || jumiaData?.image || "https://premium.jumia.com.ng/assets/images/jumia-logo.png",
-            url: jumiaData?.url ? (jumiaData.url.startsWith("http") ? jumiaData.url : `https://www.jumia.com.ng${jumiaData.url.startsWith("/") ? "" : "/"}${jumiaData.url}`) : `https://www.jumia.com.ng/catalog/?q=${sku}`,
+            url: sheetUrl || (jumiaData?.url ? (jumiaData.url.startsWith("http") ? jumiaData.url : `https://www.jumia.com.ng${jumiaData.url.startsWith("/") ? "" : "/"}${jumiaData.url}`) : `https://www.jumia.com.ng/catalog/?q=${sku}`),
             price: sheetPrice,
             oldPrice: sheetOldPrice || Math.round(sheetPrice * 1.2),
             prices: { price: sheetPrice, oldPrice: sheetOldPrice || Math.round(sheetPrice * 1.2) },
@@ -898,81 +905,7 @@ const Admin = () => {
     }
   };
 
-  const handleDownloadClicksList = async () => {
-    try {
-      toast.info("Preparing download...");
-      let allClicksData: Array<{ id: string, clicks: number }> = [];
 
-      if (clicksDateRange === "all") {
-        const clicksRef = collection(db, "product_clicks");
-        const snapshot = await getDocs(clicksRef);
-        allClicksData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          clicks: doc.data().clicks
-        }));
-      } else {
-        const days = parseInt(clicksDateRange);
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days);
-        const startDateStr = startDate.toISOString().split('T')[0];
-
-        const dailyClicksRef = collection(db, "product_daily_clicks");
-        const q = query(dailyClicksRef, where("date", ">=", startDateStr));
-        const snapshot = await getDocs(q);
-
-        const aggregated: Record<string, number> = {};
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          aggregated[data.productId] = (aggregated[data.productId] || 0) + data.clicks;
-        });
-
-        allClicksData = Object.entries(aggregated).map(([id, clicks]) => ({ id, clicks }));
-      }
-
-      if (allClicksData.length === 0) {
-        toast.error("No click data available to download");
-        return;
-      }
-
-      // Sort by clicks descending
-      allClicksData.sort((a, b) => b.clicks - a.clicks);
-
-      // Prepare CSV content
-      const headers = ["Product Name", "Product Link", "Clicks", "Total engagement %"];
-      const totalClicks = stats?.clicks || 1;
-
-      const csvRows = allClicksData.map(item => {
-        const product = products.find(p => p.id.toString() === item.id);
-        const name = product?.displayName || product?.name || `Product #${item.id}`;
-        const url = product?.url || "N/A";
-        const engagement = ((item.clicks / totalClicks) * 100).toFixed(1) + "%";
-        
-        // Escape quotes and wrap in quotes for CSV safety
-        const cleanName = `"${name.replace(/"/g, '""')}"`;
-        const cleanUrl = `"${url.replace(/"/g, '""')}"`;
-        
-        return [cleanName, cleanUrl, item.clicks, engagement].join(",");
-      });
-
-      const csvContent = [headers.join(","), ...csvRows].join("\n");
-
-      // Create blob and download
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `popular_products_clicks_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success("Download started!");
-    } catch (error) {
-      console.error("Download error:", error);
-      toast.error("Failed to generate download");
-    }
-  };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Loading...</div>;
 
@@ -2329,14 +2262,7 @@ const Admin = () => {
                         <option value="30">Last 30 Days</option>
                         <option value="90">Last 90 Days</option>
                       </select>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleDownloadClicksList}
-                      className="rounded-xl border-dashed border-gray-300 hover:border-primary hover:text-primary transition-all bg-white"
-                    >
-                      <Download size={14} className="mr-2" /> Download List
-                    </Button>
+
                     </div>
                   </div>
                   <div className="space-y-3">
