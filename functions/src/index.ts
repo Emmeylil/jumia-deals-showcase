@@ -87,21 +87,27 @@ export const fetchJumiaSku = onRequest({ cors: true }, async (req: any, res: any
 
     const html = await response.text();
     
-    // Robust extraction: find the products array using bracket balancing
-    const startMarker = '"products":[';
-    const startIdx = html.indexOf(startMarker);
-    
-    if (startIdx !== -1) {
+    // Robust extraction: Check multiple markers for product data
+    const markers = ['window.__STORE__=', 'window.__INITIAL_STATE__=', '"products":['];
+    let products: any[] = [];
+    let singleProduct: any = null;
+
+    for (const marker of markers) {
+      const startIdx = html.indexOf(marker);
+      if (startIdx === -1) continue;
+
       try {
-        const arrayStart = html.indexOf('[', startIdx); // Find the first [ after "products"
-        if (arrayStart === -1) throw new Error('Array start not found');
-        
+        const startBracket = html.indexOf(marker.endsWith('[') ? '[' : '{', startIdx);
+        if (startBracket === -1) continue;
+
         let depth = 0;
         let endIdx = -1;
-        
-        for (let i = arrayStart; i < html.length; i++) {
-          if (html[i] === '[') depth++;
-          else if (html[i] === ']') {
+        const openChar = html[startBracket];
+        const closeChar = openChar === '[' ? ']' : '}';
+
+        for (let i = startBracket; i < html.length; i++) {
+          if (html[i] === openChar) depth++;
+          else if (html[i] === closeChar) {
             depth--;
             if (depth === 0) {
               endIdx = i + 1;
@@ -111,43 +117,70 @@ export const fetchJumiaSku = onRequest({ cors: true }, async (req: any, res: any
         }
 
         if (endIdx !== -1) {
-          const jsonStr = html.substring(arrayStart, endIdx);
-          const products = JSON.parse(jsonStr);
+          const jsonStr = html.substring(startBracket, endIdx);
+          const data = JSON.parse(jsonStr);
           
-          if (products && products.length > 0) {
-            const requestedSku = sku.toLowerCase().trim();
-            const product = products.find((p: any) => 
-              p.sku?.toLowerCase().trim() === requestedSku || 
-              p.sku?.toLowerCase().trim().includes(requestedSku)
-            ) || products[0];
-            
-            // Only use this if it's actually the SKU we want, or if we're just doing a general search
-            if (product.sku?.toLowerCase().trim().includes(requestedSku) || products.length > 1) {
-              const price = typeof product.prices?.price === 'number' ? product.prices.price : 0;
-              res.json({
-                success: true,
-                data: {
-                  sku: product.sku || sku,
-                  displayName: product.displayName || product.name || '',
-                  brand: product.brand || '',
-                  image: product.image || '',
-                  url: product.url || '',
-                  prices: { 
-                    price, 
-                    oldPrice: product.prices?.oldPrice || Math.round(price * 1.2) 
-                  }
-                }
-              });
-              return;
-            }
+          // Case 1: Direct products array
+          if (Array.isArray(data)) {
+            products = data;
+          } 
+          // Case 2: window.__STORE__ or window.__INITIAL_STATE__ structure
+          else if (data.viewData?.products) {
+            products = data.viewData.products;
+          } else if (data.catalog?.products) {
+            products = data.catalog.products;
+          } else if (data.product) {
+            singleProduct = data.product;
           }
+          
+          if (products.length > 0 || singleProduct) break;
         }
-      } catch (e: any) {
-        console.error('Extraction error:', e.message);
+      } catch (e) {
+        console.error(`Marker ${marker} parse error:`, e);
       }
     }
 
-    // Fallback: Try JSON-LD (common on detail pages if redirected)
+    // Try to find the best match
+    let product = singleProduct;
+    if (products.length > 0) {
+      const requestedSku = sku.toLowerCase().trim();
+      // 1. Exact or partial SKU match
+      product = products.find((p: any) => 
+        p.sku?.toLowerCase().trim() === requestedSku || 
+        p.sku?.toLowerCase().trim().includes(requestedSku)
+      );
+      
+      // 2. Fallback to first result if it's a very specific search or if we have no match
+      if (!product && (products.length === 1 || html.includes('catalog_searchNoResults'))) {
+        product = products[0];
+      }
+    }
+
+    if (product) {
+      const priceRaw = product.prices?.price || product.offers?.price || "0";
+      const price = typeof priceRaw === 'number' ? priceRaw : parseFloat(String(priceRaw).replace(/[^\d.]/g, '')) || 0;
+      const oldPrice = product.prices?.oldPrice || Math.round(price * 1.2);
+      
+      const image = product.image?.contentUrl?.[0] || product.image || '';
+
+      res.json({
+        success: true,
+        data: {
+          sku: product.sku || sku,
+          displayName: product.displayName || product.name || '',
+          brand: product.brand?.name || product.brand || '',
+          image: image,
+          url: product.url || '',
+          prices: { 
+            price, 
+            oldPrice: typeof oldPrice === 'number' ? oldPrice : parseFloat(String(oldPrice).replace(/[^\d.]/g, '')) || Math.round(price * 1.2)
+          }
+        }
+      });
+      return;
+    }
+
+    // Second Fallback: JSON-LD (Standard Schema.org)
     try {
       const ldMarker = 'application/ld+json';
       const ldIndex = html.indexOf(ldMarker);
