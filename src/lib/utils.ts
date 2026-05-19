@@ -10,12 +10,12 @@ export function addUTMParameters(url: string | undefined): string {
   try {
     const urlObj = new URL(url);
     urlObj.searchParams.set("utm_source", "eCat");
-    urlObj.searchParams.set("utm_medium", "ja26");
-    urlObj.searchParams.set("utm_campaign", "jumiaanniversary");
+    urlObj.searchParams.set("utm_medium", "JA26");
+    urlObj.searchParams.set("utm_campaign", "anniversary");
     return urlObj.toString();
   } catch (e) {
     // If it's not a valid full URL, fallback to simple appending
     const separator = url.includes("?") ? "&" : "?";
-    return `${url}${separator}utm_source=eCat&utm_medium=ja26&utm_campaign=jumiaanniversary`;
+    return `${url}${separator}utm_source=eCat&utm_medium=JA26&utm_campaign=anniversary`;
   }
 }

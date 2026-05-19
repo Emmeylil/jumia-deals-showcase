@@ -128,7 +128,7 @@ const Index = () => {
     return filtered.sort((a, b) => {
       const catA = a.category || "";
       const catB = b.category || "";
-      if (catA === catB) return (a.brand || "").localeCompare(b.brand || "");
+      if (catA === catB) return a.price - b.price;
       const indexA = categoryOrder.indexOf(catA);
       const indexB = categoryOrder.indexOf(catB);
       if (indexA === -1 && indexB === -1) return catA.localeCompare(catB);
