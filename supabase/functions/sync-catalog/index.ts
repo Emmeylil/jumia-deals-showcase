@@ -126,7 +126,6 @@ serve(async (_req: Request) => {
       else if (norm === 'oldprice') colMap.oldPrice = idx;
       else if (norm === 'newprice' || norm === 'price') colMap.price = idx;
       else if (norm === 'images' || norm === 'image' || norm === 'imageurl') colMap.image = idx;
-      else if (norm === 'url' || norm === 'link') colMap.url = idx;
     });
 
     const mapping = {
@@ -137,7 +136,7 @@ serve(async (_req: Request) => {
       oldPrice: colMap.oldPrice ?? 4,
       price: colMap.price ?? 5,
       image: colMap.image ?? 6,
-      url: colMap.url ?? 7,
+      url: 7, // Column H
     };
 
     // Fetch existing products
