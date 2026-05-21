@@ -139,57 +139,58 @@ const Index = () => {
   }, [products, catalogSettings?.sheetCategoryOrder]);
 
   // Chunk products into pages sequentially, keeping them grouped by category order without creating unnecessary blank page slots at the end of each category.
+  // Chunk products by category, ensuring each category's products stay together across spreads
   const productChunks = React.useMemo(() => {
-    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
-    const pages: any[][] = [];
-    let currentPageIdx = 0;
-
-    if (hasLogosOnPage1) {
-      pages.push([]); // Logos on Left Page of Spread 0
-      currentPageIdx = 1;
-    }
-
-    let prodIdx = 0;
-    while (prodIdx < displayProducts.length) {
-      // Find capacity for the current page
-      const spreadIdx = Math.floor(currentPageIdx / 2);
+    const capacityForPage = (pageIdx: number) => {
+      const spreadIdx = Math.floor(pageIdx / 2);
       const spreadId = `spread-${spreadIdx}`;
       const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
-
-      let capacity = 6;
-      if (currentPageIdx % 2 === 1) {
+      if (pageIdx % 2 === 1) {
         // Right page
-        capacity = hasBanner ? 4 : 6;
+        return hasBanner ? 4 : 6;
       }
+      // Left page
+      return 6;
+    };
 
-      const pageProducts = displayProducts.slice(prodIdx, prodIdx + capacity);
-      pages.push(pageProducts);
-      prodIdx += capacity;
-      currentPageIdx++;
-    }
+    const chunks: { left: any[]; right: any[] }[] = [];
+    const categoriesInOrder = ((catalogSettings?.sheetCategoryOrder as string[]) ?? (PRODUCT_CATEGORIES as unknown as string[]));
+    const presentCategories = Array.from(new Set(displayProducts.map(p => p.category).filter(Boolean)));
+    const orderedCategories = categoriesInOrder.filter(c => presentCategories.includes(c));
 
-    // Combine pages into spreads
-    const spreads: { left: any[]; right: any[] }[] = [];
-    for (let spreadIdx = 0; spreadIdx < Math.ceil(pages.length / 2); spreadIdx++) {
-      spreads.push({
-        left: pages[spreadIdx * 2] || [],
-        right: pages[spreadIdx * 2 + 1] || []
-      });
-    }
+    let pageIdx = 0;
+    orderedCategories.forEach(category => {
+      const catProducts = displayProducts.filter(p => p.category === category);
+      let idx = 0;
+      while (idx < catProducts.length) {
+        const capacity = capacityForPage(pageIdx);
+        const pageProducts = catProducts.slice(idx, idx + capacity);
+        const spreadIdx = Math.floor(pageIdx / 2);
+        if (!chunks[spreadIdx]) {
+          chunks[spreadIdx] = { left: [], right: [] };
+        }
+        if (pageIdx % 2 === 0) {
+          chunks[spreadIdx].left = pageProducts;
+        } else {
+          chunks[spreadIdx].right = pageProducts;
+        }
+        idx += capacity;
+        pageIdx++;
+      }
+    });
 
-    // Ensure we also respect any extra banners defined beyond our product spreads
+    // Ensure banner spreads exist
     const bannerKeys = Object.keys(catalogSettings?.banners || {});
     const maxBannerSpreadIdx = bannerKeys
       .filter(key => key.startsWith('spread-'))
       .map(key => parseInt(key.split('-')[1]))
       .reduce((max, val) => Math.max(max, val), -1);
-
-    while (spreads.length <= maxBannerSpreadIdx) {
-      spreads.push({ left: [], right: [] });
+    while (chunks.length <= maxBannerSpreadIdx) {
+      chunks.push({ left: [], right: [] });
     }
 
-    return spreads;
-  }, [displayProducts, catalogSettings?.banners, catalogSettings?.brandLogos]);
+    return chunks;
+  }, [displayProducts, catalogSettings?.banners, catalogSettings?.sheetCategoryOrder]);
 
   // Helper to determine target page for a product based on dynamic chunks
   const getTargetPage = (productId: number) => {
@@ -308,11 +309,15 @@ const Index = () => {
     };
   }, []);
 
-  const handleCategorySelect = (category: string) => {
-    setActiveCategoryFilter(category);
-    setSearchQuery("");
-    setIsSearchFocused(false);
-  };
+  // When a category filter is selected, jump to its first page in the book
+  React.useEffect(() => {
+    if (activeCategoryFilter === "All") return;
+    const targetPage = getCategoryPage(activeCategoryFilter);
+    const book = bookRef.current?.pageFlip?.();
+    if (book && targetPage) {
+      book.flip(targetPage);
+    }
+  }, [activeCategoryFilter, productChunks]);
 
   const handleShare = () => {
     incrementShare();
