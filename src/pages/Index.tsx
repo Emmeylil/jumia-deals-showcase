@@ -961,7 +961,7 @@ const Index = () => {
                       </div>
                       <div className="flex-1 flex items-center justify-center">
                         <h2 className="text-xl md:text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
-                          Best Deals
+                          {predominantCategory}
                         </h2>
                       </div>
                     </div>
@@ -1340,7 +1340,7 @@ const Index = () => {
                 {/* Simulated Sidebar */}
                 <div className="w-10 bg-jumia-blue flex items-center justify-center">
                   <h2 className="text-sm font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase">
-                    Best Deals
+                    {predominantCategory}
                   </h2>
                 </div>
               </div>
