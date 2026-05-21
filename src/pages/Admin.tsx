@@ -2535,7 +2535,7 @@ const Admin = () => {
                               className="ml-2 h-6 border border-gray-200 bg-gray-50 rounded text-[10px] px-1 py-0 focus:ring-1 focus:border-jumia-purple focus:ring-jumia-purple outline-none cursor-pointer hover:bg-white transition-colors"
                             >
                               <option value="">Uncategorized</option>
-                              {PRODUCT_CATEGORIES.map(cat => (
+                              {availableCategories.map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
                               ))}
                             </select>
@@ -2580,7 +2580,7 @@ const Admin = () => {
                                 onChange={(e) => setEditCategory(e.target.value)}
                               >
                                 <option value="">Select Category</option>
-                                {PRODUCT_CATEGORIES.map(cat => (
+                                {availableCategories.map(cat => (
                                   <option key={cat} value={cat}>{cat}</option>
                                 ))}
                               </select>

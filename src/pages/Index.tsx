@@ -138,38 +138,67 @@ const Index = () => {
     });
   }, [products, catalogSettings?.sheetCategoryOrder]);
 
-  // Chunk products into groups (10 if banner exists, 12 if not)
+  // Chunk products into groups, ensuring each category starts on a new spread (double-page)
   const productChunks = React.useMemo(() => {
-    const chunks = [];
-    let i = 0;
+    const chunks: any[][] = [];
     let spreadIndex = 0;
 
-    // Determine how many spreads to create: 
-    // They must cover all products AND all defined banners
+    // Group displayProducts by category
+    const categoriesMap: Record<string, any[]> = {};
+    displayProducts.forEach(p => {
+      const cat = p.category || "Best Deals";
+      if (!categoriesMap[cat]) {
+        categoriesMap[cat] = [];
+      }
+      categoriesMap[cat].push(p);
+    });
+
+    // We want to process categories in the sorted order of displayProducts
+    const orderedCategories: string[] = [];
+    displayProducts.forEach(p => {
+      const cat = p.category || "Best Deals";
+      if (!orderedCategories.includes(cat)) {
+        orderedCategories.push(cat);
+      }
+    });
+
+    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
+
+    orderedCategories.forEach(cat => {
+      const catProducts = categoriesMap[cat];
+      let prodIdx = 0;
+
+      while (prodIdx < catProducts.length) {
+        const spreadId = `spread-${spreadIndex}`;
+        const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
+
+        let size;
+        if (spreadIndex === 0 && hasLogosOnPage1) {
+          // Spread 0 Left is Logos, so only Right page is available for products
+          size = hasBanner ? 4 : 6;
+        } else {
+          size = hasBanner ? 10 : 12;
+        }
+
+        const chunk = catProducts.slice(prodIdx, prodIdx + size);
+        chunks.push(chunk);
+        prodIdx += size;
+        spreadIndex++;
+      }
+    });
+
+    // Ensure we also respect any extra banners defined beyond our product spreads
     const bannerKeys = Object.keys(catalogSettings?.banners || {});
     const maxBannerSpreadIdx = bannerKeys
       .filter(key => key.startsWith('spread-'))
       .map(key => parseInt(key.split('-')[1]))
       .reduce((max, val) => Math.max(max, val), -1);
 
-    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
-
-    while (i < displayProducts.length || spreadIndex <= maxBannerSpreadIdx) {
-      const spreadId = `spread-${spreadIndex}`;
-      const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
-
-      let size;
-      if (spreadIndex === 0 && hasLogosOnPage1) {
-        // Spread 0 Left is Logos, so only Right page is available for products
-        size = hasBanner ? 4 : 6;
-      } else {
-        size = hasBanner ? 10 : 12;
-      }
-
-      chunks.push(displayProducts.slice(i, i + size));
-      i += size;
+    while (spreadIndex <= maxBannerSpreadIdx) {
+      chunks.push([]);
       spreadIndex++;
     }
+
     return chunks;
   }, [displayProducts, catalogSettings?.banners, catalogSettings?.brandLogos]);
 
@@ -1014,7 +1043,7 @@ const Index = () => {
                   <div className="w-10 md:w-14 bg-jumia-pink border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                     <div className="flex-1 flex items-center justify-center">
                       <h2 className="text-xl md:text-3xl font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase opacity-90">
-                        Top Picks
+                        {predominantCategory}
                       </h2>
                     </div>
                     <div className="bg-white/20 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
@@ -1370,7 +1399,7 @@ const Index = () => {
                 {/* Simulated Sidebar */}
                 <div className="w-10 bg-jumia-pink border-l border-white flex items-center justify-center">
                   <h2 className="text-sm font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase">
-                    Top Picks
+                    {predominantCategory}
                   </h2>
                 </div>
               </div>
