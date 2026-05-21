@@ -33,12 +33,9 @@ export const useProducts = () => {
                     id: parseInt(doc.id) || doc.data().id, // Ensure ID is handled correctly
                 })) as Product[];
 
-                // Ensure each product has a valid category; correct mismatches between brand and category
+                // Ensure each product has a valid category. Do NOT override the sheet category if it exists!
                 const enriched = docs.map(p => {
-                    const inferredCat = p.category || autoCategorizeProduct(p.name);
-                    const brandCat = getCategoryFromBrand(p.brand);
-                    // If brand suggests a different category, prefer the brand category
-                    const finalCat = brandCat && (p.category ? brandCat !== p.category : true) ? brandCat : inferredCat;
+                    const finalCat = p.category || getCategoryFromBrand(p.brand) || autoCategorizeProduct(p.name);
                     return { ...p, category: finalCat };
                 });
 

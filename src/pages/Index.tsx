@@ -138,146 +138,149 @@ const Index = () => {
     });
   }, [products, catalogSettings?.sheetCategoryOrder]);
 
-<<<<<<< HEAD
-  // Chunk products into pages sequentially, keeping them grouped by category order without creating unnecessary blank page slots at the end of each category.
-  // Chunk products by category, ensuring each category's products stay together across spreads
-  const productChunks = React.useMemo(() => {
-    const capacityForPage = (pageIdx: number) => {
-      const spreadIdx = Math.floor(pageIdx / 2);
-      const spreadId = `spread-${spreadIdx}`;
-      const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
-      if (pageIdx % 2 === 1) {
-        // Right page
-        return hasBanner ? 4 : 6;
-=======
-  // Chunk products into groups, ensuring each category starts on a new spread (double-page)
-  const productChunks = React.useMemo(() => {
-    const chunks: any[][] = [];
-    let spreadIndex = 0;
+  // Helper function to resolve standard category for brand logo lookup
+  const resolveStandardCategory = (rawCategory: string): string => {
+    const norm = rawCategory.trim().toLowerCase();
+    if (norm.includes("beauty") || norm.includes("perfume")) return "Health & Beauty";
+    if (norm.includes("phone") || norm.includes("tablet")) return "Phones & Tablets";
+    if (norm.includes("camera") || norm.includes("tv") || norm.includes("electronics")) return "Electronics";
+    if (norm.includes("gaming") || norm.includes("game")) return "Gaming";
+    if (norm.includes("home") || norm.includes("office")) return "Home & Office";
+    if (norm.includes("fashion") || norm.includes("men's") || norm.includes("women's")) return "Fashion";
+    if (norm.includes("appliance")) return "Appliances";
+    if (norm.includes("computing") || norm.includes("computer") || norm.includes("laptop")) return "Computing";
+    if (norm.includes("supermarket") || norm.includes("grocery")) return "Supermarket";
+    return rawCategory;
+  };
 
-    // Group displayProducts by category
-    const categoriesMap: Record<string, any[]> = {};
-    displayProducts.forEach(p => {
-      const cat = p.category || "Best Deals";
-      if (!categoriesMap[cat]) {
-        categoriesMap[cat] = [];
->>>>>>> parent of f62ac40 (fix(catalog): fix blank right pages by using chunk left/right arrays directly)
-      }
-      // Left page
-      return 6;
-    };
+  // Generate flat innerPages array, ensuring each category begins on a new page (no category mix/slip over)
+  // And no blank full pages (starts immediately on the next page, left or right).
+  const innerPages = React.useMemo(() => {
+    const pages: {
+      type: "brand_partners" | "products" | "outside_back_cover";
+      category?: string;
+      products?: any[];
+      hasBanner?: boolean;
+      banner?: any;
+    }[] = [];
 
-    const chunks: { left: any[]; right: any[] }[] = [];
-    const categoriesInOrder = ((catalogSettings?.sheetCategoryOrder as string[]) ?? (PRODUCT_CATEGORIES as unknown as string[]));
+    // 1. Check if we have brand logos for Page 1
+    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
+    if (hasLogosOnPage1) {
+      pages.push({
+        type: "brand_partners"
+      });
+    }
+
+    // 2. Group products by category (following the sheet category order)
+    const categoryOrder: string[] =
+      (catalogSettings?.sheetCategoryOrder as string[] | undefined)?.length
+        ? (catalogSettings.sheetCategoryOrder as string[])
+        : (PRODUCT_CATEGORIES as unknown as string[]);
+
+    // Filter categories to only those present in displayProducts
     const presentCategories = Array.from(new Set(displayProducts.map(p => p.category).filter(Boolean)));
-    const orderedCategories = categoriesInOrder.filter(c => presentCategories.includes(c));
+    const orderedCategories = categoryOrder.filter(c => presentCategories.includes(c));
 
-<<<<<<< HEAD
-    let pageIdx = 0;
     orderedCategories.forEach(category => {
       const catProducts = displayProducts.filter(p => p.category === category);
-      let idx = 0;
-      while (idx < catProducts.length) {
-        const capacity = capacityForPage(pageIdx);
-        const pageProducts = catProducts.slice(idx, idx + capacity);
-        const spreadIdx = Math.floor(pageIdx / 2);
-        if (!chunks[spreadIdx]) {
-          chunks[spreadIdx] = { left: [], right: [] };
-        }
-        if (pageIdx % 2 === 0) {
-          chunks[spreadIdx].left = pageProducts;
-        } else {
-          chunks[spreadIdx].right = pageProducts;
-        }
-        idx += capacity;
-        pageIdx++;
-      }
-    });
-
-    // Ensure banner spreads exist
-=======
-    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
-
-    orderedCategories.forEach(cat => {
-      const catProducts = categoriesMap[cat];
       let prodIdx = 0;
 
       while (prodIdx < catProducts.length) {
-        const spreadId = `spread-${spreadIndex}`;
-        const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
+        // Create a new page at the current index
+        const nextPageIndex = pages.length;
+        const isLeftPage = nextPageIndex % 2 === 0;
+        
+        let capacity = 6;
+        let pageHasBanner = false;
+        let bannerData = null;
 
-        let size;
-        if (spreadIndex === 0 && hasLogosOnPage1) {
-          // Spread 0 Left is Logos, so only Right page is available for products
-          size = hasBanner ? 4 : 6;
-        } else {
-          size = hasBanner ? 10 : 12;
+        if (!isLeftPage) {
+          // Right page can have a banner
+          const spreadIdx = Math.floor(nextPageIndex / 2);
+          const spreadId = `spread-${spreadIdx}`;
+          bannerData = catalogSettings?.banners?.[spreadId];
+          pageHasBanner = !!bannerData?.image;
+          if (pageHasBanner) {
+            capacity = 4;
+          }
         }
 
-        const chunk = catProducts.slice(prodIdx, prodIdx + size);
-        chunks.push(chunk);
-        prodIdx += size;
-        spreadIndex++;
+        const pageProducts = catProducts.slice(prodIdx, prodIdx + capacity);
+        pages.push({
+          type: "products",
+          category,
+          products: pageProducts,
+          hasBanner: pageHasBanner,
+          banner: bannerData
+        });
+
+        prodIdx += pageProducts.length;
       }
     });
 
-    // Ensure we also respect any extra banners defined beyond our product spreads
->>>>>>> parent of f62ac40 (fix(catalog): fix blank right pages by using chunk left/right arrays directly)
+    // Ensure we respect any extra banners defined beyond our product spreads
     const bannerKeys = Object.keys(catalogSettings?.banners || {});
     const maxBannerSpreadIdx = bannerKeys
       .filter(key => key.startsWith('spread-'))
       .map(key => parseInt(key.split('-')[1]))
       .reduce((max, val) => Math.max(max, val), -1);
-<<<<<<< HEAD
-    while (chunks.length <= maxBannerSpreadIdx) {
-      chunks.push({ left: [], right: [] });
-    }
 
-    return chunks;
-  }, [displayProducts, catalogSettings?.banners, catalogSettings?.sheetCategoryOrder]);
-=======
+    while (Math.floor(pages.length / 2) <= maxBannerSpreadIdx) {
+      const nextPageIndex = pages.length;
+      const isLeftPage = nextPageIndex % 2 === 0;
+      let pageHasBanner = false;
+      let bannerData = null;
 
-    while (spreadIndex <= maxBannerSpreadIdx) {
-      chunks.push([]);
-      spreadIndex++;
-    }
-
-    return chunks;
-  }, [displayProducts, catalogSettings?.banners, catalogSettings?.brandLogos]);
->>>>>>> parent of f62ac40 (fix(catalog): fix blank right pages by using chunk left/right arrays directly)
-
-  // Helper to determine target page for a product based on dynamic chunks
-  const getTargetPage = (productId: number) => {
-    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
-
-    for (let chunkIdx = 0; chunkIdx < productChunks.length; chunkIdx++) {
-      const chunk = productChunks[chunkIdx];
-      const prodInChunkIdx = chunk.findIndex(p => p.id === productId);
-
-      if (prodInChunkIdx !== -1) {
-        if (chunkIdx === 0 && hasLogosOnPage1) {
-          // Spread 0: Left is Logos (Page 1), Right is products (Page 2)
-          return 2;
-        }
-
-        // General case for spreads
-        const spreadStartPage = 1 + (chunkIdx * 2);
-        const onLeftPage = prodInChunkIdx < (chunkIdx === 0 && hasLogosOnPage1 ? 0 : 6);
-        return spreadStartPage + (onLeftPage ? 0 : 1);
+      if (!isLeftPage) {
+        const spreadIdx = Math.floor(nextPageIndex / 2);
+        const spreadId = `spread-${spreadIdx}`;
+        bannerData = catalogSettings?.banners?.[spreadId];
+        pageHasBanner = !!bannerData?.image;
       }
+
+      pages.push({
+        type: "products",
+        category: "Promo",
+        products: [],
+        hasBanner: pageHasBanner,
+        banner: bannerData
+      });
+    }
+
+    // Pad with an outside back cover page if the inner page count is odd
+    if (pages.length % 2 !== 0) {
+      pages.push({
+        type: "outside_back_cover"
+      });
+    }
+
+    return pages;
+  }, [displayProducts, catalogSettings?.banners, catalogSettings?.brandLogos, catalogSettings?.sheetCategoryOrder]);
+
+  // Helper to determine target page for a product based on innerPages
+  const getTargetPage = (productId: number) => {
+    const pageIndex = innerPages.findIndex(
+      page => page.type === "products" && page.products?.some(p => p.id === productId)
+    );
+    if (pageIndex !== -1) {
+      return pageIndex + 1;
     }
     return 0;
   };
 
   // Returns the first book page index that contains a product of the given category
   const getCategoryPage = (category: string) => {
-    const firstProduct = displayProducts.find(p => p.category === category);
-    if (!firstProduct) return 0;
-    return getTargetPage(firstProduct.id);
+    const pageIndex = innerPages.findIndex(
+      page => page.type === "products" && page.category === category
+    );
+    if (pageIndex !== -1) {
+      return pageIndex + 1;
+    }
+    return 0;
   };
 
   // Ordered list of categories that actually have products in the current catalog
-  // Respects the Google Sheet column-A order when available
   const categoryNav = React.useMemo(() => {
     const present = new Set(displayProducts.map(p => p.category).filter(Boolean));
     const preferredOrder: string[] =
@@ -287,23 +290,23 @@ const Index = () => {
     return preferredOrder.filter(c => present.has(c));
   }, [displayProducts, catalogSettings?.sheetCategoryOrder]);
 
-  // Which category is actually dominant on the current spread
+  // Which category is dominant on the current spread
   const activeCategoryOnPage = React.useMemo(() => {
-    // currentPage 0 = cover, 1+ = inner spreads; spreadIndex = Math.floor((currentPage - 1) / 2)
     if (currentPage === 0) return null;
     const spreadIndex = Math.floor((currentPage - 1) / 2);
-    const chunk = productChunks[spreadIndex];
-    if (!chunk || chunk.length === 0) return null;
-    // Tally categories on this spread and return the most common one
-    const tally: Record<string, number> = {};
-    for (const p of chunk) {
-      if (p.category) tally[p.category] = (tally[p.category] ?? 0) + 1;
-    }
-    return Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-  }, [currentPage, productChunks]);
+    const leftPage = innerPages[spreadIndex * 2];
+    const rightPage = innerPages[spreadIndex * 2 + 1];
 
-  // Cleanup: ensure all hooks are absolute top level. Already moved some.
-  // Now moving the remaining hooks from bottom to top.
+    const tally: Record<string, number> = {};
+    if (leftPage?.type === "products" && leftPage.category) {
+      tally[leftPage.category] = (tally[leftPage.category] ?? 0) + (leftPage.products?.length ?? 0);
+    }
+    if (rightPage?.type === "products" && rightPage.category) {
+      tally[rightPage.category] = (tally[rightPage.category] ?? 0) + (rightPage.products?.length ?? 0);
+    }
+
+    return Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  }, [currentPage, innerPages]);
 
   React.useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
@@ -312,7 +315,6 @@ const Index = () => {
   }, []);
 
   React.useEffect(() => {
-    // Fetch settings statically via getDoc
     const fetchSettings = async () => {
       try {
         if (!db) return;
@@ -339,23 +341,19 @@ const Index = () => {
 
   // Tracking
   useEffect(() => {
-    // Unique session ID for presence tracking
     let sessionId = sessionStorage.getItem("jumia_presence_id");
     if (!sessionId) {
       sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
       sessionStorage.setItem("jumia_presence_id", sessionId);
     }
 
-    // Initial updates
     incrementView();
     incrementReader();
     logDailyActivity();
     updatePresence(sessionId);
 
-    // Track time on book
     const startTime = Date.now();
 
-    // Heartbeat for presence & potentially time tracking
     const interval = setInterval(() => {
       updatePresence(sessionId!);
     }, 60000);
@@ -375,7 +373,7 @@ const Index = () => {
     if (book && targetPage) {
       book.flip(targetPage);
     }
-  }, [activeCategoryFilter, productChunks]);
+  }, [activeCategoryFilter, innerPages]);
 
   const handleShare = () => {
     incrementShare();
@@ -387,22 +385,16 @@ const Index = () => {
         url: shareUrl,
       }).catch(console.error);
     } else {
-      // Fallback
       navigator.clipboard.writeText(shareUrl);
       alert("Link copied to clipboard!");
     }
   };
 
-
-
-
   // Calculate total pages for centering logic
   React.useEffect(() => {
-    // 1 (Front) + inner spreads + 1 (Back)
-    // Pages: 0 (Front), 1-N (Inner), N+1 (Back)
-    const count = 1 + (productChunks.length * 2) + 1;
+    const count = 1 + innerPages.length + 1;
     setTotalPages(count);
-  }, [productChunks.length]);
+  }, [innerPages.length]);
 
   // Fetch Popular Suggestions
   useEffect(() => {
@@ -931,51 +923,30 @@ const Index = () => {
           </Page>
 
           {/* DYNAMIC PAGES */}
-          {productChunks.flatMap((chunk, index) => {
-            const pageNum = index * 2 + 1;
-            const hasLogosOnPage1 = index === 0 && (catalogSettings?.brandLogos?.length ?? 0) > 0;
-            const spreadId = `spread-${index}`;
-            const banner = catalogSettings?.banners?.[spreadId];
-            const hasBanner = !!banner?.image;
-
-            let leftPageProducts: any[] = [];
-            let rightPageProducts: any[] = [];
-
-            if (hasLogosOnPage1) {
-              leftPageProducts = [];
-              rightPageProducts = hasBanner ? chunk.slice(0, 4) : chunk.slice(0, 6);
-            } else {
-              leftPageProducts = chunk.slice(0, 6);
-              rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
-            }
-
-            const allPageProducts = [...leftPageProducts, ...rightPageProducts];
-            const categories = allPageProducts.map(p => p.category).filter(Boolean);
-            const predominantCategory = categories.length > 0
-              ? categories.reduce((acc, curr) => (categories.filter(v => v === curr).length > categories.filter(v => v === acc).length ? curr : acc))
-              : "Best Deals";
-
-            const categoryBrands = (predominantCategory && predominantCategory !== "Best Deals")
-              ? (CATEGORY_BRAND_MAP[predominantCategory as ProductCategory] || [])
+          {innerPages.map((page, index) => {
+            const pageNum = index + 1;
+            const isLeftPage = index % 2 === 0;
+            const categoryForLogo = page.category || "Best Deals";
+            const standardCategory = resolveStandardCategory(categoryForLogo);
+            const categoryBrands = (standardCategory && standardCategory !== "Best Deals")
+              ? (CATEGORY_BRAND_MAP[standardCategory as ProductCategory] || [])
               : [];
 
             const relevantBrandLogos = (catalogSettings?.brandLogos as any[] || []).filter(b =>
               categoryBrands.some(cb => b.name.toLowerCase().includes(cb.toLowerCase()))
             ).slice(0, 4);
 
-            return [
-              /* LEFT PAGE */
-              <Page
-                key={`page-${pageNum}`}
-                id={`page-${pageNum}`}
-                className="bg-[#E6F7FF] bg-cover bg-center"
-                style={{
-                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
-                  ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
-                }}
-              >
-                {/* DEDICATED BRAND LOGOS PAGE — now on Page 1 (index 0) */}
-                {hasLogosOnPage1 ? (
+            if (page.type === "brand_partners") {
+              return (
+                <Page
+                  key={`page-${pageNum}`}
+                  id={`page-${pageNum}`}
+                  className="bg-[#E6F7FF] bg-cover bg-center"
+                  style={{
+                    ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                    ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
+                  }}
+                >
                   <div className="w-full h-full flex flex-row">
                     {/* Brand Logos Content */}
                     <div className="flex-1 p-2 md:p-3 flex flex-col min-h-0 overflow-hidden">
@@ -1029,8 +1000,64 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
-                ) : (
-                  /* NORMAL LEFT PAGE */
+                  {/* Page Number */}
+                  <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">
+                    {pageNum}
+                  </div>
+                </Page>
+              );
+            }
+
+            if (page.type === "outside_back_cover") {
+              return (
+                <Page
+                  key={`page-${pageNum}`}
+                  id={`page-${pageNum}`}
+                  className="bg-[#E6F7FF] bg-cover bg-center"
+                  style={{
+                    ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                    ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
+                  }}
+                >
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-[#FF9900]/10 to-[#009FE3]/10 opacity-70 pointer-events-none" />
+                    <div className="relative z-10 max-w-xs space-y-4">
+                      <div className="w-16 h-16 bg-[#FF9900] rounded-2xl flex items-center justify-center mx-auto shadow-md">
+                        <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase">Don't Miss Out!</h3>
+                      <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                        Flip to the next page to share your suggestions, or scan the QR code to find even more incredible deals directly on Jumia.
+                      </p>
+                      <div className="inline-block px-4 py-1.5 bg-[#FF9900]/10 text-[#FF9900] rounded-full text-[10px] font-black tracking-widest uppercase">
+                        Super Deals Ahead
+                      </div>
+                    </div>
+                  </div>
+                  {/* Page Number */}
+                  <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">
+                    {pageNum}
+                  </div>
+                </Page>
+              );
+            }
+
+            const pageProducts = page.products || [];
+            const pageCategory = page.category || "Best Deals";
+
+            if (isLeftPage) {
+              return (
+                <Page
+                  key={`page-${pageNum}`}
+                  id={`page-${pageNum}`}
+                  className="bg-[#E6F7FF] bg-cover bg-center"
+                  style={{
+                    ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                    ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
+                  }}
+                >
                   <div className="w-full h-full flex flex-row">
                     <div className="w-10 md:w-14 bg-jumia-blue flex flex-col items-center py-3 md:py-6 relative shadow-lg z-10">
                       <div className="bg-black/20 p-1 md:p-1.5 rounded-full mb-3 md:mb-6">
@@ -1038,12 +1065,12 @@ const Index = () => {
                       </div>
                       <div className="flex-1 flex items-center justify-center">
                         <h2 className="text-xl md:text-3xl font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase drop-shadow-md">
-                          {predominantCategory}
+                          {pageCategory}
                         </h2>
                       </div>
                     </div>
                     <div className="flex-1 p-1.5 md:p-2 grid grid-cols-2 grid-rows-3 gap-1.5 md:gap-2 content-start">
-                      {leftPageProducts.map((product) => (
+                      {pageProducts.map((product) => (
                         <ProductCard
                           key={product.id}
                           product={product}
@@ -1052,73 +1079,73 @@ const Index = () => {
                       ))}
                     </div>
                   </div>
-                )}
 
-                {/* Page Number */}
-                <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">
-                  {pageNum}
-                </div>
-              </Page>,
+                  {/* Page Number */}
+                  <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">
+                    {pageNum}
+                  </div>
+                </Page>
+              );
+            } else {
+              return (
+                <Page
+                  key={`page-${pageNum}`}
+                  id={`page-${pageNum}`}
+                  className="bg-[#E2E0F5] bg-cover bg-center"
+                  style={{
+                    ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                    ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
+                  }}
+                >
+                  <div className="w-full h-full flex flex-row">
+                    <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1 md:gap-1.5 min-h-0 overflow-hidden">
+                      <div className={`grid grid-cols-2 gap-1.5 md:gap-2 min-h-0 ${page.hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
+                        {pageProducts.map((product) => (
+                          <ProductCard
+                            key={product.id}
+                            product={product}
+                            highlighted={product.id === highlightedProductId}
+                          />
+                        ))}
+                      </div>
+                      {page.hasBanner && page.banner && (
+                        <div className="h-[100px] md:h-[120px] flex-shrink-0">
+                          <BannerCard image={page.banner.image} url={page.banner.url} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-10 md:w-14 bg-jumia-pink border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
+                      <div className="flex-1 flex items-center justify-center">
+                        <h2 className="text-xl md:text-3xl font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase opacity-90">
+                          {pageCategory}
+                        </h2>
+                      </div>
+                      <div className="bg-white/20 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
+                        <svg className="w-4 h-4 md:w-6 md:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                    </div>
+                  </div>
 
-              /* RIGHT PAGE */
-              <Page
-                key={`page-${pageNum + 1}`}
-                id={`page-${pageNum + 1}`}
-                className="bg-[#E2E0F5] bg-cover bg-center"
-                style={{
-                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
-                  ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
-                }}
-              >
-                {/* NORMAL PRODUCT PAGE */}
-                <div className="w-full h-full flex flex-row">
-                  <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1 md:gap-1.5 min-h-0 overflow-hidden">
-                    <div className={`grid grid-cols-2 gap-1.5 md:gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
-                      {rightPageProducts.map((product) => (
-                        <ProductCard
-                          key={product.id}
-                          product={product}
-                          highlighted={product.id === highlightedProductId}
-                        />
+                  {/* Page Number & Relevant Brands */}
+                  <div className="absolute bottom-3 left-6 right-6 flex justify-between items-center">
+                    <div className="flex gap-2">
+                      {relevantBrandLogos.map((b, i) => (
+                        <div key={i} className="h-4 md:h-6 bg-white/50 rounded-md p-1 shadow-sm">
+                          <img src={b.logoUrl} alt={b.name} className="h-full object-contain" />
+                        </div>
                       ))}
                     </div>
-                    {hasBanner && (
-                      <div className="h-[100px] md:h-[120px] flex-shrink-0">
-                        <BannerCard image={banner.image} url={banner.url} />
-                      </div>
-                    )}
-                  </div>
-                  <div className="w-10 md:w-14 bg-jumia-pink border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
-                    <div className="flex-1 flex items-center justify-center">
-                      <h2 className="text-xl md:text-3xl font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase opacity-90">
-                        {predominantCategory}
-                      </h2>
-                    </div>
-                    <div className="bg-white/20 p-1 md:p-1.5 rounded-full mt-3 md:mt-6">
-                      <svg className="w-4 h-4 md:w-6 md:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      Page {String(pageNum).padStart(2, '0')}
                     </div>
                   </div>
-                </div>
-
-                {/* Page Number & Relevant Brands */}
-                <div className="absolute bottom-3 left-6 right-6 flex justify-between items-center">
-                  <div className="flex gap-2">
-                    {relevantBrandLogos.map((b, i) => (
-                      <div key={i} className="h-4 md:h-6 bg-white/50 rounded-md p-1 shadow-sm">
-                        <img src={b.logoUrl} alt={b.name} className="h-full object-contain" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    Page {String(pageNum + 1).padStart(2, '0')}
-                  </div>
-                </div>
-              </Page>
-            ];
+                </Page>
+              );
+            }
           })}
 
           {/* BACK COVER */}
-          <Page className="bg-[#f5f5f5] text-gray-800" id={`page-${1 + productChunks.length * 2}`}>
+          <Page className="bg-[#f5f5f5] text-gray-800" id={`page-${innerPages.length + 1}`}>
             <div
               className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8 text-center border-l border-gray-200 bg-cover bg-center overflow-y-auto"
               style={{
@@ -1348,54 +1375,32 @@ const Index = () => {
         </div>
 
         {/* DYNAMIC PAGES */}
-        {productChunks.flatMap((chunk, index) => {
-          const pageNum = index * 2 + 1;
-          const hasLogosOnPage1 = index === 0 && (catalogSettings?.brandLogos?.length ?? 0) > 0;
-          const spreadId = `spread-${index}`;
-          const banner = catalogSettings?.banners?.[spreadId];
-          const hasBanner = !!banner?.image;
-
-          let leftPageProducts: any[] = [];
-          let rightPageProducts: any[] = [];
-
-          if (hasLogosOnPage1) {
-            rightPageProducts = hasBanner ? chunk.slice(0, 4) : chunk.slice(0, 6);
-          } else {
-            leftPageProducts = chunk.slice(0, 6);
-            rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
-          }
-
-          // Determine page category (majority category in chunks)
-          const allPageProducts = [...leftPageProducts, ...rightPageProducts];
-          const categories = allPageProducts.map(p => p.category).filter(Boolean);
-          const predominantCategory = categories.length > 0
-            ? categories.reduce((acc, curr) => (categories.filter(v => v === curr).length > categories.filter(v => v === acc).length ? curr : acc))
-            : "Best Deals";
-
-          // Relevant brands for this category from our map
-          const categoryBrands = predominantCategory && predominantCategory !== "Best Deals"
-            ? CATEGORY_BRAND_MAP[predominantCategory as ProductCategory] || []
+        {innerPages.map((page, index) => {
+          const pageNum = index + 1;
+          const isLeftPage = index % 2 === 0;
+          const categoryForLogo = page.category || "Best Deals";
+          const standardCategory = resolveStandardCategory(categoryForLogo);
+          const categoryBrands = (standardCategory && standardCategory !== "Best Deals")
+            ? (CATEGORY_BRAND_MAP[standardCategory as ProductCategory] || [])
             : [];
 
-          // Filter catalogSettings.brandLogos to only show those in categoryBrands
           const relevantBrandLogos = (catalogSettings?.brandLogos as any[] || []).filter(b =>
             categoryBrands.some(cb => b.name.toLowerCase().includes(cb.toLowerCase()))
           ).slice(0, 4);
 
-          return [
-            /* LEFT PAGE CAPTURE */
-            <div
-              key={`pdf-page-${pageNum}`}
-              id={`pdf-page-${pageNum}`}
-              className="bg-[#E6F7FF] bg-cover bg-center relative"
-              style={{
-                width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
-                ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
-                ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
-              }}
-            >
-              <div className="w-full h-full flex flex-row overflow-hidden">
-                {hasLogosOnPage1 ? (
+          if (page.type === "brand_partners") {
+            return (
+              <div
+                key={`pdf-page-${pageNum}`}
+                id={`pdf-page-${pageNum}`}
+                className="bg-[#E6F7FF] bg-cover bg-center relative"
+                style={{
+                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                  ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
+                }}
+              >
+                <div className="w-full h-full flex flex-row overflow-hidden">
                   <div className="flex-1 p-3 flex flex-col min-h-0 overflow-hidden">
                     <div className="text-center mb-2">
                       <h2 className="text-sm font-black text-gray-800 uppercase tracking-wide">Brand Partners</h2>
@@ -1408,66 +1413,126 @@ const Index = () => {
                       ))}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start overflow-hidden">
-                    {leftPageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
+                  {/* Simulated Sidebar */}
+                  <div className="w-10 bg-jumia-pink border-l border-white flex items-center justify-center">
+                    <h2 className="text-sm font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase">
+                      Partners
+                    </h2>
                   </div>
-
-                )}
-                {/* Simulated Sidebar */}
-                <div className="w-10 bg-jumia-blue flex items-center justify-center">
-                  <h2 className="text-sm font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase">
-                    {predominantCategory}
-                  </h2>
                 </div>
+                <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">{pageNum}</div>
               </div>
-              <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">{pageNum}</div>
-            </div>,
+            );
+          }
 
-            /* RIGHT PAGE CAPTURE */
-            <div
-              key={`pdf-page-${pageNum + 1}`}
-              id={`pdf-page-${pageNum + 1}`}
-              className="bg-[#E2E0F5] bg-cover bg-center relative"
-              style={{
-                width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
-                ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
-                ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
-              }}
-            >
-              <div className="w-full h-full flex flex-row overflow-hidden">
-                <div className="flex-1 p-2 flex flex-col gap-2 min-h-0 overflow-hidden">
-                  <div className={`grid grid-cols-2 gap-2 min-h-0 ${hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
-                    {rightPageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
-                  </div>
-                  {hasBanner && <div className="h-24"><img src={banner.image} alt="" className="w-full h-full object-cover rounded-xl" /></div>}
-
-
-                </div>
-                {/* Simulated Sidebar */}
-                <div className="w-10 bg-jumia-pink border-l border-white flex items-center justify-center">
-                  <h2 className="text-sm font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase">
-                    {predominantCategory}
-                  </h2>
-                </div>
-              </div>
-              <div className="absolute bottom-3 left-6 right-6 flex justify-between items-center">
-                <div className="flex gap-2">
-                  {relevantBrandLogos.map((b, i) => (
-                    <div key={i} className="h-4 md:h-6 bg-white/50 rounded-md p-1 shadow-sm">
-                      <img src={b.logoUrl} alt={b.name} className="h-full object-contain" />
+          if (page.type === "outside_back_cover") {
+            return (
+              <div
+                key={`pdf-page-${pageNum}`}
+                id={`pdf-page-${pageNum}`}
+                className="bg-[#E6F7FF] bg-cover bg-center relative"
+                style={{
+                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                  ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
+                }}
+              >
+                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-[#FF9900]/10 to-[#009FE3]/10 opacity-70 pointer-events-none" />
+                  <div className="relative z-10 max-w-xs space-y-4">
+                    <div className="w-16 h-16 bg-[#FF9900] rounded-2xl flex items-center justify-center mx-auto shadow-md">
+                      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z" />
+                      </svg>
                     </div>
-                  ))}
+                    <h3 className="text-base font-black text-gray-900 tracking-tight uppercase">Don't Miss Out!</h3>
+                    <p className="text-[10px] text-gray-600 font-medium leading-relaxed">
+                      Flip to the next page to share your suggestions, or scan the QR code to find even more incredible deals directly on Jumia.
+                    </p>
+                  </div>
                 </div>
-                <div className="text-[10px] font-bold text-gray-400">Page {String(pageNum + 1).padStart(2, '0')}</div>
+                <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">{pageNum}</div>
               </div>
-            </div>
-          ];
+            );
+          }
+
+          const pageProducts = page.products || [];
+          const pageCategory = page.category || "Best Deals";
+
+          if (isLeftPage) {
+            return (
+              <div
+                key={`pdf-page-${pageNum}`}
+                id={`pdf-page-${pageNum}`}
+                className="bg-[#E6F7FF] bg-cover bg-center relative"
+                style={{
+                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                  ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
+                }}
+              >
+                <div className="w-full h-full flex flex-row overflow-hidden">
+                  <div className="flex-1 p-2 grid grid-cols-2 grid-rows-3 gap-2 content-start overflow-hidden">
+                    {pageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
+                  </div>
+                  {/* Simulated Sidebar */}
+                  <div className="w-10 bg-jumia-blue flex items-center justify-center">
+                    <h2 className="text-sm font-black text-white tracking-wide -rotate-90 whitespace-nowrap uppercase">
+                      {pageCategory}
+                    </h2>
+                  </div>
+                </div>
+                <div className="absolute bottom-2 left-4 text-[9px] font-bold text-gray-400">{pageNum}</div>
+              </div>
+            );
+          } else {
+            return (
+              <div
+                key={`pdf-page-${pageNum}`}
+                id={`pdf-page-${pageNum}`}
+                className="bg-[#E2E0F5] bg-cover bg-center relative"
+                style={{
+                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                  ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
+                  ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
+                }}
+              >
+                <div className="w-full h-full flex flex-row overflow-hidden">
+                  <div className="flex-1 p-2 flex flex-col gap-2 min-h-0 overflow-hidden">
+                    <div className={`grid grid-cols-2 gap-2 min-h-0 ${page.hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
+                      {pageProducts.map(p => <ProductCard key={p.id} product={p} lazy={false} />)}
+                    </div>
+                    {page.hasBanner && page.banner && (
+                      <div className="h-24">
+                        <img src={page.banner.image} alt="" className="w-full h-full object-cover rounded-xl" />
+                      </div>
+                    )}
+                  </div>
+                  {/* Simulated Sidebar */}
+                  <div className="w-10 bg-jumia-pink border-l border-white flex items-center justify-center">
+                    <h2 className="text-sm font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase">
+                      {pageCategory}
+                    </h2>
+                  </div>
+                </div>
+                <div className="absolute bottom-3 left-6 right-6 flex justify-between items-center">
+                  <div className="flex gap-2">
+                    {relevantBrandLogos.map((b, i) => (
+                      <div key={i} className="h-4 md:h-6 bg-white/50 rounded-md p-1 shadow-sm">
+                        <img src={b.logoUrl} alt={b.name} className="h-full object-contain" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-[10px] font-bold text-gray-400">Page {String(pageNum).padStart(2, '0')}</div>
+                </div>
+              </div>
+            );
+          }
         })}
 
         {/* BACK COVER CAPTURE */}
         <div
-          id={`pdf-page-${1 + productChunks.length * 2}`}
+          id={`pdf-page-${innerPages.length + 1}`}
           className="bg-[#f5f5f5] text-gray-800 bg-cover bg-center relative flex flex-col items-center justify-center p-12 text-center"
           style={{
             width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,

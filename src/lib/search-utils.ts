@@ -269,28 +269,6 @@ const CATEGORY_MAP: Record<string, string> = {
  * Maps a raw category name (often messy/split in feed data) to standard PRODUCT_CATEGORIES.
  */
 export function normalizeCategory(category: string): string {
-    const trimmed = category.trim().toLowerCase();
-    
-    if (CATEGORY_MAP[trimmed]) {
-        return CATEGORY_MAP[trimmed];
-    }
-    
-    // Check if it's already one of the standard categories (case insensitive)
-    const standardCategories = [
-        "Appliances",
-        "Phones & Tablets",
-        "Health & Beauty",
-        "Home & Office",
-        "Electronics",
-        "Fashion",
-        "Supermarket",
-        "Computing",
-        "Gaming"
-    ];
-    
-    const foundStandard = standardCategories.find(c => c.toLowerCase() === trimmed);
-    if (foundStandard) return foundStandard;
-
-    return category; // fallback to original if unknown
+    return category.trim();
 }
 
