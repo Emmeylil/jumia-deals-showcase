@@ -138,27 +138,8 @@ const Index = () => {
     });
   }, [products, catalogSettings?.sheetCategoryOrder]);
 
-  // Chunk products into pages, then combine every 2 pages into a spread chunk (to prevent blank pages and keep alignments)
+  // Chunk products into pages sequentially, keeping them grouped by category order without creating unnecessary blank page slots at the end of each category.
   const productChunks = React.useMemo(() => {
-    // Group displayProducts by category
-    const categoriesMap: Record<string, any[]> = {};
-    displayProducts.forEach(p => {
-      const cat = p.category || "Best Deals";
-      if (!categoriesMap[cat]) {
-        categoriesMap[cat] = [];
-      }
-      categoriesMap[cat].push(p);
-    });
-
-    // We want to process categories in the sorted order of displayProducts
-    const orderedCategories: string[] = [];
-    displayProducts.forEach(p => {
-      const cat = p.category || "Best Deals";
-      if (!orderedCategories.includes(cat)) {
-        orderedCategories.push(cat);
-      }
-    });
-
     const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
     const pages: any[][] = [];
     let currentPageIdx = 0;
@@ -168,28 +149,24 @@ const Index = () => {
       currentPageIdx = 1;
     }
 
-    orderedCategories.forEach(cat => {
-      const catProducts = categoriesMap[cat];
-      let prodIdx = 0;
+    let prodIdx = 0;
+    while (prodIdx < displayProducts.length) {
+      // Find capacity for the current page
+      const spreadIdx = Math.floor(currentPageIdx / 2);
+      const spreadId = `spread-${spreadIdx}`;
+      const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
 
-      while (prodIdx < catProducts.length) {
-        // Find capacity for the current page
-        const spreadIdx = Math.floor(currentPageIdx / 2);
-        const spreadId = `spread-${spreadIdx}`;
-        const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
-
-        let capacity = 6;
-        if (currentPageIdx % 2 === 1) {
-          // Right page
-          capacity = hasBanner ? 4 : 6;
-        }
-
-        const pageProducts = catProducts.slice(prodIdx, prodIdx + capacity);
-        pages.push(pageProducts);
-        prodIdx += capacity;
-        currentPageIdx++;
+      let capacity = 6;
+      if (currentPageIdx % 2 === 1) {
+        // Right page
+        capacity = hasBanner ? 4 : 6;
       }
-    });
+
+      const pageProducts = displayProducts.slice(prodIdx, prodIdx + capacity);
+      pages.push(pageProducts);
+      prodIdx += capacity;
+      currentPageIdx++;
+    }
 
     // Combine pages into spreads
     const spreads: { left: any[]; right: any[] }[] = [];
