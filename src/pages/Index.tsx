@@ -138,6 +138,7 @@ const Index = () => {
     });
   }, [products, catalogSettings?.sheetCategoryOrder]);
 
+<<<<<<< HEAD
   // Chunk products into pages sequentially, keeping them grouped by category order without creating unnecessary blank page slots at the end of each category.
   // Chunk products by category, ensuring each category's products stay together across spreads
   const productChunks = React.useMemo(() => {
@@ -148,6 +149,19 @@ const Index = () => {
       if (pageIdx % 2 === 1) {
         // Right page
         return hasBanner ? 4 : 6;
+=======
+  // Chunk products into groups, ensuring each category starts on a new spread (double-page)
+  const productChunks = React.useMemo(() => {
+    const chunks: any[][] = [];
+    let spreadIndex = 0;
+
+    // Group displayProducts by category
+    const categoriesMap: Record<string, any[]> = {};
+    displayProducts.forEach(p => {
+      const cat = p.category || "Best Deals";
+      if (!categoriesMap[cat]) {
+        categoriesMap[cat] = [];
+>>>>>>> parent of f62ac40 (fix(catalog): fix blank right pages by using chunk left/right arrays directly)
       }
       // Left page
       return 6;
@@ -158,6 +172,7 @@ const Index = () => {
     const presentCategories = Array.from(new Set(displayProducts.map(p => p.category).filter(Boolean)));
     const orderedCategories = categoriesInOrder.filter(c => presentCategories.includes(c));
 
+<<<<<<< HEAD
     let pageIdx = 0;
     orderedCategories.forEach(category => {
       const catProducts = displayProducts.filter(p => p.category === category);
@@ -180,29 +195,75 @@ const Index = () => {
     });
 
     // Ensure banner spreads exist
+=======
+    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
+
+    orderedCategories.forEach(cat => {
+      const catProducts = categoriesMap[cat];
+      let prodIdx = 0;
+
+      while (prodIdx < catProducts.length) {
+        const spreadId = `spread-${spreadIndex}`;
+        const hasBanner = !!catalogSettings?.banners?.[spreadId]?.image;
+
+        let size;
+        if (spreadIndex === 0 && hasLogosOnPage1) {
+          // Spread 0 Left is Logos, so only Right page is available for products
+          size = hasBanner ? 4 : 6;
+        } else {
+          size = hasBanner ? 10 : 12;
+        }
+
+        const chunk = catProducts.slice(prodIdx, prodIdx + size);
+        chunks.push(chunk);
+        prodIdx += size;
+        spreadIndex++;
+      }
+    });
+
+    // Ensure we also respect any extra banners defined beyond our product spreads
+>>>>>>> parent of f62ac40 (fix(catalog): fix blank right pages by using chunk left/right arrays directly)
     const bannerKeys = Object.keys(catalogSettings?.banners || {});
     const maxBannerSpreadIdx = bannerKeys
       .filter(key => key.startsWith('spread-'))
       .map(key => parseInt(key.split('-')[1]))
       .reduce((max, val) => Math.max(max, val), -1);
+<<<<<<< HEAD
     while (chunks.length <= maxBannerSpreadIdx) {
       chunks.push({ left: [], right: [] });
     }
 
     return chunks;
   }, [displayProducts, catalogSettings?.banners, catalogSettings?.sheetCategoryOrder]);
+=======
+
+    while (spreadIndex <= maxBannerSpreadIdx) {
+      chunks.push([]);
+      spreadIndex++;
+    }
+
+    return chunks;
+  }, [displayProducts, catalogSettings?.banners, catalogSettings?.brandLogos]);
+>>>>>>> parent of f62ac40 (fix(catalog): fix blank right pages by using chunk left/right arrays directly)
 
   // Helper to determine target page for a product based on dynamic chunks
   const getTargetPage = (productId: number) => {
-    for (let spreadIdx = 0; spreadIdx < productChunks.length; spreadIdx++) {
-      const spread = productChunks[spreadIdx];
-      const leftIdx = spread.left.findIndex(p => p.id === productId);
-      if (leftIdx !== -1) {
-        return 1 + (spreadIdx * 2);
-      }
-      const rightIdx = spread.right.findIndex(p => p.id === productId);
-      if (rightIdx !== -1) {
-        return 1 + (spreadIdx * 2) + 1;
+    const hasLogosOnPage1 = (catalogSettings?.brandLogos?.length ?? 0) > 0;
+
+    for (let chunkIdx = 0; chunkIdx < productChunks.length; chunkIdx++) {
+      const chunk = productChunks[chunkIdx];
+      const prodInChunkIdx = chunk.findIndex(p => p.id === productId);
+
+      if (prodInChunkIdx !== -1) {
+        if (chunkIdx === 0 && hasLogosOnPage1) {
+          // Spread 0: Left is Logos (Page 1), Right is products (Page 2)
+          return 2;
+        }
+
+        // General case for spreads
+        const spreadStartPage = 1 + (chunkIdx * 2);
+        const onLeftPage = prodInChunkIdx < (chunkIdx === 0 && hasLogosOnPage1 ? 0 : 6);
+        return spreadStartPage + (onLeftPage ? 0 : 1);
       }
     }
     return 0;
@@ -231,14 +292,11 @@ const Index = () => {
     // currentPage 0 = cover, 1+ = inner spreads; spreadIndex = Math.floor((currentPage - 1) / 2)
     if (currentPage === 0) return null;
     const spreadIndex = Math.floor((currentPage - 1) / 2);
-    const spread = productChunks[spreadIndex];
-    if (!spread) return null;
-    
-    const allProducts = [...spread.left, ...spread.right];
-    if (allProducts.length === 0) return null;
-
+    const chunk = productChunks[spreadIndex];
+    if (!chunk || chunk.length === 0) return null;
+    // Tally categories on this spread and return the most common one
     const tally: Record<string, number> = {};
-    for (const p of allProducts) {
+    for (const p of chunk) {
       if (p.category) tally[p.category] = (tally[p.category] ?? 0) + 1;
     }
     return Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
@@ -880,8 +938,16 @@ const Index = () => {
             const banner = catalogSettings?.banners?.[spreadId];
             const hasBanner = !!banner?.image;
 
-            const leftPageProducts = chunk.left || [];
-            const rightPageProducts = chunk.right || [];
+            let leftPageProducts: any[] = [];
+            let rightPageProducts: any[] = [];
+
+            if (hasLogosOnPage1) {
+              leftPageProducts = [];
+              rightPageProducts = hasBanner ? chunk.slice(0, 4) : chunk.slice(0, 6);
+            } else {
+              leftPageProducts = chunk.slice(0, 6);
+              rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
+            }
 
             const allPageProducts = [...leftPageProducts, ...rightPageProducts];
             const categories = allPageProducts.map(p => p.category).filter(Boolean);
@@ -1289,8 +1355,15 @@ const Index = () => {
           const banner = catalogSettings?.banners?.[spreadId];
           const hasBanner = !!banner?.image;
 
-          const leftPageProducts = chunk.left || [];
-          const rightPageProducts = chunk.right || [];
+          let leftPageProducts: any[] = [];
+          let rightPageProducts: any[] = [];
+
+          if (hasLogosOnPage1) {
+            rightPageProducts = hasBanner ? chunk.slice(0, 4) : chunk.slice(0, 6);
+          } else {
+            leftPageProducts = chunk.slice(0, 6);
+            rightPageProducts = hasBanner ? chunk.slice(6, 10) : chunk.slice(6, 12);
+          }
 
           // Determine page category (majority category in chunks)
           const allPageProducts = [...leftPageProducts, ...rightPageProducts];
