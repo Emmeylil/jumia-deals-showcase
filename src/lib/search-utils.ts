@@ -204,3 +204,93 @@ export function autoCategorizeProduct(name: string): string {
 
     return "";
 }
+
+// Map raw feed categories to Jumia standardized categories
+const CATEGORY_MAP: Record<string, string> = {
+    // Beauty & Perfumes
+    "beauty & perfumes": "Health & Beauty",
+    "beauty and perfumes": "Health & Beauty",
+    "health & beauty": "Health & Beauty",
+    "health and beauty": "Health & Beauty",
+    
+    // Phones & Tablets
+    "phones": "Phones & Tablets",
+    "phone": "Phones & Tablets",
+    "tablet": "Phones & Tablets",
+    "tablets": "Phones & Tablets",
+    "phones & tablets": "Phones & Tablets",
+    "phones and tablets": "Phones & Tablets",
+    
+    // Electronics & TV/Video/Cameras
+    "tvs, audio and video": "Electronics",
+    "tv, audio and video": "Electronics",
+    "tvs, audio & video": "Electronics",
+    "cameras & accessories": "Electronics",
+    "cameras and accessories": "Electronics",
+    "electronics": "Electronics",
+    
+    // Gaming
+    "games & consoles": "Gaming",
+    "games and consoles": "Gaming",
+    "gaming": "Gaming",
+    
+    // Home & Office
+    "home": "Home & Office",
+    "home & office": "Home & Office",
+    "home and office": "Home & Office",
+    "office": "Home & Office",
+    
+    // Fashion
+    "fashion": "Fashion",
+    "men's accessories": "Fashion",
+    "men's clothing": "Fashion",
+    "men's shoes": "Fashion",
+    "women's accessories": "Fashion",
+    "women's clothing": "Fashion",
+    "women's shoes": "Fashion",
+    "mens accessories": "Fashion",
+    "mens clothing": "Fashion",
+    "mens shoes": "Fashion",
+    "womens accessories": "Fashion",
+    "womens clothing": "Fashion",
+    "womens shoes": "Fashion",
+    
+    // Appliances
+    "appliances": "Appliances",
+    
+    // Computing
+    "computing": "Computing",
+    
+    // Supermarket
+    "supermarket": "Supermarket"
+};
+
+/**
+ * Maps a raw category name (often messy/split in feed data) to standard PRODUCT_CATEGORIES.
+ */
+export function normalizeCategory(category: string): string {
+    const trimmed = category.trim().toLowerCase();
+    
+    if (CATEGORY_MAP[trimmed]) {
+        return CATEGORY_MAP[trimmed];
+    }
+    
+    // Check if it's already one of the standard categories (case insensitive)
+    const standardCategories = [
+        "Appliances",
+        "Phones & Tablets",
+        "Health & Beauty",
+        "Home & Office",
+        "Electronics",
+        "Fashion",
+        "Supermarket",
+        "Computing",
+        "Gaming"
+    ];
+    
+    const foundStandard = standardCategories.find(c => c.toLowerCase() === trimmed);
+    if (foundStandard) return foundStandard;
+
+    return category; // fallback to original if unknown
+}
+

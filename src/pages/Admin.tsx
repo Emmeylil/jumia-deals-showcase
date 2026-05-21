@@ -13,7 +13,7 @@ import { Activity, Plus, Search, Loader2, Trash2, Save, Edit2, BarChart3, MouseP
 import { getStats, type StatsData, listenToActiveReaders, getDailyStats, fetchBackendAnalytics, type AnalyticsResponse } from "@/lib/stats";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/constants";
-import { autoCategorizeProduct } from "@/lib/search-utils";
+import { autoCategorizeProduct, normalizeCategory } from "@/lib/search-utils";
 import { FeatureRequest, Announcement, RequestStatus, RequestTopic } from "@/types/feedback";
 import { addUTMParameters } from "@/lib/utils";
 
@@ -763,7 +763,7 @@ const Admin = () => {
         // If Sheet Column A has text, we use it exactly as provided.
         // If Sheet Column A is empty, we fall back to auto-categorization.
         const categoryToUse = sheetCategory.trim() !== ""
-          ? sheetCategory.trim()
+          ? normalizeCategory(sheetCategory)
           : autoCategorizeProduct(nameFromSheet);
 
         if (categoryToUse && !extractedCategoryOrder.includes(categoryToUse)) {
