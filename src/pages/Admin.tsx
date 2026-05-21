@@ -705,7 +705,7 @@ const Admin = () => {
 
       headerRow.forEach((col, idx) => {
         const norm = col.toLowerCase().replace(/[^a-z]/g, '');
-        if (norm === 'category') colMap.category = idx;
+        if (norm === 'category' || norm === 'categories') colMap.category = idx;
         else if (norm === 'sku') colMap.sku = idx;
         else if (norm === 'productname' || norm === 'name') colMap.name = idx;
         else if (norm === 'brandname' || norm === 'brand') colMap.brand = idx;
@@ -748,6 +748,8 @@ const Admin = () => {
         return isNaN(numeric) ? 0 : Math.round(numeric);
       };
 
+      const extractedCategoryOrder: string[] = [];
+
       for (const row of rows) {
         const sku = row[mapping.sku];
         const sheetCategory = row[mapping.category] || "";
@@ -764,6 +766,10 @@ const Admin = () => {
         const categoryToUse = sheetCategory.trim() !== ""
           ? sheetCategory.trim()
           : autoCategorizeProduct(nameFromSheet);
+
+        if (categoryToUse && !extractedCategoryOrder.includes(categoryToUse)) {
+          extractedCategoryOrder.push(categoryToUse);
+        }
 
         const existingProduct = currentProducts.find(p => p.sku === sku);
 
@@ -844,8 +850,8 @@ const Admin = () => {
       }
 
       const now = Date.now();
-      await updateDoc(doc(db, "settings", "catalog"), { lastSyncTimestamp: now });
-      setCatalogSettings(prev => ({ ...prev, lastSyncTimestamp: now }));
+      await updateDoc(doc(db, "settings", "catalog"), { lastSyncTimestamp: now, sheetCategoryOrder: extractedCategoryOrder });
+      setCatalogSettings(prev => ({ ...prev, lastSyncTimestamp: now, sheetCategoryOrder: extractedCategoryOrder }));
 
       if (!isAuto) toast.success(`Synced ${rows.length} products! Prices mapping verified.`);
     } catch (error) {
