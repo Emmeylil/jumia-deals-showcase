@@ -705,8 +705,7 @@ const Admin = () => {
 
       headerRow.forEach((col, idx) => {
         const norm = col.toLowerCase().replace(/[^a-z]/g, '');
-        if (norm === 'category' || norm === 'categories') colMap.category = idx;
-        else if (norm === 'sku') colMap.sku = idx;
+        if (norm === 'sku') colMap.sku = idx;
         else if (norm === 'productname' || norm === 'name') colMap.name = idx;
         else if (norm === 'brandname' || norm === 'brand') colMap.brand = idx;
         else if (norm === 'oldprice') colMap.oldPrice = idx;
@@ -717,7 +716,7 @@ const Admin = () => {
 
       // Default mapping if headers missing
       const mapping = {
-        category: colMap.category ?? 0,
+        category: 0, // Force Column A for category
         sku: colMap.sku ?? 1,
         name: colMap.name ?? 2,
         brand: colMap.brand ?? 3,
