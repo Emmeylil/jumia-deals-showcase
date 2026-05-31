@@ -933,7 +933,7 @@ const Index = () => {
               : [];
 
             const relevantBrandLogos = (catalogSettings?.brandLogos as any[] || []).filter(b =>
-              categoryBrands.some(cb => b.name.toLowerCase().includes(cb.toLowerCase()))
+              categoryBrands.some(cb => b?.name?.toLowerCase().includes(cb.toLowerCase()))
             ).slice(0, 4);
 
             if (page.type === "brand_partners") {
@@ -1385,7 +1385,7 @@ const Index = () => {
             : [];
 
           const relevantBrandLogos = (catalogSettings?.brandLogos as any[] || []).filter(b =>
-            categoryBrands.some(cb => b.name.toLowerCase().includes(cb.toLowerCase()))
+            categoryBrands.some(cb => b?.name?.toLowerCase().includes(cb.toLowerCase()))
           ).slice(0, 4);
 
           if (page.type === "brand_partners") {

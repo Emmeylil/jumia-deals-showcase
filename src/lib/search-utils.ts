@@ -28,7 +28,8 @@ const SYNONYM_MAP: Record<string, string[]> = {
 /**
  * Normalizes text by lowercasing, removing punctuation, and trimming.
  */
-export function normalizeText(text: string): string {
+export function normalizeText(text: string | undefined | null): string {
+    if (!text) return "";
     return text
         .toLowerCase()
         .replace(/[^\w\s]/g, " ")
@@ -171,7 +172,8 @@ export function getSemanticScore(
 /**
  * Guesses the product category based on its name and keywords.
  */
-export function autoCategorizeProduct(name: string): string {
+export function autoCategorizeProduct(name: string | undefined | null): string {
+    if (!name) return "";
     const norm = name.toLowerCase();
 
     // Ordered by specificity to ensure better matching
