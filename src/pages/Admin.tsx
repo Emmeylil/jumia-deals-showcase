@@ -680,6 +680,10 @@ const Admin = () => {
       const response = await fetch(sheetUrl);
       const csvText = await response.text();
 
+      if (csvText.trim().toLowerCase().startsWith("<!doctype") || csvText.includes("<html") || csvText.includes("<script>")) {
+          throw new Error("Received HTML instead of CSV. Ensure your Google Sheet is shared as 'Anyone with the link can view'.");
+      }
+
       const lines = csvText.split('\n');
       if (lines.length === 0) throw new Error("Empty spreadsheet");
 
