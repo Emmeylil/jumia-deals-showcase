@@ -81,6 +81,11 @@ const Index = () => {
   // Dynamic Category Filtering
   const [activeCategoryFilter, setActiveCategoryFilter] = React.useState<string>("All");
 
+  const handleCategorySelect = (category: string) => {
+    setActiveCategoryFilter(category);
+    setIsSearchFocused(false);
+  };
+
   const availableCategories = React.useMemo(() => {
     const categories = (products || [])
       .filter(p => p.category)
@@ -833,11 +838,10 @@ const Index = () => {
             : 'none'
         }}
       >
-        {/* @ts-expect-error react-pageflip types are sometimes tricky with newer react */}
         <HTMLFlipBook
           key={(isDesktop ? 'desktop_' : 'mobile_') + activeCategoryFilter}
           width={isDesktop ? 380 : 320}
-          height={isDesktop ? 480 : 420}
+          height={isDesktop ? 480 : 480}
           size="stretch"
           minWidth={isDesktop ? 280 : 250}
           maxWidth={700}
@@ -852,6 +856,8 @@ const Index = () => {
           flippingTime={1000}
           drawShadow={true}
           useMouseEvents={true}
+          clickEventForward={true}
+          disableFlipByClick={true}
           onFlip={(e) => {
             const newPage = e.data;
             setCurrentPage(newPage);
@@ -1337,7 +1343,7 @@ const Index = () => {
         className="fixed top-[-9999px] left-[-9999px] z-[-5000] pointer-events-none"
         style={{
           width: isDesktop ? 380 : 320,
-          height: isDesktop ? 480 : 420,
+          height: isDesktop ? 480 : 480,
           fontFamily: "'Inter', sans-serif"
         }}
       >
@@ -1347,7 +1353,7 @@ const Index = () => {
           className="bg-white text-gray-900 border-none relative overflow-hidden bg-cover bg-center"
           style={{
             width: isDesktop ? 380 : 320,
-            height: isDesktop ? 480 : 420,
+            height: isDesktop ? 480 : 480,
             ...(catalogSettings?.frontPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.frontPage.backgroundImage})` } : {}),
             ...(catalogSettings?.frontPage?.backgroundColor ? { backgroundColor: catalogSettings.frontPage.backgroundColor } : {})
           }}
@@ -1395,7 +1401,7 @@ const Index = () => {
                 id={`pdf-page-${pageNum}`}
                 className="bg-[#E6F7FF] bg-cover bg-center relative"
                 style={{
-                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 480,
                   ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
                   ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
                 }}
@@ -1432,7 +1438,7 @@ const Index = () => {
                 id={`pdf-page-${pageNum}`}
                 className="bg-[#E6F7FF] bg-cover bg-center relative"
                 style={{
-                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 480,
                   ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
                   ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
                 }}
@@ -1466,7 +1472,7 @@ const Index = () => {
                 id={`pdf-page-${pageNum}`}
                 className="bg-[#E6F7FF] bg-cover bg-center relative"
                 style={{
-                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 480,
                   ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
                   ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
                 }}
@@ -1492,7 +1498,7 @@ const Index = () => {
                 id={`pdf-page-${pageNum}`}
                 className="bg-[#E2E0F5] bg-cover bg-center relative"
                 style={{
-                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+                  width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 480,
                   ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
                   ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
                 }}
@@ -1535,7 +1541,7 @@ const Index = () => {
           id={`pdf-page-${innerPages.length + 1}`}
           className="bg-[#f5f5f5] text-gray-800 bg-cover bg-center relative flex flex-col items-center justify-center p-12 text-center"
           style={{
-            width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 420,
+            width: isDesktop ? 380 : 320, height: isDesktop ? 480 : 480,
             ...(catalogSettings?.backPage?.backgroundImage ? { backgroundImage: `url(${catalogSettings.backPage.backgroundImage})` } : {}),
             ...(catalogSettings?.backPage?.backgroundColor ? { backgroundColor: catalogSettings.backPage.backgroundColor } : {})
           }}
