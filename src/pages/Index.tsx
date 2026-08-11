@@ -20,7 +20,7 @@ import { AlertCircle, Loader2, Share2, Search, X, History, Flame, Trash2 } from 
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { addUTMParameters } from "@/lib/utils";
-import AnniversaryEffects from "@/components/AnniversaryEffects";
+import BrandFestivalEffects from "@/components/BrandFestivalEffects";
 
 interface PageProps {
   children: React.ReactNode;
@@ -469,6 +469,21 @@ const Index = () => {
     }
   };
 
+  const handleCategorySelect = (cat: string) => {
+    logCategorySearch(cat);
+    const targetPage = getCategoryPage(cat);
+    const book = bookRef.current?.pageFlip();
+    if (book && targetPage > 0) {
+      const currentPageIndex = book.getCurrentPageIndex();
+      const isVisible = isDesktop
+        ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
+        : currentPageIndex === targetPage;
+      if (!isVisible) book.flip(targetPage);
+    }
+    setSearchQuery("");
+    setIsSearchFocused(false);
+  };
+
   // Live search results (as-you-type)
   const liveSearchResults = React.useMemo(() => {
     if (searchQuery.trim().length < 2) return [];
@@ -533,7 +548,7 @@ const Index = () => {
 
   return (
     <div className="h-[100dvh] font-outfit overflow-hidden flex flex-col items-center justify-between py-2 md:py-4 px-2 md:px-4 relative gradient-main fixed inset-0">
-      <AnniversaryEffects />
+      <BrandFestivalEffects />
 
       {/* Control Bar */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
