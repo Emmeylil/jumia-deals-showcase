@@ -71,8 +71,8 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
         <Heart size={12} fill={isWishlisted ? "currentColor" : "none"} />
       </button>
 
-      {/* Product Image — takes ~55% of card height */}
-      <div className="w-full flex items-center justify-center mt-5 mb-1" style={{ height: '55%', minHeight: 0 }}>
+      {/* Product Image — takes ~50-55% of card height */}
+      <div className="w-full flex items-center justify-center mt-2 md:mt-5 mb-0.5 md:mb-1" style={{ height: '50%', minHeight: 0 }}>
         <img
           src={product.image}
           alt={product.name}
@@ -83,8 +83,8 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
       </div>
 
       {/* Product Name */}
-      <div className="w-full text-center px-1 mb-1 shrink-0 flex items-center justify-center" style={{ minHeight: '2.2rem' }}>
-        <h3 className="text-[10px] md:text-[11px] font-bold text-gray-900 leading-snug line-clamp-2">
+      <div className="w-full text-center px-1 mb-0.5 md:mb-1 shrink-0 flex items-center justify-center min-h-[1.8rem] md:min-h-[2.2rem]">
+        <h3 className="text-[9px] md:text-[11px] font-bold text-gray-900 leading-snug line-clamp-2">
           {(() => {
             const fullName = product.displayName || product.name;
             const words = fullName.split(' ');
@@ -102,14 +102,14 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
 
       {/* Price Pill */}
       <div className="w-full flex flex-col items-center mt-auto gap-0.5 shrink-0 pb-1">
-        <div className="bg-jumia-orange-deep text-black w-full max-w-[92%] py-1 rounded-xl flex items-center justify-center shadow-sm">
-          <span className="text-[11px] md:text-[13px] font-black tracking-tight">
+        <div className="bg-jumia-orange-deep text-black w-full max-w-[92%] py-0.5 md:py-1 rounded-xl flex items-center justify-center shadow-sm">
+          <span className="text-[10px] md:text-[13px] font-black tracking-tight">
             {formatPrice(product.price)}
           </span>
         </div>
 
         {product.oldPrice && (
-          <span className="text-[8px] text-gray-400 line-through font-bold">
+          <span className="text-[7px] md:text-[8px] text-gray-400 line-through font-bold">
             {formatPrice(product.oldPrice)}
           </span>
         )}
