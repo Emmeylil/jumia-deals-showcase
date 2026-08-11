@@ -82,7 +82,18 @@ const Index = () => {
   const [activeCategoryFilter, setActiveCategoryFilter] = React.useState<string>("All");
 
   const handleCategorySelect = (category: string) => {
+    logCategorySearch(category);
     setActiveCategoryFilter(category);
+    const targetPage = getCategoryPage(category);
+    const book = bookRef.current?.pageFlip?.();
+    if (book && targetPage > 0) {
+      const currentPageIndex = book.getCurrentPageIndex();
+      const isVisible = isDesktop
+        ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
+        : currentPageIndex === targetPage;
+      if (!isVisible) book.flip(targetPage);
+    }
+    setSearchQuery("");
     setIsSearchFocused(false);
   };
 
@@ -472,21 +483,6 @@ const Index = () => {
         duration: 5000,
       });
     }
-  };
-
-  const handleCategorySelect = (cat: string) => {
-    logCategorySearch(cat);
-    const targetPage = getCategoryPage(cat);
-    const book = bookRef.current?.pageFlip();
-    if (book && targetPage > 0) {
-      const currentPageIndex = book.getCurrentPageIndex();
-      const isVisible = isDesktop
-        ? (currentPageIndex === targetPage || (currentPageIndex % 2 !== 0 && currentPageIndex + 1 === targetPage))
-        : currentPageIndex === targetPage;
-      if (!isVisible) book.flip(targetPage);
-    }
-    setSearchQuery("");
-    setIsSearchFocused(false);
   };
 
   // Live search results (as-you-type)
