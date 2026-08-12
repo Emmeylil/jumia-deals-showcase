@@ -13,30 +13,34 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    /* Jumia Color Palette from image */
-    --jumia-pink: 352 100% 83%;       /* #ffa7b3 */
-    --jumia-orange: 44 100% 50%;      /* #ffba00 */
-    --jumia-orange-deep: 36 100% 50%;  /* #ff9900 */
-    --jumia-blue: 191 59% 63%;        /* #6ac1d5 */
+    /* Jumia Brand Festival Official Color Palette */
+    --jumia-orange: 28 92% 54%;         /* #F68B1E Brand Orange */
+    --jumia-orange-deep: 28 92% 47%;    /* #E07810 Deep Brand Orange */
+    --jumia-amber: 43 96% 56%;          /* #F59E0B Amber-Aurora */
+    --jumia-purple: 259 84% 62%;        /* #7F4CEF Block-Purple */
+    --jumia-purple-light: 260 90% 74%;  /* #AC80F7 Iris-Aurora */
+    --jumia-blue: 217 91% 60%;          /* #3B82F6 Block-Blue */
+    --jumia-blue-light: 214 100% 93%;   /* #DDEDFF Block-Blue Light */
+    --jumia-lilac: 268 95% 85%;         /* #D8B4FE */
 
-    --primary: 191 59% 63%;           /* Blue */
+    --primary: 28 92% 54%;              /* #F68B1E */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 352 100% 83%;        /* Pink */
-    --secondary-foreground: 191 59% 63%;
+    --secondary: 259 84% 62%;           /* #7F4CEF */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 191 20% 96%;
-    --muted-foreground: 191 40% 45%;
+    --muted: 214 100% 97%;
+    --muted-foreground: 259 20% 45%;
 
-    --accent: 44 100% 50%;           /* Orange */
+    --accent: 43 96% 56%;               /* #F59E0B */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 191 30% 90%;
-    --input: 191 30% 90%;
-    --ring: 191 59% 63%;
+    --border: 259 30% 90%;
+    --input: 259 30% 90%;
+    --ring: 28 92% 54%;
 
     --radius: 0.75rem;
 
@@ -50,33 +54,31 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Custom Jumia tokens */
-    --jumia-blue-light: 191 80% 85%;
-    --jumia-pink-light: 352 100% 92%;
-    --jumia-bg: 191 40% 98%;
-    --jumia-card-shadow: 0 4px 12px 0 hsla(191, 59%, 30%, 0.08);
-    --jumia-card-shadow-hover: 0 12px 24px -4px hsla(191, 59%, 30%, 0.15);
+    --jumia-bg: 214 100% 98%;
+    --jumia-card-shadow: 0 4px 12px 0 rgba(127, 76, 239, 0.08);
+    --jumia-card-shadow-hover: 0 12px 24px -4px rgba(246, 139, 30, 0.2);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 260 50% 8%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 260 50% 10%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 260 50% 10%;
     --popover-foreground: 210 40% 98%;
-    --primary: 199 89% 48%;
+    --primary: 28 92% 54%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 259 84% 62%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 260 30% 18%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 45 100% 50%;
+    --accent: 43 96% 56%;
     --accent-foreground: 0 0% 15%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 260 30% 20%;
+    --input: 260 30% 20%;
+    --ring: 28 92% 54%;
   }
 }
 
@@ -93,20 +95,23 @@
 
 @layer utilities {
   .gradient-header {
-    background: linear-gradient(135deg, hsl(var(--jumia-blue)) 0%, hsl(var(--jumia-pink)) 100%);
+    background: linear-gradient(135deg, #F68B1E 0%, #7F4CEF 100%);
   }
 
   .gradient-main {
-    background: radial-gradient(circle at top right, #ffba00 0%, #ff9900 100%);
+    background: radial-gradient(circle at 15% 15%, rgba(246, 139, 30, 0.95) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(127, 76, 239, 0.95) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(172, 128, 247, 0.8) 0%, transparent 60%),
+                linear-gradient(135deg, #F68B1E 0%, #7F4CEF 50%, #AC80F7 100%);
     background-attachment: fixed;
   }
 
   .text-jumia-orange {
-    color: hsl(var(--jumia-orange));
+    color: #F68B1E;
   }
 
   .bg-jumia-orange {
-    background-color: hsl(var(--jumia-orange));
+    background-color: #F68B1E;
   }
 
   .bg-jumia-bg {
@@ -122,9 +127,9 @@
   }
 
   .discount-badge {
-    background: linear-gradient(135deg, hsl(var(--jumia-orange-deep)) 0%, hsl(var(--jumia-orange)) 100%);
-    color: hsl(0, 0%, 100%);
-    box-shadow: 0 2px 4px rgba(255, 153, 0, 0.3);
+    background: linear-gradient(135deg, #F68B1E 0%, #F59E0B 100%);
+    color: #FFFFFF;
+    box-shadow: 0 2px 6px rgba(246, 139, 30, 0.4);
   }
 
   .animate-beat {

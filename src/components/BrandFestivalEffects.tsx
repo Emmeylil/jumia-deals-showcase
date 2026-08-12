@@ -11,7 +11,7 @@ const BrandFestivalEffects = () => {
     // Initial celebration burst
     const duration = 5 * 1000;
     const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0, colors: ['#F68B1E', '#F59E0B', '#7F4CEF', '#AC80F7', '#3B82F6', '#FFFFFF'] };
 
     const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 

@@ -16,10 +16,10 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
     };
 
     const content = (
-        <div className="relative bg-jumia-orange rounded-[1.5rem] shadow-sm flex flex-col items-center p-2.5 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group">
+        <div className="relative bg-[#F68B1E] text-white rounded-[1.5rem] shadow-sm flex flex-col items-center p-2.5 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group">
             {/* Discount Badge */}
             {discount > 0 && (
-                <div className="absolute top-2 right-2 z-10 bg-white text-jumia-orange-deep text-[10px] font-black w-8 h-8 flex items-center justify-center rounded-full shadow-sm">
+                <div className="absolute top-2 right-2 z-10 bg-white text-[#F68B1E] text-[10px] font-black w-8 h-8 flex items-center justify-center rounded-full shadow-sm">
                     -{discount}%
                 </div>
             )}

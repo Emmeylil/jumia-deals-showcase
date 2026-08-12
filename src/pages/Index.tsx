@@ -878,7 +878,7 @@ const Index = () => {
               particleCount: 80,
               spread: 60,
               origin: { y: 0.7 },
-              colors: ['#ff9900', '#ffa7b3', '#ffffff', '#6ac1d5']
+              colors: ['#F68B1E', '#F59E0B', '#7F4CEF', '#AC80F7', '#3B82F6', '#FFFFFF']
             });
           }}
         >
@@ -893,12 +893,12 @@ const Index = () => {
             >
               {/* Decorative Circle */}
               <div
-                className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-[#FF9900]/10 rounded-full blur-3xl pointer-events-none"
-                style={{ backgroundColor: `${catalogSettings?.frontPage?.primaryColor || '#FF9900'}1A` }}
+                className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-[#F68B1E]/10 rounded-full blur-3xl pointer-events-none"
+                style={{ backgroundColor: `${catalogSettings?.frontPage?.primaryColor || '#F68B1E'}1A` }}
               />
               <div
-                className="absolute bottom-[-50px] left-[-50px] w-40 h-40 bg-[#009FE3]/10 rounded-full blur-3xl pointer-events-none"
-                style={{ backgroundColor: `${catalogSettings?.frontPage?.secondaryColor || '#009FE3'}1A` }}
+                className="absolute bottom-[-50px] left-[-50px] w-40 h-40 bg-[#7F4CEF]/10 rounded-full blur-3xl pointer-events-none"
+                style={{ backgroundColor: `${catalogSettings?.frontPage?.secondaryColor || '#7F4CEF'}1A` }}
               />
 
               {/* Decorative Circle */}
@@ -910,7 +910,7 @@ const Index = () => {
                     {catalogSettings?.frontPage?.subtitle && (
                       <span
                         className="drop-shadow-sm"
-                        style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF9900' }}
+                        style={{ color: catalogSettings?.frontPage?.primaryColor || '#F68B1E' }}
                       >
                         {catalogSettings?.frontPage?.subtitle}
                       </span>
@@ -920,7 +920,7 @@ const Index = () => {
                 {(catalogSettings?.frontPage?.title || catalogSettings?.frontPage?.subtitle) && (
                   <div
                     className="absolute -bottom-4 right-0 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rotate-[-5deg] shadow-md rounded-sm"
-                    style={{ backgroundColor: catalogSettings?.frontPage?.secondaryColor || '#009FE3' }}
+                    style={{ backgroundColor: catalogSettings?.frontPage?.secondaryColor || '#7F4CEF' }}
                   >
                     LIMITED TIME
                   </div>
@@ -1069,14 +1069,14 @@ const Index = () => {
                 <Page
                   key={`page-${pageNum}`}
                   id={`page-${pageNum}`}
-                  className="bg-[#E6F7FF] bg-cover bg-center"
+                  className="bg-[#DDEDFF] bg-cover bg-center"
                   style={{
                     ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
                     ...(catalogSettings?.innerPages?.leftPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.leftPageBackgroundColor } : {})
                   }}
                 >
                   <div className="w-full h-full flex flex-row">
-                    <div className="w-10 md:w-14 bg-jumia-blue flex flex-col items-center py-3 md:py-6 relative shadow-lg z-10">
+                    <div className="w-10 md:w-14 bg-[#3B82F6] flex flex-col items-center py-3 md:py-6 relative shadow-lg z-10">
                       <div className="bg-black/20 p-1 md:p-1.5 rounded-full mb-3 md:mb-6">
                         <svg className="w-4 h-4 md:w-6 md:h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
                       </div>
@@ -1108,7 +1108,7 @@ const Index = () => {
                 <Page
                   key={`page-${pageNum}`}
                   id={`page-${pageNum}`}
-                  className="bg-[#E2E0F5] bg-cover bg-center"
+                  className="bg-[#F3E8FF] bg-cover bg-center"
                   style={{
                     ...(catalogSettings?.innerPages?.backgroundImage ? { backgroundImage: `url(${catalogSettings.innerPages.backgroundImage})` } : {}),
                     ...(catalogSettings?.innerPages?.rightPageBackgroundColor ? { backgroundColor: catalogSettings.innerPages.rightPageBackgroundColor } : {})
@@ -1131,7 +1131,7 @@ const Index = () => {
                         </div>
                       )}
                     </div>
-                    <div className="w-10 md:w-14 bg-jumia-pink border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
+                    <div className="w-10 md:w-14 bg-[#7F4CEF] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                       <div className="flex-1 flex items-center justify-center">
                         <h2 className="text-xl md:text-3xl font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase opacity-90">
                           {pageCategory}
