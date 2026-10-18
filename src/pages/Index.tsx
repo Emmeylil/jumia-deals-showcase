@@ -915,12 +915,16 @@ const Index = () => {
             const newPage = e.data;
             setCurrentPage(newPage);
             
-            // Trigger celebration on flip
+            // Subtle flash deal golden spark on page flip (Black Friday sparks, not party confetti)
             confetti({
-              particleCount: 80,
-              spread: 60,
-              origin: { y: 0.7 },
-              colors: ['#FF550C', '#3B2079', '#bE1d3e', '#FFA000', '#000000', '#FFFFFF']
+              particleCount: 16,
+              spread: 40,
+              origin: { y: 0.8 },
+              gravity: 1.8,
+              ticks: 25,
+              scalar: 0.65,
+              shapes: ['star'],
+              colors: ['#FF550C', '#FFD700', '#FFA000']
             });
           }}
         >
