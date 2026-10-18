@@ -13,20 +13,21 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    /* Jumia Brand Festival Official Color Palette */
-    --jumia-orange: 28 92% 54%;         /* #F68B1E Brand Orange */
-    --jumia-orange-deep: 28 92% 47%;    /* #E07810 Deep Brand Orange */
-    --jumia-amber: 43 96% 56%;          /* #F59E0B Amber-Aurora */
-    --jumia-purple: 259 84% 62%;        /* #7F4CEF Block-Purple */
-    --jumia-purple-light: 260 90% 74%;  /* #AC80F7 Iris-Aurora */
+    /* Jumia Black Friday Color Palette */
+    --jumia-orange: 18 100% 52%;        /* #FF550C Orange-550 */
+    --jumia-orange-deep: 18 100% 45%;   /* Deep Brand Orange */
+    --jumia-amber: 43 96% 56%;          /* Amber-Aurora */
+    --jumia-purple: 258 58% 30%;        /* #3B2079 Purple-900 */
+    --jumia-purple-light: 260 50% 45%;  /* Purple Accent */
+    --jumia-red: 348 74% 43%;           /* #bE1d3e Red-500 */
     --jumia-blue: 217 91% 60%;          /* #3B82F6 Block-Blue */
     --jumia-blue-light: 214 100% 93%;   /* #DDEDFF Block-Blue Light */
     --jumia-lilac: 268 95% 85%;         /* #D8B4FE */
 
-    --primary: 28 92% 54%;              /* #F68B1E */
+    --primary: 18 100% 52%;             /* #FF550C */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 259 84% 62%;           /* #7F4CEF */
+    --secondary: 258 58% 30%;          /* #3B2079 */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 214 100% 97%;
@@ -95,23 +96,23 @@
 
 @layer utilities {
   .gradient-header {
-    background: linear-gradient(135deg, #F68B1E 0%, #7F4CEF 100%);
+    background: linear-gradient(135deg, #FF550C 0%, #3B2079 50%, #bE1d3e 100%);
   }
 
   .gradient-main {
-    background: radial-gradient(circle at 15% 15%, rgba(246, 139, 30, 0.95) 0%, transparent 45%),
-                radial-gradient(circle at 85% 85%, rgba(127, 76, 239, 0.95) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(172, 128, 247, 0.8) 0%, transparent 60%),
-                linear-gradient(135deg, #F68B1E 0%, #7F4CEF 50%, #AC80F7 100%);
+    background: radial-gradient(circle at 12% 18%, rgba(255, 85, 12, 0.45) 0%, transparent 42%),
+                radial-gradient(circle at 88% 82%, rgba(190, 29, 62, 0.42) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(59, 32, 121, 0.85) 0%, transparent 60%),
+                linear-gradient(135deg, #000000 0%, #150826 35%, #3B2079 70%, #000000 100%);
     background-attachment: fixed;
   }
 
   .text-jumia-orange {
-    color: #F68B1E;
+    color: #FF550C;
   }
 
   .bg-jumia-orange {
-    background-color: #F68B1E;
+    background-color: #FF550C;
   }
 
   .bg-jumia-bg {
@@ -127,9 +128,9 @@
   }
 
   .discount-badge {
-    background: linear-gradient(135deg, #F68B1E 0%, #F59E0B 100%);
+    background: linear-gradient(135deg, #FF550C 0%, #bE1d3e 100%);
     color: #FFFFFF;
-    box-shadow: 0 2px 6px rgba(246, 139, 30, 0.4);
+    box-shadow: 0 2px 6px rgba(255, 85, 12, 0.4);
   }
 
   .animate-beat {

@@ -18,9 +18,8 @@ import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/
 
 import { AlertCircle, Loader2, Share2, Search, X, History, Flame, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { addUTMParameters } from "@/lib/utils";
-import BrandFestivalEffects from "@/components/BrandFestivalEffects";
+import BlackFridayEffects from "@/components/BlackFridayEffects";
 
 interface PageProps {
   children: React.ReactNode;
@@ -549,24 +548,18 @@ const Index = () => {
 
   return (
     <div className="h-[100dvh] font-outfit overflow-hidden flex flex-col items-center justify-between py-2 md:py-4 px-2 md:px-4 relative gradient-main fixed inset-0">
-      <BrandFestivalEffects />
+      <BlackFridayEffects />
 
       {/* Control Bar */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
-        <button onClick={handleShare} className="bg-white p-2 rounded-full shadow hover:bg-gray-50 text-gray-700" title="Share">
+        <button
+          onClick={handleShare}
+          className="bg-white/20 backdrop-blur-md p-2.5 rounded-full shadow-lg hover:bg-white/30 text-white border border-white/20 transition-all hover:scale-105 active:scale-95"
+          title="Share"
+        >
           <Share2 size={20} />
         </button>
-
       </div>
-
-
-
-
-      {/* Background with blur effect */}
-      <div
-        className="fixed inset-0 z-0 bg-cover bg-center opacity-20 pointer-events-none"
-        style={{ backgroundImage: `url(${catalogBg})` }}
-      />
 
       {/* Search Backdrop (closes results when clicking away) */}
       {isSearchFocused && (
@@ -878,7 +871,7 @@ const Index = () => {
               particleCount: 80,
               spread: 60,
               origin: { y: 0.7 },
-              colors: ['#F68B1E', '#F59E0B', '#7F4CEF', '#AC80F7', '#3B82F6', '#FFFFFF']
+              colors: ['#FF550C', '#3B2079', '#bE1d3e', '#FFA000', '#000000', '#FFFFFF']
             });
           }}
         >
@@ -893,12 +886,12 @@ const Index = () => {
             >
               {/* Decorative Circle */}
               <div
-                className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-[#F68B1E]/10 rounded-full blur-3xl pointer-events-none"
-                style={{ backgroundColor: `${catalogSettings?.frontPage?.primaryColor || '#F68B1E'}1A` }}
+                className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-[#FF550C]/10 rounded-full blur-3xl pointer-events-none"
+                style={{ backgroundColor: `${catalogSettings?.frontPage?.primaryColor || '#FF550C'}1A` }}
               />
               <div
-                className="absolute bottom-[-50px] left-[-50px] w-40 h-40 bg-[#7F4CEF]/10 rounded-full blur-3xl pointer-events-none"
-                style={{ backgroundColor: `${catalogSettings?.frontPage?.secondaryColor || '#7F4CEF'}1A` }}
+                className="absolute bottom-[-50px] left-[-50px] w-40 h-40 bg-[#3B2079]/10 rounded-full blur-3xl pointer-events-none"
+                style={{ backgroundColor: `${catalogSettings?.frontPage?.secondaryColor || '#3B2079'}1A` }}
               />
 
               {/* Decorative Circle */}
@@ -910,7 +903,7 @@ const Index = () => {
                     {catalogSettings?.frontPage?.subtitle && (
                       <span
                         className="drop-shadow-sm"
-                        style={{ color: catalogSettings?.frontPage?.primaryColor || '#F68B1E' }}
+                        style={{ color: catalogSettings?.frontPage?.primaryColor || '#FF550C' }}
                       >
                         {catalogSettings?.frontPage?.subtitle}
                       </span>
@@ -920,7 +913,7 @@ const Index = () => {
                 {(catalogSettings?.frontPage?.title || catalogSettings?.frontPage?.subtitle) && (
                   <div
                     className="absolute -bottom-4 right-0 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rotate-[-5deg] shadow-md rounded-sm"
-                    style={{ backgroundColor: catalogSettings?.frontPage?.secondaryColor || '#7F4CEF' }}
+                    style={{ backgroundColor: catalogSettings?.frontPage?.secondaryColor || '#bE1d3e' }}
                   >
                     LIMITED TIME
                   </div>
@@ -1329,20 +1322,22 @@ const Index = () => {
       <div className="flex items-center gap-8 z-50 shrink-0 pb-1 md:pb-0 mt-2">
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
-          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-jumia-purple/10 bg-white/20 backdrop-blur-md shadow-lg border border-white/50' : 'bg-transparent text-white'}`}
+          className={`p-3 rounded-full transition-all group ${isDesktop ? 'hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white' : 'bg-transparent text-white'}`}
+          title="Previous page"
         >
           <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" /></svg>
         </button>
 
-        <div className="bg-white/20 backdrop-blur-md px-6 py-2.5 rounded-full shadow-xl flex items-center gap-3 border border-white/40">
-          <span className="text-sm font-black text-jumia-purple">
-            {currentPage + 1} <span className="opacity-30 mx-1">/</span> {totalPages}
+        <div className="bg-white/15 backdrop-blur-md px-6 py-2.5 rounded-full shadow-xl flex items-center gap-3 border border-white/20">
+          <span className="text-sm font-black text-white">
+            {currentPage + 1} <span className="opacity-40 mx-1">/</span> {totalPages}
           </span>
         </div>
 
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipNext()}
-          className={`p-3 rounded-full transition-colors group ${isDesktop ? 'hover:bg-jumia-purple/10 bg-white/20 backdrop-blur-md shadow-lg border border-white/50' : 'bg-transparent text-white'}`}
+          className={`p-3 rounded-full transition-all group ${isDesktop ? 'hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white' : 'bg-transparent text-white'}`}
+          title="Next page"
         >
           <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
         </button>
