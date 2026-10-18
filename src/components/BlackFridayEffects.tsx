@@ -61,7 +61,7 @@ const BlackFridayEffects = () => {
       {balloons.map((b) => (
         <div
           key={b.id}
-          className="absolute bottom-[-150px] animate-float-up"
+          className="absolute bottom-[-150px] animate-float-up pointer-events-none select-none"
           style={{
             left: `${b.left}%`,
             width: `${b.size}px`,
@@ -73,7 +73,7 @@ const BlackFridayEffects = () => {
           <img
             src={b.item.image}
             alt="balloon"
-            className="w-full h-auto drop-shadow-2xl"
+            className="w-full h-auto drop-shadow-2xl pointer-events-none select-none"
             style={{ filter: b.item.filter }}
           />
         </div>

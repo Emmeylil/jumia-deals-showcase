@@ -56,12 +56,15 @@ const DEFAULT_SETTINGS = {
 const Index = () => {
   const { products, loading } = useProducts();
   const bookRef = useRef<any>(null);
+  if (typeof window !== "undefined") {
+    (window as any).__bookRef = bookRef;
+  }
 
   const [catalogSettings, setCatalogSettings] = React.useState<any>(null);
   const [settingsLoading, setSettingsLoading] = React.useState(true);
   const [currentPage, setCurrentPage] = React.useState(0);
   const [totalPages, setTotalPages] = React.useState(0);
-  const [isDesktop, setIsDesktop] = React.useState(typeof window !== "undefined" ? window.innerWidth >= 1024 : false);
+  const [isDesktop, setIsDesktop] = React.useState(typeof window !== "undefined" ? window.innerWidth >= 768 : false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [recentSearches, setRecentSearches] = React.useState<string[]>(() => {
@@ -325,6 +328,7 @@ const Index = () => {
 
   React.useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -380,15 +384,6 @@ const Index = () => {
     };
   }, []);
 
-  // Track responsive screen size (desktop vs mobile)
-  React.useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   // When a category filter is selected, jump to its first page in the book
   React.useEffect(() => {
@@ -412,6 +407,51 @@ const Index = () => {
     } else {
       navigator.clipboard.writeText(shareUrl);
       alert("Link copied to clipboard!");
+    }
+  };
+
+  const handleNextPage = () => {
+    const book = bookRef.current?.pageFlip?.();
+    if (!book) return;
+
+    const cur = book.getCurrentPageIndex();
+    const total = book.getPageCount();
+    if (cur >= total - 1) return;
+
+    try {
+      if (isDesktop) {
+        book.flipNext();
+      } else {
+        book.turnToNextPage();
+      }
+    } catch {
+      try {
+        book.turnToNextPage();
+      } catch (err) {
+        console.error("Failed to turn page forward:", err);
+      }
+    }
+  };
+
+  const handlePrevPage = () => {
+    const book = bookRef.current?.pageFlip?.();
+    if (!book) return;
+
+    const cur = book.getCurrentPageIndex();
+    if (cur <= 0) return;
+
+    try {
+      if (isDesktop) {
+        book.flipPrev();
+      } else {
+        book.turnToPrevPage();
+      }
+    } catch {
+      try {
+        book.turnToPrevPage();
+      } catch (err) {
+        console.error("Failed to turn page back:", err);
+      }
     }
   };
 
@@ -854,10 +894,10 @@ const Index = () => {
         <HTMLFlipBook
           key={(isDesktop ? 'desktop_' : 'mobile_') + activeCategoryFilter}
           width={isDesktop ? 360 : 290}
-          height={isDesktop ? 450 : 420}
-          size="stretch"
+          height={isDesktop ? 450 : 410}
+          size={isDesktop ? "stretch" : "fixed"}
           minWidth={isDesktop ? 260 : 220}
-          maxWidth={isDesktop ? 550 : 320}
+          maxWidth={isDesktop ? 550 : 340}
           minHeight={isDesktop ? 320 : 300}
           maxHeight={isDesktop ? 470 : 430}
           maxShadowOpacity={0.5}
@@ -866,11 +906,11 @@ const Index = () => {
           showCover={true}
           mobileScrollSupport={true}
           usePortrait={!isDesktop}
-          flippingTime={1000}
+          flippingTime={600}
           drawShadow={true}
           useMouseEvents={true}
           clickEventForward={true}
-          disableFlipByClick={true}
+          disableFlipByClick={isDesktop}
           onFlip={(e) => {
             const newPage = e.data;
             setCurrentPage(newPage);
@@ -890,7 +930,7 @@ const Index = () => {
             id="page-0"
             onClick={() => {
               if (currentPage === 0) {
-                bookRef.current?.pageFlip()?.flipNext();
+                handleNextPage();
               }
             }}
           >
@@ -947,7 +987,7 @@ const Index = () => {
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  bookRef.current?.pageFlip()?.flipNext();
+                  handleNextPage();
                 }}
                 className="mt-8 md:mt-24 px-6 md:px-8 py-2 md:py-3 border-2 border-gray-200 rounded-full text-xs md:text-sm font-bold text-gray-900 bg-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-bounce z-10"
               >
@@ -1343,27 +1383,41 @@ const Index = () => {
       </div>
 
       {/* BOTTOM NAVIGATION CONTROLS */}
-      <div className="flex items-center gap-4 md:gap-8 z-50 shrink-0 pb-1.5 md:pb-0 mt-1 md:mt-2">
+      <div className="relative z-50 flex items-center gap-4 md:gap-8 shrink-0 pb-1.5 md:pb-0 mt-1 md:mt-2">
         <button
-          onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
-          className="p-2.5 md:p-3 rounded-full transition-all hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white active:scale-95 flex items-center justify-center min-w-[42px] min-h-[42px]"
+          id="btn-prev-page"
+          type="button"
+          onClick={handlePrevPage}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            handlePrevPage();
+          }}
+          className="relative z-50 p-2.5 md:p-3 rounded-full transition-all hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white active:scale-95 flex items-center justify-center min-w-[44px] min-h-[44px] cursor-pointer touch-manipulation select-none pointer-events-auto"
           title="Previous page"
+          aria-label="Previous page"
         >
-          <svg className="w-5 h-5 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" /></svg>
+          <svg className="w-5 h-5 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" /></svg>
         </button>
 
-        <div className="bg-white/15 backdrop-blur-md px-4 md:px-6 py-2 md:py-2.5 rounded-full shadow-xl flex items-center gap-2 md:gap-3 border border-white/20">
+        <div className="bg-white/15 backdrop-blur-md px-4 md:px-6 py-2 md:py-2.5 rounded-full shadow-xl flex items-center gap-2 md:gap-3 border border-white/20 select-none">
           <span className="text-xs md:text-sm font-black text-white">
             {currentPage + 1} <span className="opacity-40 mx-1">/</span> {totalPages}
           </span>
         </div>
 
         <button
-          onClick={() => bookRef.current?.pageFlip()?.flipNext()}
-          className="p-2.5 md:p-3 rounded-full transition-all hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white active:scale-95 flex items-center justify-center min-w-[42px] min-h-[42px]"
+          id="btn-next-page"
+          type="button"
+          onClick={handleNextPage}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            handleNextPage();
+          }}
+          className="relative z-50 p-2.5 md:p-3 rounded-full transition-all hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white active:scale-95 flex items-center justify-center min-w-[44px] min-h-[44px] cursor-pointer touch-manipulation select-none pointer-events-auto"
           title="Next page"
+          aria-label="Next page"
         >
-          <svg className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
+          <svg className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
 
