@@ -61,7 +61,7 @@ const Index = () => {
   const [settingsLoading, setSettingsLoading] = React.useState(true);
   const [currentPage, setCurrentPage] = React.useState(0);
   const [totalPages, setTotalPages] = React.useState(0);
-  const [isDesktop, setIsDesktop] = React.useState(window.innerWidth >= 768);
+  const [isDesktop, setIsDesktop] = React.useState(typeof window !== "undefined" ? window.innerWidth >= 1024 : false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [recentSearches, setRecentSearches] = React.useState<string[]>(() => {
@@ -380,6 +380,16 @@ const Index = () => {
     };
   }, []);
 
+  // Track responsive screen size (desktop vs mobile)
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // When a category filter is selected, jump to its first page in the book
   React.useEffect(() => {
     if (activeCategoryFilter === "All") return;
@@ -550,17 +560,6 @@ const Index = () => {
     <div className="h-[100dvh] font-outfit overflow-hidden flex flex-col items-center justify-between py-2 md:py-4 px-2 md:px-4 relative gradient-main fixed inset-0">
       <BlackFridayEffects />
 
-      {/* Control Bar */}
-      <div className="absolute top-4 right-4 z-50 flex gap-2">
-        <button
-          onClick={handleShare}
-          className="bg-white/20 backdrop-blur-md p-2.5 rounded-full shadow-lg hover:bg-white/30 text-white border border-white/20 transition-all hover:scale-105 active:scale-95"
-          title="Share"
-        >
-          <Share2 size={20} />
-        </button>
-      </div>
-
       {/* Search Backdrop (closes results when clicking away) */}
       {isSearchFocused && (
         <div
@@ -569,40 +568,50 @@ const Index = () => {
         />
       )}
 
-      {/* Search Bar & Category Filter */}
-      <div className="w-full max-w-md mb-2 md:mb-3 relative z-50 px-4 md:px-0 shrink-0 flex flex-col gap-2">
-        <div className="relative group">
-          <button
-            onClick={() => performSearch()}
-            className="absolute inset-y-0 left-3 flex items-center z-10 text-gray-400 group-focus-within:text-jumia-blue transition-all hover:scale-110 active:scale-95"
-            title="Search"
-          >
-            <Search size={18} />
-          </button>
-          <Input
-            id="search-input"
-            name="searchQuery"
-            aria-label="Search catalog"
-            type="text"
-            placeholder="Search products, brands, or deals..."
-            className="pl-10 pr-10 py-7 bg-white/20 backdrop-blur-md border-2 border-white/40 shadow-2xl rounded-2xl focus:ring-4 focus:ring-jumia-blue/20 focus:border-jumia-blue transition-all text-gray-900 placeholder:text-gray-400 font-medium"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setIsSearchFocused(true)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                performSearch();
-              }
-            }}
-          />
-          {searchQuery && (
+      {/* Search Bar & Share Button */}
+      <div className="w-full max-w-md mb-1.5 md:mb-3 relative z-50 px-2 md:px-0 shrink-0 flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <div className="relative group flex-1">
             <button
-              onClick={() => setSearchQuery("")}
-              className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 px-1 hover:scale-110 transition-transform"
+              onClick={() => performSearch()}
+              className="absolute inset-y-0 left-3 flex items-center z-10 text-gray-300 group-focus-within:text-[#FF550C] transition-all hover:scale-110 active:scale-95"
+              title="Search"
             >
-              <X size={20} />
+              <Search size={18} />
             </button>
-          )}
+            <Input
+              id="search-input"
+              name="searchQuery"
+              aria-label="Search catalog"
+              type="text"
+              placeholder="Search products, brands, or deals..."
+              className="pl-10 pr-10 py-5 md:py-6 bg-white/20 backdrop-blur-md border border-white/30 shadow-xl rounded-2xl focus:ring-4 focus:ring-[#FF550C]/20 focus:border-[#FF550C] transition-all text-white placeholder:text-gray-300 font-medium text-xs md:text-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  performSearch();
+                }
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-300 hover:text-white px-1 hover:scale-110 transition-transform"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={handleShare}
+            className="bg-white/20 backdrop-blur-md p-3 md:p-3.5 rounded-2xl shadow-lg hover:bg-white/30 text-white border border-white/25 transition-all hover:scale-105 active:scale-95 shrink-0 flex items-center justify-center min-w-[44px] min-h-[44px]"
+            title="Share"
+          >
+            <Share2 size={18} />
+          </button>
         </div>
 
 
@@ -844,13 +853,13 @@ const Index = () => {
       >
         <HTMLFlipBook
           key={(isDesktop ? 'desktop_' : 'mobile_') + activeCategoryFilter}
-          width={isDesktop ? 380 : 320}
-          height={isDesktop ? 480 : 480}
+          width={isDesktop ? 360 : 290}
+          height={isDesktop ? 450 : 420}
           size="stretch"
-          minWidth={isDesktop ? 280 : 250}
-          maxWidth={700}
-          minHeight={350}
-          maxHeight={600}
+          minWidth={isDesktop ? 260 : 220}
+          maxWidth={isDesktop ? 550 : 320}
+          minHeight={isDesktop ? 320 : 300}
+          maxHeight={isDesktop ? 470 : 430}
           maxShadowOpacity={0.5}
           className="jumia-book shadow-2xl mx-auto"
           ref={bookRef}
@@ -876,7 +885,15 @@ const Index = () => {
           }}
         >
           {/* COVER PAGE */}
-          <Page className="bg-white text-gray-900 border-none" id="page-0">
+          <Page
+            className="bg-white text-gray-900 border-none cursor-pointer"
+            id="page-0"
+            onClick={() => {
+              if (currentPage === 0) {
+                bookRef.current?.pageFlip()?.flipNext();
+              }
+            }}
+          >
             <div
               className="w-full h-full flex flex-col items-center justify-center gap-2 md:gap-6 p-4 md:p-12 text-center bg-white relative overflow-hidden bg-cover bg-center"
               style={{
@@ -926,9 +943,16 @@ const Index = () => {
                 </p>
               )}
 
-              <div className="mt-8 md:mt-24 px-6 md:px-8 py-2 md:py-3 border-2 border-gray-200 rounded-full text-xs md:text-sm font-bold text-gray-900 bg-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-bounce z-10">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  bookRef.current?.pageFlip()?.flipNext();
+                }}
+                className="mt-8 md:mt-24 px-6 md:px-8 py-2 md:py-3 border-2 border-gray-200 rounded-full text-xs md:text-sm font-bold text-gray-900 bg-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-bounce z-10"
+              >
                 {catalogSettings?.frontPage?.footerText || "CLICK TO OPEN"}
-              </div>
+              </button>
             </div>
           </Page>
 
@@ -1079,7 +1103,7 @@ const Index = () => {
                         </h2>
                       </div>
                     </div>
-                    <div className="flex-1 p-1.5 md:p-2 grid grid-cols-2 grid-rows-3 gap-1.5 md:gap-2 content-start">
+                    <div className="flex-1 p-1.5 md:p-2 grid grid-cols-2 grid-rows-3 gap-1 md:gap-2 content-start pb-4">
                       {pageProducts.map((product) => (
                         <ProductCard
                           key={product.id}
@@ -1108,7 +1132,7 @@ const Index = () => {
                   }}
                 >
                   <div className="w-full h-full flex flex-row">
-                    <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1 md:gap-1.5 min-h-0 overflow-hidden">
+                    <div className="flex-1 p-1.5 md:p-2 flex flex-col gap-1 md:gap-1.5 min-h-0 overflow-hidden pb-4">
                       <div className={`grid grid-cols-2 gap-1.5 md:gap-2 min-h-0 ${page.hasBanner ? "grid-rows-2 flex-1" : "grid-rows-3 flex-1"}`}>
                         {pageProducts.map((product) => (
                           <ProductCard
@@ -1124,7 +1148,7 @@ const Index = () => {
                         </div>
                       )}
                     </div>
-                    <div className="w-10 md:w-14 bg-[#7F4CEF] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
+                    <div className="w-10 md:w-14 bg-[#3B2079] border-l border-white flex flex-col items-center py-3 md:py-6 relative shadow-inner z-10">
                       <div className="flex-1 flex items-center justify-center">
                         <h2 className="text-xl md:text-3xl font-black text-white tracking-wide rotate-90 whitespace-nowrap uppercase opacity-90">
                           {pageCategory}
@@ -1319,27 +1343,27 @@ const Index = () => {
       </div>
 
       {/* BOTTOM NAVIGATION CONTROLS */}
-      <div className="flex items-center gap-8 z-50 shrink-0 pb-1 md:pb-0 mt-2">
+      <div className="flex items-center gap-4 md:gap-8 z-50 shrink-0 pb-1.5 md:pb-0 mt-1 md:mt-2">
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
-          className={`p-3 rounded-full transition-all group ${isDesktop ? 'hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white' : 'bg-transparent text-white'}`}
+          className="p-2.5 md:p-3 rounded-full transition-all hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white active:scale-95 flex items-center justify-center min-w-[42px] min-h-[42px]"
           title="Previous page"
         >
-          <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" /></svg>
+          <svg className="w-5 h-5 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" /></svg>
         </button>
 
-        <div className="bg-white/15 backdrop-blur-md px-6 py-2.5 rounded-full shadow-xl flex items-center gap-3 border border-white/20">
-          <span className="text-sm font-black text-white">
+        <div className="bg-white/15 backdrop-blur-md px-4 md:px-6 py-2 md:py-2.5 rounded-full shadow-xl flex items-center gap-2 md:gap-3 border border-white/20">
+          <span className="text-xs md:text-sm font-black text-white">
             {currentPage + 1} <span className="opacity-40 mx-1">/</span> {totalPages}
           </span>
         </div>
 
         <button
           onClick={() => bookRef.current?.pageFlip()?.flipNext()}
-          className={`p-3 rounded-full transition-all group ${isDesktop ? 'hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white' : 'bg-transparent text-white'}`}
+          className="p-2.5 md:p-3 rounded-full transition-all hover:bg-white/30 bg-white/15 backdrop-blur-md shadow-lg border border-white/20 text-white active:scale-95 flex items-center justify-center min-w-[42px] min-h-[42px]"
           title="Next page"
         >
-          <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
+          <svg className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
 

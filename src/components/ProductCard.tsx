@@ -55,10 +55,10 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
   };
 
   const content = (
-    <div className={`relative bg-white rounded-[1.5rem] shadow-sm flex flex-col items-center p-2 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group ${highlighted ? 'border-2 border-jumia-blue ring-4 ring-jumia-blue/20 animate-beat' : ''}`}>
+    <div className={`relative bg-white rounded-xl md:rounded-[1.5rem] shadow-sm flex flex-col items-center p-1 md:p-2 h-full overflow-hidden transition-all hover:shadow-md cursor-pointer group ${highlighted ? 'border-2 border-jumia-blue ring-4 ring-jumia-blue/20 animate-beat' : ''}`}>
       {/* Discount Badge */}
       {discount > 0 && (
-        <div className="absolute top-2 right-2 z-10 bg-[#FF550C] text-white text-[9px] font-black w-6 h-6 flex items-center justify-center rounded-full shadow-sm">
+        <div className="absolute top-1.5 right-1.5 z-10 bg-[#FF550C] text-white text-[8px] md:text-[9px] font-black w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full shadow-sm">
           -{discount}%
         </div>
       )}
@@ -66,9 +66,9 @@ const ProductCard = ({ product, compact, highlighted, lazy = true }: ProductCard
       {/* Wishlist Button */}
       <button
         onClick={toggleWishlist}
-        className={`wishlist-btn absolute top-2 left-2 z-10 w-6 h-6 flex items-center justify-center rounded-full transition-all shadow-sm ${isWishlisted ? 'bg-[#3B2079] text-white' : 'bg-white/80 text-gray-400 hover:text-[#3B2079]'}`}
+        className={`wishlist-btn absolute top-1.5 left-1.5 z-10 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full transition-all shadow-sm ${isWishlisted ? 'bg-[#3B2079] text-white' : 'bg-white/80 text-gray-400 hover:text-[#3B2079]'}`}
       >
-        <Heart size={12} fill={isWishlisted ? "currentColor" : "none"} />
+        <Heart size={11} fill={isWishlisted ? "currentColor" : "none"} />
       </button>
 
       {/* Product Image — takes ~50-55% of card height */}

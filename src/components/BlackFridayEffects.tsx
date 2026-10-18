@@ -80,10 +80,13 @@ const BlackFridayEffects = () => {
       ))}
 
       {/* Black Friday Text (Subtle Backdrop) */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20 pointer-events-none select-none w-full flex justify-center">
-        <h1 className="text-[13vw] font-black uppercase tracking-tighter text-center whitespace-nowrap text-white/20 select-none drop-shadow-[0_0_40px_rgba(255,85,12,0.15)]">
-          Black Friday
-        </h1>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-15 md:opacity-20 pointer-events-none select-none w-full flex flex-col md:flex-row items-center justify-center gap-1 md:gap-6 px-4">
+        <span className="text-[15vw] md:text-[13vw] font-black uppercase tracking-tighter text-center whitespace-nowrap text-white/20 select-none drop-shadow-[0_0_40px_rgba(255,85,12,0.15)] leading-none">
+          BLACK
+        </span>
+        <span className="text-[15vw] md:text-[13vw] font-black uppercase tracking-tighter text-center whitespace-nowrap text-white/20 select-none drop-shadow-[0_0_40px_rgba(190,29,62,0.15)] leading-none">
+          FRIDAY
+        </span>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
