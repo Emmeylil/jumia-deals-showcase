@@ -1,6 +1,9 @@
 import React, { useRef, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
 import confetti from 'canvas-confetti';
+import { toast } from "sonner";
+
+const HTMLFlipBookAny = HTMLFlipBook as any;
 
 
 import ProductCard from "@/components/ProductCard";
@@ -27,15 +30,17 @@ interface PageProps {
   className?: string;
   style?: React.CSSProperties;
   id?: string;
+  onClick?: (e?: any) => void;
 }
 
-const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className, style, id }, ref) => {
+const Page = React.forwardRef<HTMLDivElement, PageProps>(({ children, className, style, id, onClick }, ref) => {
   return (
     <div
       className={`bg-white shadow-md overflow-hidden flex flex-col border border-gray-200 ${className}`}
       ref={ref}
       style={style}
       id={id}
+      onClick={onClick}
     >
       {children}
     </div>
@@ -892,7 +897,7 @@ const Index = () => {
             : 'none'
         }}
       >
-        <HTMLFlipBook
+        <HTMLFlipBookAny
           key={(isDesktop ? 'desktop_' : 'mobile_') + activeCategoryFilter}
           width={isDesktop ? 360 : 290}
           height={isDesktop ? 450 : 410}
@@ -1332,6 +1337,7 @@ const Index = () => {
                       }
                       setSuggestionSubmitting(true);
                       try {
+                        const suggestionsRef = collection(db, "product_suggestions");
                         const sanitizedSuggestion = {
                           name: sanitize(suggestionForm.name),
                           brand: sanitize(suggestionForm.brand) || null,
@@ -1384,7 +1390,7 @@ const Index = () => {
               </div>
             </div>
           </Page>
-        </HTMLFlipBook>
+        </HTMLFlipBookAny>
       </div>
 
       {/* BOTTOM NAVIGATION CONTROLS */}
