@@ -16,11 +16,10 @@ import { db, isConfigured } from "@/lib/firebase";
 import { expandQuery, getSemanticScore, normalizeText, autoCategorizeProduct } from "@/lib/search-utils";
 import { PRODUCT_CATEGORIES, CATEGORY_BRAND_MAP, type ProductCategory } from "@/lib/constants";
 
-import { AlertCircle, Loader2, Share2, Search, X, History, Flame, Trash2, Bell } from "lucide-react";
+import { AlertCircle, Loader2, Share2, Search, X, History, Flame, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addUTMParameters } from "@/lib/utils";
 import BlackFridayEffects from "@/components/BlackFridayEffects";
-import DealAlertsModal from "@/components/DealAlertsModal";
 import { sanitize, sanitizeEmail, sanitizePhone } from "@/lib/sanitize";
 
 interface PageProps {
@@ -81,7 +80,6 @@ const Index = () => {
   const [suggestionForm, setSuggestionForm] = React.useState({ name: "", brand: "", description: "", email: "", phone: "" });
   const [suggestionSuccess, setSuggestionSuccess] = React.useState(false);
   const [suggestionSubmitting, setSuggestionSubmitting] = React.useState(false);
-  const [isDealAlertsOpen, setIsDealAlertsOpen] = React.useState(false);
 
   // Dynamic Category Filtering
   const [activeCategoryFilter, setActiveCategoryFilter] = React.useState<string>("All");
@@ -602,10 +600,6 @@ const Index = () => {
   return (
     <div className="h-[100dvh] font-outfit overflow-hidden flex flex-col items-center justify-between py-2 md:py-4 px-2 md:px-4 relative gradient-main fixed inset-0">
       <BlackFridayEffects />
-      <DealAlertsModal
-        isOpen={isDealAlertsOpen}
-        onClose={() => setIsDealAlertsOpen(false)}
-      />
 
       {/* Search Backdrop (closes results when clicking away) */}
       {isSearchFocused && (
@@ -651,18 +645,6 @@ const Index = () => {
               </button>
             )}
           </div>
-
-          <button
-            id="btn-deal-alerts"
-            type="button"
-            onClick={() => setIsDealAlertsOpen(true)}
-            className="bg-gradient-to-r from-[#FF550C] to-[#bE1d3e] px-3.5 py-3 md:py-3.5 rounded-2xl shadow-lg hover:brightness-110 text-white border border-[#FF550C]/40 transition-all hover:scale-105 active:scale-95 shrink-0 flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] cursor-pointer touch-manipulation select-none"
-            title="Black Friday Flash Deal Alerts"
-            aria-label="Get Black Friday Flash Deal Alerts"
-          >
-            <Bell size={18} className="animate-pulse text-amber-300" />
-            <span className="hidden sm:inline text-xs font-black uppercase tracking-wider">Alerts</span>
-          </button>
 
           <button
             onClick={handleShare}
